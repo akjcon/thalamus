@@ -126,12 +126,37 @@ Be brief. One line per instrument."""
     return trade_ideas
 
 
+def load_recent_alerts(n: int = 3) -> str:
+    """Load recent alert trade ideas so the analyst knows what was already recommended."""
+    alerts_dir = MEMORY / "alerts"
+    if not alerts_dir.exists():
+        return "(No previous alerts)"
+    alert_files = sorted(alerts_dir.iterdir(), reverse=True)[:n]
+    lines = []
+    for f in alert_files:
+        try:
+            import json as _json
+            alert = _json.loads(f.read_text())
+            ts = f.stem  # timestamp from filename
+            ideas = alert.get("trade_ideas", [])
+            if ideas:
+                idea_strs = [f"  - {i.get('direction','').upper()} {i.get('instrument','')}: {i.get('one_liner','')}" for i in ideas]
+                lines.append(f"**{ts}** (alert_worthy={alert.get('alert_worthy', False)}):\n" + "\n".join(idea_strs))
+            else:
+                lines.append(f"**{ts}**: No trade ideas (quiet cycle)")
+        except Exception:
+            pass
+    return "\n\n".join(lines) if lines else "(No previous alerts)"
+
+
 def deep_analysis(client, flagged_items: list[dict], world_model: str,
                   portfolio: str, research: str, model: str) -> dict:
     """
     Run deep analysis on flagged items. Returns structured analysis
     with trade implications.
     """
+    recent_alerts = load_recent_alerts()
+
     items_text = "\n\n".join(
         f"### {item['title']}\n"
         f"Source: {item['source']}\n"
@@ -146,6 +171,9 @@ def deep_analysis(client, flagged_items: list[dict], world_model: str,
 
 ## Current Portfolio
 {portfolio}
+
+## Recent Alerts (already sent to user)
+{recent_alerts}
 
 ## Flagged Events
 {items_text}
@@ -195,6 +223,13 @@ not intraday reactions. The best ideas are ones where:
 
 For each trade idea, ask yourself: "Would a smart person who only reads headlines
 come up with this?" If yes, discard it and dig deeper.
+
+**DO NOT REPEAT TRADE IDEAS YOU ALREADY SENT.** Check the "Recent Alerts" section
+above. If you already recommended an instrument (e.g., CF Industries, corn futures),
+do NOT recommend it again UNLESS there is a genuinely new development that materially
+changes the thesis, entry point, or confidence level. "More articles about the same
+situation" is NOT a new development. If the same situation is still playing out as
+expected, that's confirmation — not a new alert. Just update the world model quietly.
 
 **MOST CYCLES SHOULD HAVE ZERO TRADE IDEAS.** Only suggest a trade when you have
 genuine conviction — a clear, non-obvious chain of reasoning where you can explain
