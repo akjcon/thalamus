@@ -1,0 +1,40 @@
+# RSS feeds for geopolitical news
+# Intentionally excludes financial/markets sections
+rss_feeds:
+  # Wire services — hard news, minimal editorializing
+  - name: "AP Top News"
+    url: "https://rsshub.app/apnews/topics/apf-topnews"
+  - name: "Reuters World"
+    url: "https://www.reutersagency.com/feed/?best-topics=world"
+
+  # International / geopolitics focused
+  - name: "BBC World"
+    url: "http://feeds.bbci.co.uk/news/world/rss.xml"
+  - name: "Al Jazeera"
+    url: "https://www.aljazeera.com/xml/rss/all.xml"
+  - name: "Foreign Policy"
+    url: "https://foreignpolicy.com/feed/"
+  - name: "The Diplomat"
+    url: "https://thediplomat.com/feed/"
+
+  # US government / policy
+  - name: "State Department"
+    url: "https://www.state.gov/rss-feed/press-releases/feed/"
+
+  # Conflict / security
+  - name: "Defense One"
+    url: "https://www.defenseone.com/rss/"
+  - name: "War on the Rocks"
+    url: "https://warontherocks.com/feed/"
+
+  # Energy / commodities (non-market)
+  - name: "EIA Today in Energy"
+    url: "https://www.eia.gov/rss/todayinenergy.xml"
+
+# How often to scan (hours)
+scan_interval_hours: 4
+
+# Model configuration
+models:
+  scanner: "claude-haiku-4-5-20251001"  # Fast, cheap headline classification
+  analyst: "claude-sonnet-4-6"           # Deep analysis when triggered

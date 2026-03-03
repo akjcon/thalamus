@@ -1,0 +1,5 @@
+.env
+__pycache__/
+*.pyc
+memory/seen_headlines.json
+memory/alerts/
