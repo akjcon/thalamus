@@ -6,7 +6,6 @@ with expandable trade ideas and chat capability.
 
 import os
 import json
-import time
 import asyncio
 import discord
 from discord import ui
@@ -370,26 +369,40 @@ async def generate_idle_message() -> str:
     return response.content[0].text
 
 
+def last_scan_time() -> datetime | None:
+    """Check when the last scan ran by looking at alert files on disk."""
+    alerts_dir = ROOT / "memory" / "alerts"
+    if not alerts_dir.exists():
+        return None
+    files = sorted(alerts_dir.iterdir(), reverse=True)
+    if not files:
+        return None
+    # Filenames are like 20260303_055901.json → parse as UTC datetime
+    try:
+        ts = files[0].stem  # e.g. "20260303_055901"
+        return datetime.strptime(ts, "%Y%m%d_%H%M%S").replace(tzinfo=timezone.utc)
+    except (ValueError, IndexError):
+        return None
+
+
 async def scan_loop():
     """Background task that runs the scan cycle periodically."""
     await client.wait_until_ready()
 
-    # Wait before first scan — prevents spam if bot is crash-restarting
-    await asyncio.sleep(120)
-
     config = load_config()
     interval_hours = config.get("scan_interval_hours", 4)
-    interval_seconds = interval_hours * 3600
-    last_scan = 0  # epoch time of last scan
 
     while not client.is_closed():
-        # Use wall clock instead of asyncio.sleep to survive gateway disconnects
-        now = time.time()
-        if now - last_scan < interval_seconds and last_scan > 0:
-            await asyncio.sleep(60)  # Check every minute
-            continue
+        # Check if enough time has passed since last scan (survives restarts + disconnects)
+        last = last_scan_time()
+        if last:
+            elapsed = (datetime.now(timezone.utc) - last).total_seconds()
+            remaining = (interval_hours * 3600) - elapsed
+            if remaining > 0:
+                print(f"  Last scan was {elapsed/60:.0f}m ago, next in {remaining/60:.0f}m")
+                await asyncio.sleep(min(remaining, 300))  # Re-check every 5 min or when due
+                continue
 
-        last_scan = now
         try:
             # Run scan in thread pool to not block the bot
             result = await asyncio.get_event_loop().run_in_executor(None, run_scan_cycle)
@@ -408,7 +421,7 @@ async def scan_loop():
             import traceback
             traceback.print_exc()
 
-        await asyncio.sleep(60)  # Short sleep, time check guards against running too soon
+        await asyncio.sleep(60)
 
 
 @client.event
