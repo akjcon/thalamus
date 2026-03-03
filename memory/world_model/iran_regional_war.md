@@ -1,88 +1,82 @@
 # Iran — Active Regional War
-**Status: 🔴 ACTIVE WAR — Leadership Decapitated, Interim Council Confirmed, IRGC Autonomous**
-**As of: March 2, 2026**
+**Status: 🔴 ACTIVE WAR — Leadership Decapitated; IRGC Naval Assets Eliminated; Diplomatic Back-Channel Active**
+**As of: March 3, 2026**
 
 ## Situation Overview
 - ~2,000 combined U.S.–Israeli airstrikes in 3 days preceding March 2, 2026
 - **Khamenei confirmed dead** — Supreme Leader position vacant
-- **Interim leadership council confirmed (March 1):** Larijani (SNSC), Pezeshkian (President), Mohseni-Ejei (Judiciary)
+- Interim leadership council in place; names/composition unclear
 - **Air supremacy reportedly achieved** over Iran by combined U.S.-Israeli forces
+- **IRGC naval capacity ELIMINATED:** U.S. CENTCOM confirms 11 Iranian vessels sunk in Gulf of Oman — IRGC has ZERO surface ships in that theater
+- **Residual IRGC threat:** Shore-based ballistic missiles + shallow-water fast-attack boats in Gulf proper
 - IRGC operating on **autonomous pre-arranged protocols** — no clear unified command authority
 - Iran attacking **9 countries** and **27 U.S. bases** across Middle East
-- Strait of Hormuz **declared closed by IRGC** (contested; U.S. carrier groups present; 3 tankers damaged, 150 ships stranded)
-- **Residual Iranian ballistic missile capability confirmed** — missile struck West Jerusalem post-strike
-
-## Interim Governance — CRITICAL UNCERTAINTY
-
-### Larijani as De Facto Crisis Manager
-- **Ali Larijani** confirmed as de facto power broker in crisis management role via SNSC position since January 2026
-- Constitutionally **ineligible** for Supreme Leader — does not hold senior Shiite cleric status (required by constitution)
-- His role is crisis manager / stabilizer, not heir apparent
-- **'Pragmatist' label is accurate but limited:** Larijani oversaw lethal crackdown on 2019–2022 protests; his pragmatism is about Iranian state survival, not liberal reform
-- **U.S.-sanctioned (January 15, 2026)** for protest crackdown role — complicates any direct U.S.–Larijani negotiation channel
-
-### Rival Power Center — IRGC
-- **Ahmad Vahidi named IRGC chief** — potential rival to Larijani council for actual operational control
-- Vahidi controls IRGC autonomous military operations
-- Larijani (diplomatic/political) vs. Vahidi (IRGC/military) = fundamental tension in Iranian decision-making
-- IRGC commanders aligning with Vahidi vs. council: **unknown/actively tracking**
-- This split is the core reason the FM diplomatic signals and IRGC military operations are running simultaneously and contradictorily
-
-### Post-Regime Governance Framework
-- **Explicitly absent** — flagged by NATO allies and multiple think tanks
-- Assembly of Experts (88-member clerical body) constitutionally responsible for electing new Supreme Leader
-- Timeline: unclear; body must convene and deliberate; could take weeks to months
-- Constitutional requirement for senior Shiite cleric status formally disqualifies Larijani
-- **No clear successor identified** — deepest governance vacuum in Iranian history since 1979
+- Strait of Hormuz **declared closed by IRGC** — now insurance-market-enforced, not militarily enforced; could reopen quickly with credible ceasefire
+- **Residual Iranian ballistic missile capability confirmed** — struck West Jerusalem post-strike
+- **U.S. operational timeline:** Trump stated U.S. expected **4–5 week campaign** from outset — not open-ended
 
 ## Nuclear Program Status
-- IAEA confirms: **no nuclear installations confirmed hit** as of March 2, 2026
+- IAEA confirms: **no nuclear installations confirmed hit** as of March 3, 2026
 - Nuclear program covert reconstitution status unknown post-strikes
 - Risk: autonomous IRGC factions may pursue nuclear escalation without central command authority
 
-## Diplomatic Track
+## Diplomatic Track — ACTIVE BUT DISCONNECTED FROM MILITARY
 - Iran foreign minister signaling **openness to de-escalation via Oman channel**
 - Trump confirms talks possible
-- **Critical disconnect:** Diplomatic signals from FM (aligned with Larijani council) vs. autonomous IRGC (Vahidi) military operations — HIGH RISK gap
-- Larijani's U.S. sanctions status complicates direct engagement
+- **Critical disconnect:** Diplomatic signals from FM vs. autonomous IRGC military operations — HIGH RISK gap; these are NOT coordinated
 - Oman's traditional back-channel role is the primary negotiation mechanism
+- FM signals = civilian/diplomatic track; IRGC = autonomous military track operating independently
+
+## IRGC Threat Assessment — Updated
+| Capability | Status |
+|---|---|
+| Surface naval vessels (Gulf of Oman) | 🔴 ELIMINATED — 0 remaining |
+| Fast-attack boats (shallow Gulf waters) | ⚠️ Still active — shallower theater |
+| Shore-based ballistic missiles | ⚠️ CONFIRMED RESIDUAL — struck West Jerusalem |
+| Drone capability | ⚠️ Active — 541+ drones launched against Qatar alone |
+| Air force | 🔴 SEVERELY DEGRADED — 2 jets downed over Qatar; air supremacy lost |
+| Proxy networks (Hezbollah, Houthis, Iraqi militias) | ⚠️ Still operational — autonomous |
 
 ## Iranian Strikes — Targets & Doctrine
 | Target | Status | Notes |
 |---|---|---|
 | Qatar (incl. Al Udeid) | Under attack | 2 Iranian jets downed; 165 missiles + 541 drones intercepted |
-| Saudi Arabia infrastructure | Under missile/drone attack | Largest domestic refinery shuttered by drone strike |
+| Saudi Arabia infrastructure | Under missile/drone attack | Ras Tanura refinery CONFIRMED shutdown (550,000 b/d refined products) |
 | UAE infrastructure | Under missile/drone attack | Energy infrastructure at risk |
-| Kuwait | Under attack | International airport struck — economic targeting |
+| Kuwait | Under attack | International airport struck — economic targeting confirmed |
 | Bahrain | Under attack | Hosts U.S. 5th Fleet |
 | Oman | Under attack | Also serving as back-channel diplomatic conduit |
 | Iraq | Under attack | Significant U.S. base presence |
 | Jordan | Under attack | |
 | 27 U.S. bases (region-wide) | Under attack | |
 
-**Economic targeting doctrine confirmed:** Iran striking civilian aviation facilities including international airports — signals deliberate targeting of economic infrastructure, not just military assets.
+**Economic targeting doctrine confirmed:** Iran deliberately striking civilian aviation facilities, ports, refineries — not just military assets.
 
 ## Key Risks
-- **Hormuz closure:** ~20% of global oil transits; physically disrupting (3 tankers damaged, 150 ships stranded)
-- **Nuclear escalation:** Autonomous IRGC actors; no clear command authority; Vahidi alignment unknown
-- **Gulf state infrastructure strikes:** Saudi Aramco refinery HIT; UAE terminals at direct risk
+- **Hormuz:** Insurance-enforced closure; ~150+ tankers stranded; no physical barrier (can resolve quickly with ceasefire)
+- **Nuclear escalation:** Autonomous IRGC actors; no clear command authority — HIGHEST SYSTEMIC RISK
+- **Saudi/UAE infrastructure:** Ras Tanura CONFIRMED shuttered; Aramco/ADNOC at continued risk
 - **Qatar LNG:** Halted; Qafco ammonia/urea also halted
-- **Larijani–Vahidi split:** FM signals de-escalation while IRGC attacks autonomously — not necessarily coordinated
-- **Residual ballistic missiles:** Confirmed capability despite air supremacy loss
-- **Secondary instability:** Pakistan-Afghanistan fighting escalating simultaneously
-- **U.S. direct negotiation blocked:** Larijani sanctioned by U.S. Jan 15, 2026
+- **Diplomatic–military gap:** FM signals de-escalation while IRGC attacks autonomously
+- **Residual ballistic missiles:** Confirmed; inventory unknown — key uncertainty
+- **Proxy activation:** Hezbollah, Houthis, Iraqi militias operating independently
+
+## Duration Signals
+- Trump: U.S. expected **4–5 week campaign** — sets expectation for resolution window (late March/early April)
+- Iran FM active in Oman channel — civilian government wants out
+- IRGC autonomous operations: primary obstacle to ceasefire effectiveness
+- Interim council gaining control over IRGC = key ceasefire pre-condition
 
 ## Trajectory
-🔴 ACUTE ESCALATION — Air supremacy achieved but IRGC autonomous under Vahidi; governance vacuum confirmed by NATO/analysts; Larijani pragmatism offset by U.S. sanctions complication and IRGC autonomy; physical Hormuz disruption ongoing; Assembly of Experts timeline to new Supreme Leader unclear
+🔴 ACUTE ESCALATION — IRGC naval threat eliminated but autonomous operations continuing via missiles/drones/proxies; economic targeting doctrine confirmed; insurance-enforced Hormuz closure could reverse quickly with ceasefire; command vacuum is primary systemic risk; 4–5 week U.S. campaign timeline suggests resolution window late March/early April
 
 ## Watch For
-- Whether Larijani council vs. Vahidi/IRGC split resolves — or deepens
-- IRGC commander alignment: who is following Vahidi vs. council orders?
-- Assembly of Experts convening timeline for Supreme Leader selection
-- Oman back-channel ceasefire framework progress (Larijani council incentivized; Vahidi/IRGC unclear)
-- **Residual Iranian ballistic missile inventory** — how many remain usable?
+- Whether interim leadership council gains control over IRGC autonomous operations
+- **Oman back-channel ceasefire framework progress** — most important near-term indicator
+- **Residual Iranian ballistic missile inventory** — how many remain; rate of use
 - Nuclear facility targeting in follow-on strikes
 - Gulf state (Saudi/UAE) direct military retaliation decisions
 - Chinese diplomatic intervention (largest energy stakeholder)
-- Whether U.S. sanctions on Larijani are quietly waived or worked around for Oman channel
-- Economic targeting escalation: airports → ports → refineries
+- Fast-attack boat activity in shallow Gulf waters (residual naval threat)
+- Economic targeting escalation: airports → ports → additional refineries
+- Interim council composition announcement — signals control vs. fragmentation

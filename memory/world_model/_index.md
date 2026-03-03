@@ -1,25 +1,27 @@
-# Geopolitical World Model — March 2, 2026 (UPDATED)
-**⚠️ CRITICAL: Middle East regional war underway — Iran leadership decapitated, governance vacuum confirmed, Hormuz under closure threat, Qatar LNG halted, fertilizer/food cascade emerging**
+# Geopolitical World Model — March 3, 2026 (UPDATED)
+**⚠️ CRITICAL: Middle East regional war; IRGC naval assets eliminated; Hormuz insurance-enforced; Ras Tanura refined products offline; 170 containerships trapped; 6–8 week consumer goods shock emerging**
 
 ## Files
 
 ### 🔴 ACTIVE CRISIS — Middle East Regional War
-- [iran_regional_war.md](iran_regional_war.md) — Iran under U.S./Israeli strikes; Khamenei dead; interim council (Larijani/Pezeshkian/Mohseni-Ejei); Vahidi/IRGC autonomous rival power center
-- [iran_succession.md](iran_succession.md) — NEW: Larijani vs. Vahidi power contest; Assembly of Experts timeline; governance vacuum analysis
+- [iran_regional_war.md](iran_regional_war.md) — IRGC naval eliminated; 4–5 week U.S. campaign timeline; Oman back-channel active; FM vs IRGC disconnect
 - [israel_gaza_middle_east.md](israel_gaza_middle_east.md) — Lebanon ceasefire over; Hezbollah re-engaged; multi-front war
 - [qatar_crisis.md](qatar_crisis.md) — Under Iranian attack; LNG halted; Al Udeid at risk
 - [red_sea_suez.md](red_sea_suez.md) — BACK TO DISRUPTION: Houthis resumed attacks
-- [energy_supply_chains.md](energy_supply_chains.md) — CRITICAL: Hormuz closure + Qatar LNG offline (~20% global LNG); Saudi refinery shuttered; fertilizer cascade; Qatar 3–6 week restart floors shock independently of diplomacy
-- [global_shipping.md](global_shipping.md) — Both Red Sea and Hormuz simultaneously threatened; Atlantic-basin rerouting emerging
-- [middle_east_overview.md](middle_east_overview.md) — Regional war: Saudi position shift; Gulf state alignment dynamics; Larijani–Vahidi split
+- [energy_supply_chains.md](energy_supply_chains.md) — CRITICAL: Hormuz insurance-enforced (not military); Ras Tanura 550k b/d refined products offline; Qatar LNG halted; TTF above curtailment threshold
+- [global_shipping.md](global_shipping.md) — 170 containerships (450k TEU) trapped; Jebel Ali paralyzed; dual chokepoint; 6–8 week retail consequence window
+- [middle_east_overview.md](middle_east_overview.md) — Regional war: 9 countries under Iranian attack
+
+### 🟠 EMERGING CRISIS — Consumer Goods & Supply Chain Cascade
+- [consumer_goods_supply_chain.md](consumer_goods_supply_chain.md) — NEW: 450k TEU trapped; Jebel Ali paralyzed; DXB air cargo disrupted; East Africa/South Asia most exposed; late April/May retail shock
 
 ### 🟠 EMERGING CRISIS — Energy Cascade / Food Supply
-- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — TTF above curtailment threshold; dual-channel disruption; physical 3–6 week restart floor floors shock independent of diplomacy; spring planting overlap near-certain
+- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — Dual-channel: TTF above threshold + direct Middle East shutdown; spring planting risk; worse than 2021
 - [food_agriculture_supply.md](food_agriculture_supply.md) — 2026 planting season at risk from nitrogen shock
-- [oil_gas_market.md](oil_gas_market.md) — 🔴 ACUTE CRISIS: Brent $77-81; LNG/TTF extreme spike
+- [oil_gas_market.md](oil_gas_market.md) — 🔴 ACUTE CRISIS: Brent settled +7.6%; refined products MORE disrupted than crude; Ras Tanura offline; crack spreads key indicator
 
 ### Conflicts & Military Tensions
-- [russia_ukraine_war.md](russia_ukraine_war.md) — Active war + Geneva negotiations
+- [russia_ukraine_war.md](russia_ukraine_war.md) — Active war + Geneva negotiations stalling
 - [sudan_civil_war.md](sudan_civil_war.md) — SAF vs RSF, escalating
 - [drc_eastern_congo.md](drc_eastern_congo.md) — M23/Rwanda, critical minerals
 - [myanmar_civil_war.md](myanmar_civil_war.md) — Junta vs EAOs, China involvement
@@ -30,31 +32,33 @@
 ### Sanctions & Trade Disputes
 - [russia_sanctions.md](russia_sanctions.md) — Full-spectrum, shadow fleet targeting
 - [us_china_trade_war.md](us_china_trade_war.md) — Truce + tech restrictions + tariff legal uncertainty
-- [iran_sanctions.md](iran_sanctions.md) — Subsumed by active war; see iran_regional_war.md
+- [iran_sanctions.md](iran_sanctions.md) — Superseded by active war
 - [us_latam_sanctions.md](us_latam_sanctions.md) — Venezuela, Colombia, Cuba, cartels
 - [syria_sanctions_lifting.md](syria_sanctions_lifting.md) — Broad sanctions lifted, reconstruction opening
 
 ### Critical Infrastructure & Supply Chains
 - [red_sea_suez.md](red_sea_suez.md) — ACTIVE DISRUPTION RESUMED
 - [critical_minerals.md](critical_minerals.md) — Rare earths, cobalt, China dominance
-- [energy_supply_chains.md](energy_supply_chains.md) — CRITICAL: Hormuz + Qatar LNG crisis + fertilizer cascade
-- [global_shipping.md](global_shipping.md) — Dual chokepoint crisis; Atlantic-basin rerouting
-- [oil_gas_market.md](oil_gas_market.md) — Prices spiking; TTF-Henry Hub spread key variable
-- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — Nitrogen supply shock; physical restart floor independent of diplomacy
+- [energy_supply_chains.md](energy_supply_chains.md) — CRITICAL: Hormuz insurance-enforced; Ras Tanura offline; Qatar LNG halted
+- [global_shipping.md](global_shipping.md) — 170 containerships trapped; Jebel Ali paralyzed; dual chokepoint
+- [oil_gas_market.md](oil_gas_market.md) — Refined products shock; crack spreads; TTF above curtailment threshold
+- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — Dual-channel nitrogen shock; spring planting risk
+- [consumer_goods_supply_chain.md](consumer_goods_supply_chain.md) — NEW: 6–8 week retail shelf consequence
 
 ### Major Power Dynamics
-- [us_foreign_policy_2026.md](us_foreign_policy_2026.md) — Trump administration; now managing active war
-- [china_global_posture.md](china_global_posture.md) — Strategic positioning; Iran oil disrupted; Power of Siberia 2 leverage
-- [russia_global_posture.md](russia_global_posture.md) — War economy, sanctions evasion, Africa; energy windfall
-- [europe_security_posture.md](europe_security_posture.md) — Energy emergency scenario re-emerging
+- [us_foreign_policy_2026.md](us_foreign_policy_2026.md) — Trump 4–5 week campaign timeline; Oman back-channel; managing Hormuz standoff
+- [china_global_posture.md](china_global_posture.md) — Energy crisis; Power of Siberia 2 acceleration; Hormuz de-escalation incentive
+- [russia_global_posture.md](russia_global_posture.md) — Energy windfall; war economy; possible sanctions leverage attempt
+- [europe_security_posture.md](europe_security_posture.md) — Energy emergency re-emerged; Qatar LNG crisis; possible Russian LNG sanctions pause
 
 ### Regional Overviews
-- [middle_east_overview.md](middle_east_overview.md) — 🔴 ACTIVE REGIONAL WAR; Gulf alignment dynamics; Saudi position shift
+- [middle_east_overview.md](middle_east_overview.md) — 🔴 ACTIVE REGIONAL WAR
 - [africa_overview.md](africa_overview.md) — Sahel, Sudan, DRC, great power competition
 - [asia_pacific_overview.md](asia_pacific_overview.md) — Taiwan Strait, South China Sea, Korea
 
 ### Commodities & Markets
-- [oil_gas_market.md](oil_gas_market.md) — 🔴 ACUTE CRISIS: Brent $77-81 confirmed; TTF extreme
-- [food_agriculture_supply.md](food_agriculture_supply.md) — 2026 spring planting season risk emerging
-- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — 🔴 ACTIVE: Nitrogen shock; physical restart floors spring overlap
+- [oil_gas_market.md](oil_gas_market.md) — 🔴 ACUTE CRISIS: Refined products shock distinct from crude; crack spreads key
+- [food_agriculture_supply.md](food_agriculture_supply.md) — 2026 spring planting season risk
+- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — 🔴 Dual-channel nitrogen shock
 - [semiconductor_tech_supply.md](semiconductor_tech_supply.md) — Chip controls, Taiwan risk
+- [consumer_goods_supply_chain.md](consumer_goods_supply_chain.md) — 🟠 NEW: Gulf disruption → retail shock
