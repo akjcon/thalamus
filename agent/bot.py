@@ -269,6 +269,9 @@ def save_replay(timestamp: str, headlines: list, flagged: list, research: str):
 
 def run_scan_cycle() -> dict | None:
     """Execute one scan cycle. Returns analysis result or None."""
+    # Record scan start IMMEDIATELY — survives crashes, restarts, and quiet cycles
+    record_scan_time()
+
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     print(f"\n{'='*60}")
     print(f"[{datetime.now(timezone.utc).isoformat()}] Starting scan cycle")
@@ -350,6 +353,13 @@ def run_scan_cycle() -> dict | None:
     else:
         print("\n[6/6] No actionable ideas this cycle — world model updated quietly.")
 
+    # Programmatic dedup — filter out instruments already recommended recently
+    if result.get("trade_ideas"):
+        result["trade_ideas"] = filter_repeat_ideas(result["trade_ideas"])
+        if not result["trade_ideas"]:
+            print("  All ideas were repeats — downgrading to quiet cycle.")
+            result["alert_worthy"] = False
+
     save_alert(result)
     print("Cycle complete.")
     return result
@@ -370,19 +380,57 @@ async def generate_idle_message() -> str:
 
 
 def last_scan_time() -> datetime | None:
-    """Check when the last scan ran by looking at alert files on disk."""
+    """Check when the last scan started by reading a simple marker file."""
+    scan_marker = ROOT / "memory" / "last_scan.txt"
+    if not scan_marker.exists():
+        return None
+    try:
+        return datetime.fromisoformat(scan_marker.read_text().strip())
+    except (ValueError, OSError):
+        return None
+
+
+def record_scan_time():
+    """Write current UTC time to the scan marker file."""
+    scan_marker = ROOT / "memory" / "last_scan.txt"
+    scan_marker.parent.mkdir(parents=True, exist_ok=True)
+    scan_marker.write_text(datetime.now(timezone.utc).isoformat())
+
+
+def filter_repeat_ideas(trade_ideas: list[dict]) -> list[dict]:
+    """Remove trade ideas for instruments already recommended recently."""
     alerts_dir = ROOT / "memory" / "alerts"
     if not alerts_dir.exists():
-        return None
-    files = sorted(alerts_dir.iterdir(), reverse=True)
-    if not files:
-        return None
-    # Filenames are like 20260303_055901.json → parse as UTC datetime
-    try:
-        ts = files[0].stem  # e.g. "20260303_055901"
-        return datetime.strptime(ts, "%Y%m%d_%H%M%S").replace(tzinfo=timezone.utc)
-    except (ValueError, IndexError):
-        return None
+        return trade_ideas
+
+    # Collect tickers from recent alerts
+    recent_tickers = set()
+    for f in sorted(alerts_dir.iterdir(), reverse=True)[:5]:
+        try:
+            alert = json.loads(f.read_text())
+            for idea in alert.get("trade_ideas", []):
+                instrument = idea.get("instrument", "")
+                if "(" in instrument and ")" in instrument:
+                    ticker = instrument.split("(")[1].split(")")[0].upper()
+                    recent_tickers.add(ticker)
+        except Exception:
+            pass
+
+    if not recent_tickers:
+        return trade_ideas
+
+    filtered = []
+    for idea in trade_ideas:
+        instrument = idea.get("instrument", "")
+        ticker = ""
+        if "(" in instrument and ")" in instrument:
+            ticker = instrument.split("(")[1].split(")")[0].upper()
+        if ticker and ticker in recent_tickers:
+            print(f"  [*] Filtering repeat idea: {ticker} (already recommended)")
+            continue
+        filtered.append(idea)
+
+    return filtered
 
 
 async def scan_loop():

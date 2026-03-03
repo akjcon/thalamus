@@ -4,5 +4,6 @@ __pycache__/
 memory/seen_headlines.json
 memory/alerts/
 memory/replays/
+memory/last_scan.txt
 .schwab_token.json
 .schwab_login_debug.png
