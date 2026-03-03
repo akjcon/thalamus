@@ -71,6 +71,11 @@ python3 agent/replay.py 20260303_055901
 **Optional (Schwab):**
 - `SCHWAB_APP_KEY`, `SCHWAB_APP_SECRET`, `SCHWAB_USERNAME`, `SCHWAB_PASSWORD`, `SCHWAB_CALLBACK_URL`
 
+## Git
+
+- Commit atomically — one logical change per commit
+- Use `/cp` to commit and push
+
 ## Conventions
 
 - All LLM JSON responses: strip markdown fences, parse with error handling, log first/last 500 chars on failure
