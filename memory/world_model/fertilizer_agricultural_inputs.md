@@ -83,16 +83,22 @@ Two simultaneous disruption channels are now active:
 ## Supply Chain Geography — Compounding Factors
 - **Middle East ammonia trade flows:** Qatar, Saudi Arabia, UAE are major exporters — ALL disrupted
 - **Urea:** China, Russia, Middle East dominant exporters
-  - **Chinese urea export policy is THE critical binary for global nitrogen markets:**
+  - **Chinese urea export policy is THE critical binary for global nitrogen markets — #1 WATCH ITEM:**
     - China has restricted exports before (2021, 2022) for domestic food security
     - **Decision expected within 2–3 weeks** — HIGHEST PRIORITY SIGNAL
-    - Restrict exports → global nitrogen shortage becomes acute/severe; price spike confirmed
-    - Allow exports → partially cushions dual-channel disruption
+    - Restrict exports → global nitrogen shortage becomes acute/severe; CF Industries thesis **confirmed and strengthened**
+    - Allow exports → partially cushions dual-channel disruption; CF Industries thesis **partially undercut**
     - **This is the single variable most capable of blunting or confirming the price spike trajectory**
-    - Monitor Chinese Ministry of Commerce and customs export data as early signals
+    - Monitor Chinese Ministry of Commerce statements and customs export data as early signals
   - Russian urea exempt from most sanctions (food security carve-out) — Russia becomes more critical supplier
 - **Ukraine:** Fertilizer transit routes through Black Sea also disrupted
 - **No easy substitute:** Global ammonia capacity fully utilized; no surge capacity available
+
+## Reference: Pre-War Deal Terms (Relevant to Duration Assessment)
+- The Oman-mediated framework that was 'within reach' before strikes included:
+  - Zero uranium stockpiling + full IAEA verification + freezing Hamas/Houthis/Hezbollah
+- **Relevance for fertilizer:** These terms define the minimum threshold for any ceasefire; given mid-negotiation strikes + IRGC 'relentless until victory' posture, a fast deal is implausible
+- **Duration implication:** Qatar LNG 3–6 week floor is likely a floor, not a ceiling; fertilizer cascade extends through planting season as base case
 
 ## Unique 2026 Compounding Factors vs. 2021
 - ✅ Direct Middle East ammonia/urea production shutdown (Qatar/Saudi/UAE) — new vs. 2021
@@ -101,9 +107,10 @@ Two simultaneous disruption channels are now active:
 - ✅ Ukraine conflict disrupting fertilizer transit routes
 - ✅ Global ammonia capacity fully utilized — no surge capacity available
 - ✅ Consumer goods shipping disruption (Jebel Ali) compounding agricultural input logistics in East Africa
+- ✅ IRGC 'relentless until victory' posture makes rapid ceasefire implausible — duration floor likely extends
 
 ## Market Signals to Watch (Priority Order)
-1. **Chinese urea export restriction decision** (within 2–3 weeks) — **PRIMARY BINARY**; can blunt or confirm the spike; watch Chinese Ministry of Commerce statements
+1. **Chinese urea export restriction decision** (within 2–3 weeks) — **#1 PRIMARY BINARY**; can blunt or confirm the CF Industries thesis; watch Chinese Ministry of Commerce statements and customs data
 2. **Yara/OCI/BASF curtailment announcements THIS WEEK** — confirms Channel 1 mechanism triggering
 3. **USDA Prospective Plantings report (late March 2026)** — nitrogen application intentions; crop switching signals; CRITICAL
 4. **Tampa ammonia CFR price** (weekly; **~late March** for first TTF-spike-driven data — mark calendar)
@@ -115,4 +122,4 @@ Two simultaneous disruption channels are now active:
 - Note: Naphtha/petrochemical shock tracked separately — see [oil_gas_market.md](oil_gas_market.md)
 
 ## Trajectory
-🔴 ACTIVE RISK — TTF confirmed above curtailment threshold; dual-channel disruption structurally worse than 2021; Qatar LNG 3–6 week physical floor sustains gas shock through April; spring planting season timing is worst-case overlap; **Chinese urea export restriction decision is the key swing variable** (2–3 weeks); first curtailment announcements expected this week; Tampa benchmark data ~late March; analyst estimate revisions ~late March
+🔴 ACTIVE RISK — TTF confirmed above curtailment threshold; dual-channel disruption structurally worse than 2021; Qatar LNG 3–6 week physical floor sustains gas shock through April (likely through planting season given IRGC posture); spring planting season timing is worst-case overlap; **Chinese urea export restriction decision is the #1 swing variable** (2–3 weeks); first curtailment announcements expected this week; Tampa benchmark data ~late March; analyst estimate revisions ~late March; IRGC 'relentless until victory' + no defined U.S. end-state makes rapid ceasefire implausible — duration floor likely extends beyond 3–6 weeks minimum
