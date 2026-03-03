@@ -17,7 +17,7 @@
   - Asian-manufactured goods → East Africa
   - Asian goods → South Asia (transshipment)
   - Asian goods → Europe via Gulf route
-- Cape rerouting is not just a cost add — it reduces fleet effective capacity ~10–15% permanently for duration (each ship completes fewer voyages per month)
+- Cape rerouting is not just a cost add — it reduces fleet effective capacity ~10–15% permanently for duration
 - Insurance/operational paralysis means NO new cargo is moving through Gulf for Western operators
 
 ## Key Infrastructure Nodes Disrupted
@@ -27,6 +27,15 @@
 | Dubai Int'l Airport (DXB) | ~2.5M tonnes air cargo/year | 🔴 DISRUPTED — war zone proximity; impact happening NOW |
 | Abu Dhabi (ADNOC terminal area) | Energy + trade hub | ⚠️ Under Iranian strike threat |
 | Bahrain/Kuwait ports | Regional hubs | ⚠️ Under attack |
+
+## East Africa — COMPOUNDING DOUBLE SHOCK ⚠️ UNDERPRICED
+- East Africa faces **two simultaneous shocks** that markets are not pricing together:
+  1. **Goods shortage** via Jebel Ali paralysis — critically reliant on Dubai as primary import transshipment hub; no viable rapid alternative
+  2. **Refined fuel shortage** via Ras Tanura offline (550,000 b/d) — limited domestic refining; imports primarily from Gulf refineries
+- **Shock timeline overlap:** Goods shortage emerges 4–6 weeks from crisis onset; fuel shortage potentially faster for nations with no strategic reserves
+- **Combined severity is more acute than either shock modeled independently** — fuel shortage degrades logistics capacity exactly when goods shortages require adaptive distribution responses
+- Kenya, Tanzania, Uganda, Ethiopia most exposed
+- **This compounding is not being priced by markets** which are tracking energy and goods disruptions as separate stories
 
 ## Category Risk by Goods Type
 | Category | Risk Level | Impact Timing | Notes |
@@ -42,19 +51,19 @@
 
 ## Most Exposed Geographic Markets
 
-### East Africa — HIGHEST EXPOSURE
-- **Critically reliant on Jebel Ali** as primary import transshipment hub
+### East Africa — HIGHEST EXPOSURE (DOUBLE SHOCK)
 - Consumer goods, electronics, machinery, building materials, food imports all flow through Dubai
-- No viable rapid alternative transshipment hub at comparable volume
-- **Estimated shortage emergence:** 4–6 weeks from onset if unresolved
+- **Goods shortage:** 4–6 weeks from crisis onset if unresolved
+- **Fuel shortage:** Potentially faster — limited strategic reserves; Ras Tanura refined products offline
+- **Combined effect:** Fuel shortage degrades logistics/distribution capacity simultaneously with goods shortage — severity multiplicative, not additive
 - Kenya, Tanzania, Ethiopia, Uganda most exposed
-- Also facing: diesel/gasoline shortage from Ras Tanura refined products offline (double shock)
+- No viable rapid alternative transshipment hub at comparable volume
 
 ### South Asia — HIGH EXPOSURE
-- Pakistan: Also facing acute fuel shortage (Ras Tanura refined products offline) — goods + fuel double shock
-- Sri Lanka: Limited domestic refining + goods import disruption — triple exposure (goods, fuel, LNG)
+- Pakistan: Acute fuel shortage (Ras Tanura offline) + goods shortage — double shock same as East Africa pattern
+- Sri Lanka: Limited domestic refining + goods import disruption + LNG exposure — triple shock
 - India: Somewhat insulated by direct shipping lanes but air cargo disrupted now
-- Bangladesh: Garment export disruption (ships can't exit to deliver; reduces return cargo capacity)
+- Bangladesh: Garment export disruption (ships can't exit; reduces return cargo capacity)
 
 ### Europe — MODERATE EXPOSURE
 - Gulf transshipment is secondary route for European Asian goods imports
@@ -74,7 +83,7 @@ DXB handles ~2.5M tonnes air cargo annually — third busiest globally. Products
 - Pharmaceuticals (India generics → global markets)
 - Electronics time-sensitive shipments
 - Live seafood
-- **European fresh produce prices spiking already** — this is the leading real-time indicator of supply chain disruption severity
+- **European fresh produce prices spiking already** — this is the leading real-time indicator
 - **Pharmaceutical supply monitoring needed** — India generic drug exports disrupted; potential downstream health system impacts
 
 ## Panama Canal — Compounding Surge Pressure
@@ -95,10 +104,10 @@ DXB handles ~2.5M tonnes air cargo annually — third busiest globally. Products
 - Cape rerouting adds 10–14 days round trip → each ship does fewer total voyages → permanent throughput reduction for duration
 - Panama Canal under surge pressure from rerouting demand — any capacity constraint compounds
 - War risk insurance premium adding cost throughout supply chain
-- Dual shock for East Africa and Pakistan: goods shortage + refined product shortage simultaneously
+- **East Africa and Pakistan double shock: goods shortage + refined product shortage simultaneously — not being priced together by markets**
 
 ## Trajectory
-🟠 EMERGING → 🔴 HIGH-CONFIDENCE by ~March 17 if unresolved — East Africa and South Asia most exposed; air cargo impacts happening now; ~March 17 is key diagnostic threshold for late April/May retail shock confirmation
+🟠 EMERGING → 🔴 HIGH-CONFIDENCE by ~March 17 if unresolved — East Africa and South Asia most exposed; **East Africa double shock (goods + fuel) is most underpriced compounding risk**; air cargo impacts happening now; ~March 17 is key diagnostic threshold for late April/May retail shock confirmation
 
 ## Watch For
 - **Linerlytica trapped ship count at ~March 17** — primary threshold indicator; if ~170 ships still trapped → late April/May shock high-confidence
@@ -106,7 +115,8 @@ DXB handles ~2.5M tonnes air cargo annually — third busiest globally. Products
 - **DXB cargo operations resumption** — early recovery signal
 - **European fresh produce price spikes** — real-time leading indicator of disruption severity
 - **Pharmaceutical supply chain alerts** from India generic exporters
-- East African import emergency declarations
+- **East African fuel supply emergency declarations** (faster-moving than goods shock)
+- **East African import emergency declarations** (goods channel; 4–6 weeks)
+- **Pakistan/Sri Lanka dual-shock emergency declarations**
 - Retailer inventory warning announcements (Europe, East Africa)
 - Panama Canal throughput data (surge pressure indicator)
-- Pakistan/Sri Lanka dual-shock (goods + fuel) emergency declarations

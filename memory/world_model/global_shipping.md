@@ -1,5 +1,5 @@
 # Global Shipping — Disruptions & Routes
-**Status: 🔴 UNPRECEDENTED DUAL CHOKEPOINT + TRAPPED FLEET CRISIS**
+**Status: 🔴 UNPRECEDENTED DUAL CHOKEPOINT + TRAPPED FLEET CRISIS — P&I Club Withdrawals Effective March 5**
 **As of: March 3, 2026**
 
 ## CRITICAL SITUATION: Trapped Fleet — Most Underpriced Consequence
@@ -8,7 +8,23 @@
 - **Jebel Ali (Dubai):** World's 9th largest container port; effectively **paralyzed** — major transshipment hub for Asian goods to Europe, East Africa, South Asia
 - **Dubai Air Cargo (DXB):** Handles ~2.5M tonnes annually; disrupting time-sensitive flows (fresh produce, pharmaceuticals, perishables)
 - **Retail consequence timeline:** Goods on trapped ships → retail shelf shortages in **6–8 weeks** (late April/May 2026) if not resolved
-- **Effective global containership capacity reduction:** Estimated **10–15%** when accounting for both trapped ships AND Cape rerouting cycle time extension — this is a capacity reduction, not just a cost addition
+- **Effective global containership capacity reduction:** Estimated **10–15%** when accounting for both trapped ships AND Cape rerouting cycle time extension
+
+## War Risk Insurance — SEVERITY UPGRADED ⚠️
+- **P&I club coverage withdrawals now confirmed:** Gard, Skuld, NorthStandard, London P&I, American Club all issued cancellation notices **effective March 5, 2026**
+- **~90% of global ocean tonnage effectively uninsurable in Gulf** as of March 5 — this is not "elevated war risk premium" language; this is **effective coverage withdrawal**
+- This is materially more severe than prior reporting implied — not a cost addition but operational impossibility for most Western operators
+- **Lloyd's Gulf zone pricing** = primary ceasefire credibility barometer; re-engagement signal = most sensitive market indicator of resolution expectation
+- Insurance cost adding **$1–3/bbl equivalent** to Gulf crude transport cost for the few operators still transiting
+- **Re-engagement signal from P&I clubs AND Lloyd's** = key indicator that ceasefire is credible and durable
+
+## Hormuz Transit Volume — CONFIRMED COLLAPSE
+- **Hormuz transit down ~81%** from January baseline
+- January average: 10.3M dwt/day
+- March 1 estimate: ~1M dwt/day
+- Iranian and Chinese-flagged vessels continuing limited transit (Kpler confirmed)
+- Western commercial operators: excluded via insurance withdrawal, not physical blockade
+- **Resolution mechanism:** Credible ceasefire → Lloyd's/P&I club re-engagement → effective reopening in days (no physical barrier)
 
 ## Red Sea / Bab el-Mandeb (🔴 ACTIVE ATTACKS)
 - Houthis resumed attacks on U.S. and Israeli-flagged ships
@@ -16,16 +32,6 @@
 - Cape of Good Hope rerouting resuming (+10–14 days, major fuel premium)
 - Brief reopening (Dec 2025 — Maersk transit) fully reversed
 - Capability fully intact; will persist through Iran conflict
-
-## Strait of Hormuz (🔴 INSURANCE-ENFORCED CLOSURE)
-- IRGC declared Hormuz closed
-- **U.S. CENTCOM confirms: 11 Iranian vessels sunk in Gulf of Oman — IRGC has ZERO surface ships in that theater**
-- **Critical distinction:** Closure is **insurance-market-enforced, not militarily enforced**
-  - Western commercial operators: cannot obtain coverage; effectively excluded
-  - Iranian and Chinese-flagged vessels: continuing limited transit (Kpler confirmed)
-  - Residual IRGC threat: shore-based ballistic missiles + shallow-water fast-attack boats in Gulf proper
-- **Implication for duration:** Could reopen in DAYS with credible ceasefire — no physical barrier; insurance market re-engagement is the mechanism
-- ~20% of global oil, significant LNG, petrochemicals transit daily
 
 ## Cape Rerouting — Capacity Reduction Effect (Critical)
 - Adding 10–14 days round trip per voyage is not merely a cost addition — it is a **permanent throughput reduction for the duration**
@@ -44,7 +50,7 @@
 
 ## Consequence: No Good Alternative Routes
 - Red Sea blocked → Cape of Good Hope (+10–14 days)
-- Hormuz insurance-blocked → No alternative for Gulf oil exports at volume
+- Hormuz insurance-blocked (P&I withdrawals effective March 5) → No alternative for Gulf oil exports at volume
 - Saudi EW pipeline to Yanbu → normally partial relief but Red Sea also compromised
 - **Simultaneous blockage = Gulf states cannot export oil/LNG/goods at normal volumes by any Western-insurable sea route**
 
@@ -67,13 +73,6 @@
 - Air cargo (DXB disruption): Perishables, pharmaceuticals, time-sensitive goods most immediately affected — impact happening NOW, not in 6–8 weeks
 - See: [consumer_goods_supply_chain.md](consumer_goods_supply_chain.md)
 
-## War Risk Insurance — Economic Disruption Layer
-- Lloyd's Gulf zone pricing at extreme levels — effectively the mechanism of Hormuz closure
-- Insurance cost adding **$1–3/bbl equivalent** to Gulf crude transport cost
-- Some Gulf crude cargoes economically unliftable at current rates
-- **Re-engagement signal from insurers = key indicator that ceasefire is credible** — this is the most sensitive market signal for Hormuz resolution
-- Lloyd's Gulf zone pricing = primary market barometer of crisis severity AND resolution expectation
-
 ## Other Ongoing Disruptions
 
 ### Panama Canal
@@ -90,13 +89,13 @@
 ## Shipping Rate Environment
 - Container rates: Spiking sharply as Red Sea reopening reverses + 450,000 TEU trapped
 - Tanker rates: **Extreme spike** — Hormuz + Red Sea simultaneously; VLCC Atlantic routes surging
-- War risk insurance: Extreme premium spikes; Gulf waters effectively uninsurable at normal rates
+- War risk insurance: **P&I clubs withdrawing coverage effective March 5** — not just elevated premiums; functional exclusion
 - Dry bulk: Elevated; commodity disruptions rippling through
 
 ## Key Chokepoints — Full Status
 | Chokepoint | Flow | Status |
 |---|---|---|
-| Strait of Hormuz | ~20% global oil; ~20% LNG | 🔴 INSURANCE-ENFORCED; IRGC naval eliminated; 150+ tankers stranded; Iranian/Chinese vessels transiting; CAN REOPEN IN DAYS with ceasefire |
+| Strait of Hormuz | ~20% global oil; ~20% LNG | 🔴 P&I CLUB WITHDRAWALS EFFECTIVE MARCH 5; IRGC naval eliminated; transit down 81%; Iranian/Chinese vessels transiting; CAN REOPEN IN DAYS with ceasefire |
 | Bab el-Mandeb | ~6.2 mb/d; majority Asia-EU containers | 🔴 HOUTHI ATTACKS ACTIVE |
 | Suez Canal | ~12% global trade | 🔴 FEEDER ROUTE BLOCKED |
 | Jebel Ali (Dubai) | 9th largest global port | 🔴 EFFECTIVELY PARALYZED; 170 containerships trapped |
@@ -105,11 +104,11 @@
 | Turkish Straits | Russian Black Sea oil | ⚠️ Moderate |
 
 ## Trajectory
-🔴 UNPRECEDENTED — Both chokepoints simultaneously disrupted; 170 containerships + 150+ tankers trapped; Jebel Ali paralyzed; DXB air cargo disrupted; Cape rerouting creating permanent throughput reduction; Atlantic-basin VLCC routing becoming structural shift; 6–8 week retail consequence window becoming high-confidence if no resolution by ~March 17
+🔴 UNPRECEDENTED — Both chokepoints simultaneously disrupted; P&I club coverage withdrawals effective March 5 make Gulf effectively uninsurable for ~90% of global tonnage; 170 containerships + 150+ tankers trapped; Jebel Ali paralyzed; DXB air cargo disrupted; Hormuz transit down 81%; Cape rerouting creating permanent throughput reduction; Atlantic-basin VLCC routing becoming structural shift; 6–8 week retail consequence window becoming high-confidence if no resolution by ~March 17
 
 ## Watch For (Priority Order)
-1. **Trapped containership count** (Linerlytica weekly data) — duration/severity indicator; March 17 is key threshold
-2. **Lloyd's/war risk insurance Gulf zone pricing** — primary ceasefire credibility signal; Hormuz resolution barometer
+1. **P&I club and Lloyd's Gulf zone re-engagement** — primary ceasefire credibility signal; March 5 effective date is next key date; any reversal = strong ceasefire signal
+2. **Trapped containership count** (Linerlytica weekly data) — duration/severity indicator; March 17 is key threshold
 3. **VLCC charter rates on West Africa→Asia and U.S. Gulf→Asia routes** — structural demand shift confirmation; track separately from war risk premium
 4. **Jebel Ali operational status** (DP World announcements) — port activity resumption signal
 5. **Panama Canal throughput and capacity data** — surge pressure indicator

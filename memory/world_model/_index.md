@@ -1,24 +1,25 @@
 # Geopolitical World Model — March 3, 2026 (UPDATED)
-**⚠️ CRITICAL: Middle East regional war; IRGC naval assets eliminated; Hormuz insurance-enforced; Ras Tanura refined products offline; 170 containerships trapped; 6–8 week consumer goods shock emerging**
+**⚠️ CRITICAL: Middle East regional war; IRGC naval assets eliminated; Hormuz insurance-enforced; Fujairah bypass partially compromised; Ras Tanura refined products offline; 170 containerships trapped; 6–8 week consumer goods shock emerging; Operation Epic Fury named; U.S. war goals incoherence undermining ceasefire credibility**
 
 ## Files
 
 ### 🔴 ACTIVE CRISIS — Middle East Regional War
-- [iran_regional_war.md](iran_regional_war.md) — IRGC naval eliminated; 4–5 week U.S. campaign timeline; Oman back-channel active; FM vs IRGC disconnect
+- [iran_regional_war.md](iran_regional_war.md) — IRGC naval eliminated; economic targeting systematic across all 9 states; Fujairah hit; Oman back-channel active; U.S. war goals incoherence
+- [iran_succession.md](iran_succession.md) — Larijani council vs. Vahidi/IRGC power split; ceasefire credibility problem
 - [israel_gaza_middle_east.md](israel_gaza_middle_east.md) — Lebanon ceasefire over; Hezbollah re-engaged; multi-front war
 - [qatar_crisis.md](qatar_crisis.md) — Under Iranian attack; LNG halted; Al Udeid at risk
 - [red_sea_suez.md](red_sea_suez.md) — BACK TO DISRUPTION: Houthis resumed attacks
-- [energy_supply_chains.md](energy_supply_chains.md) — CRITICAL: Hormuz insurance-enforced (not military); Ras Tanura 550k b/d refined products offline; Qatar LNG halted; TTF above curtailment threshold
+- [energy_supply_chains.md](energy_supply_chains.md) — CRITICAL: Hormuz insurance-enforced; **Fujairah bypass partially compromised**; Ras Tanura 550k b/d offline; Qatar LNG halted; TTF above curtailment threshold
 - [global_shipping.md](global_shipping.md) — 170 containerships (450k TEU) trapped; Jebel Ali paralyzed; dual chokepoint; 6–8 week retail consequence window
 - [middle_east_overview.md](middle_east_overview.md) — Regional war: 9 countries under Iranian attack
 
 ### 🟠 EMERGING CRISIS — Consumer Goods & Supply Chain Cascade
-- [consumer_goods_supply_chain.md](consumer_goods_supply_chain.md) — NEW: 450k TEU trapped; Jebel Ali paralyzed; DXB air cargo disrupted; East Africa/South Asia most exposed; late April/May retail shock
+- [consumer_goods_supply_chain.md](consumer_goods_supply_chain.md) — 450k TEU trapped; Jebel Ali paralyzed; DXB air cargo disrupted; East Africa/South Asia most exposed; late April/May retail shock
 
 ### 🟠 EMERGING CRISIS — Energy Cascade / Food Supply
-- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — Dual-channel: TTF above threshold + direct Middle East shutdown; spring planting risk; worse than 2021
+- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — Dual-channel: TTF above threshold + direct Middle East shutdown; spring planting risk; naphtha shock tracked separately
 - [food_agriculture_supply.md](food_agriculture_supply.md) — 2026 planting season at risk from nitrogen shock
-- [oil_gas_market.md](oil_gas_market.md) — 🔴 ACUTE CRISIS: Brent settled +7.6%; refined products MORE disrupted than crude; Ras Tanura offline; crack spreads key indicator
+- [oil_gas_market.md](oil_gas_market.md) — 🔴 ACUTE CRISIS: Brent settled +7.6%; **Fujairah bypass assumption invalidated**; refined products + naphtha/petrochemical distinct shocks; crack spreads key
 
 ### Conflicts & Military Tensions
 - [russia_ukraine_war.md](russia_ukraine_war.md) — Active war + Geneva negotiations stalling
@@ -28,6 +29,7 @@
 - [sahel_west_africa.md](sahel_west_africa.md) — Jihadist expansion, Wagner, coup states
 - [venezuela_us_intervention.md](venezuela_us_intervention.md) — Post-Maduro capture, oil
 - [india_pakistan_tension.md](india_pakistan_tension.md) — Post-clash ceasefire, nuclear risk
+- [pakistan_afghanistan_escalation.md](pakistan_afghanistan_escalation.md) — Cross-border strikes; CPEC risk; China mediator role
 
 ### Sanctions & Trade Disputes
 - [russia_sanctions.md](russia_sanctions.md) — Full-spectrum, shadow fleet targeting
@@ -39,14 +41,14 @@
 ### Critical Infrastructure & Supply Chains
 - [red_sea_suez.md](red_sea_suez.md) — ACTIVE DISRUPTION RESUMED
 - [critical_minerals.md](critical_minerals.md) — Rare earths, cobalt, China dominance
-- [energy_supply_chains.md](energy_supply_chains.md) — CRITICAL: Hormuz insurance-enforced; Ras Tanura offline; Qatar LNG halted
+- [energy_supply_chains.md](energy_supply_chains.md) — CRITICAL: Hormuz insurance-enforced; **Fujairah bypass partially compromised**; Ras Tanura offline; Qatar LNG halted
 - [global_shipping.md](global_shipping.md) — 170 containerships trapped; Jebel Ali paralyzed; dual chokepoint
-- [oil_gas_market.md](oil_gas_market.md) — Refined products shock; crack spreads; TTF above curtailment threshold
+- [oil_gas_market.md](oil_gas_market.md) — Refined products + naphtha/petrochemical shock; crack spreads; TTF above curtailment threshold
 - [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — Dual-channel nitrogen shock; spring planting risk
-- [consumer_goods_supply_chain.md](consumer_goods_supply_chain.md) — NEW: 6–8 week retail shelf consequence
+- [consumer_goods_supply_chain.md](consumer_goods_supply_chain.md) — 6–8 week retail shelf consequence
 
 ### Major Power Dynamics
-- [us_foreign_policy_2026.md](us_foreign_policy_2026.md) — Trump 4–5 week campaign timeline; Oman back-channel; managing Hormuz standoff
+- [us_foreign_policy_2026.md](us_foreign_policy_2026.md) — Operation Epic Fury named; war goals incoherence (Vance vs. Trump); 4–5 week timeline vs. establishment 'Pottery Barn' signal; Oman back-channel
 - [china_global_posture.md](china_global_posture.md) — Energy crisis; Power of Siberia 2 acceleration; Hormuz de-escalation incentive
 - [russia_global_posture.md](russia_global_posture.md) — Energy windfall; war economy; possible sanctions leverage attempt
 - [europe_security_posture.md](europe_security_posture.md) — Energy emergency re-emerged; Qatar LNG crisis; possible Russian LNG sanctions pause
@@ -57,8 +59,8 @@
 - [asia_pacific_overview.md](asia_pacific_overview.md) — Taiwan Strait, South China Sea, Korea
 
 ### Commodities & Markets
-- [oil_gas_market.md](oil_gas_market.md) — 🔴 ACUTE CRISIS: Refined products shock distinct from crude; crack spreads key
+- [oil_gas_market.md](oil_gas_market.md) — 🔴 ACUTE CRISIS: Refined products + naphtha/petrochemical as distinct shocks; Fujairah bypass partially compromised
 - [food_agriculture_supply.md](food_agriculture_supply.md) — 2026 spring planting season risk
 - [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — 🔴 Dual-channel nitrogen shock
 - [semiconductor_tech_supply.md](semiconductor_tech_supply.md) — Chip controls, Taiwan risk
-- [consumer_goods_supply_chain.md](consumer_goods_supply_chain.md) — 🟠 NEW: Gulf disruption → retail shock
+- [consumer_goods_supply_chain.md](consumer_goods_supply_chain.md) — 🟠 Gulf disruption → retail shock

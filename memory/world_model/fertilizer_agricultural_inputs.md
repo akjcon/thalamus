@@ -27,6 +27,13 @@ Two simultaneous disruption channels are now active:
 5. **U.S. and global fertilizer prices spike** with 4–6 week lag from TTF move
 6. **Spring planting season inputs disrupted** — March–May 2026 window directly at risk
 
+## Naphtha / Petrochemical Shock — DISTINCT; TRACK SEPARATELY
+- Ras Tanura offline also removes naphtha supply (petrochemical feedstock)
+- **This is NOT part of the nitrogen/fertilizer story** — it affects plastics, synthetic fibers, packaging, industrial chemicals
+- European petrochemical companies face: higher naphtha costs + higher TTF energy costs simultaneously
+- Track: naphtha price, crack spreads, and petrochemical company margin guidance separately
+- See: [oil_gas_market.md](oil_gas_market.md) for petrochemical secondary shock detail
+
 ## Historical Analog: 2021–2022
 - European gas spike → widespread European nitrogen curtailment
 - Result: **40–60% U.S. fertilizer price spike** with ~4–6 week lag
@@ -51,7 +58,7 @@ Two simultaneous disruption channels are now active:
 | TTF (European gas spot) | €39.14/MWh (+21–25%) | Immediate | 🔴 ABOVE CURTAILMENT THRESHOLD |
 | JKM (Asian LNG spot) | Spiking (following TTF) | Immediate | 🔴 SPIKING |
 | Henry Hub | Stable (relative) | Immediate | 🟢 U.S. advantage confirmed |
-| Tampa ammonia CFR | Not yet reflected | 3–5 weeks from March 1 spike → ~late March | ⏳ WATCH |
+| Tampa ammonia CFR | Not yet reflected | 3–5 weeks from March 1 spike → **~late March** | ⏳ WATCH — mark calendar |
 | Yuzhne (Black Sea) urea | Not yet reflected | 3–6 weeks | ⏳ WATCH |
 | NOLA (New Orleans) UAN | Not yet reflected | 4–8 weeks | ⏳ WATCH |
 
@@ -59,7 +66,7 @@ Two simultaneous disruption channels are now active:
 - **Wide spread = U.S. nitrogen producers have structural cost advantage** — CONFIRMED NOW
 - U.S. producers (CF Industries, Koch) become marginal global suppliers as Europe curtails
 - Even rapid Hormuz ceasefire does NOT immediately collapse this spread — Qatar LNG 3–6 week restart floor sustains European disadvantage through April minimum
-- **Analyst estimate revisions for CF Industries and Mosaic** likely within 2–3 weeks as Tampa benchmark data arrives — watch as market confirmation signal
+- **CF Industries and Mosaic analyst estimate revisions expected ~late March** (2–3 weeks from March 1 TTF spike) — watch as market confirmation signal
 
 ## 2026 Spring Planting Season Risk — CRITICAL
 - **Critical window:** March–May 2026 (U.S., EU, Ukraine, FSU)
@@ -78,10 +85,11 @@ Two simultaneous disruption channels are now active:
 - **Urea:** China, Russia, Middle East dominant exporters
   - **Chinese urea export policy is THE critical binary for global nitrogen markets:**
     - China has restricted exports before (2021, 2022) for domestic food security
-    - Decision expected within **2–3 weeks**
-    - Restrict exports → global nitrogen shortage becomes acute/severe
+    - **Decision expected within 2–3 weeks** — HIGHEST PRIORITY SIGNAL
+    - Restrict exports → global nitrogen shortage becomes acute/severe; price spike confirmed
     - Allow exports → partially cushions dual-channel disruption
-    - This is the single variable most capable of blunting or confirming the price spike trajectory
+    - **This is the single variable most capable of blunting or confirming the price spike trajectory**
+    - Monitor Chinese Ministry of Commerce and customs export data as early signals
   - Russian urea exempt from most sanctions (food security carve-out) — Russia becomes more critical supplier
 - **Ukraine:** Fertilizer transit routes through Black Sea also disrupted
 - **No easy substitute:** Global ammonia capacity fully utilized; no surge capacity available
@@ -95,15 +103,16 @@ Two simultaneous disruption channels are now active:
 - ✅ Consumer goods shipping disruption (Jebel Ali) compounding agricultural input logistics in East Africa
 
 ## Market Signals to Watch (Priority Order)
-1. **Chinese urea export restriction decision** (within 2–3 weeks) — PRIMARY BINARY; can blunt or confirm the spike
+1. **Chinese urea export restriction decision** (within 2–3 weeks) — **PRIMARY BINARY**; can blunt or confirm the spike; watch Chinese Ministry of Commerce statements
 2. **Yara/OCI/BASF curtailment announcements THIS WEEK** — confirms Channel 1 mechanism triggering
 3. **USDA Prospective Plantings report (late March 2026)** — nitrogen application intentions; crop switching signals; CRITICAL
-4. **Tampa ammonia CFR price** (weekly; ~late March for first TTF-spike-driven data)
-5. **CF Industries and Mosaic analyst estimate revisions** (2–3 weeks) — market confirmation of price spike
+4. **Tampa ammonia CFR price** (weekly; **~late March** for first TTF-spike-driven data — mark calendar)
+5. **CF Industries and Mosaic analyst estimate revisions** (~late March; 2–3 weeks from March 1 spike) — market confirmation
 6. **Qafco restart timeline** — tied to Qatar LNG restart (not before 3–6 weeks)
 7. **Russian fertilizer export volumes** — potential leverage point
 8. **TTF–Henry Hub spread trajectory** — duration signal for U.S. producer advantage
 9. **Yuzhne/NOLA benchmark prices** as lagging confirmation (4–8 weeks)
+- Note: Naphtha/petrochemical shock tracked separately — see [oil_gas_market.md](oil_gas_market.md)
 
 ## Trajectory
-🔴 ACTIVE RISK — TTF confirmed above curtailment threshold; dual-channel disruption structurally worse than 2021; Qatar LNG 3–6 week physical floor sustains gas shock through April; spring planting season timing is worst-case overlap; Chinese urea decision is the key swing variable; first curtailment announcements expected this week
+🔴 ACTIVE RISK — TTF confirmed above curtailment threshold; dual-channel disruption structurally worse than 2021; Qatar LNG 3–6 week physical floor sustains gas shock through April; spring planting season timing is worst-case overlap; **Chinese urea export restriction decision is the key swing variable** (2–3 weeks); first curtailment announcements expected this week; Tampa benchmark data ~late March; analyst estimate revisions ~late March
