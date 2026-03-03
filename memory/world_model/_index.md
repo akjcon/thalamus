@@ -1,20 +1,21 @@
-# Geopolitical World Model — March 2, 2026 (UPDATED — MAJOR ESCALATION)
-**⚠️ CRITICAL: Middle East regional war underway — Iran leadership decapitated, Hormuz under closure threat, Qatar LNG halted, fertilizer/food cascade emerging**
+# Geopolitical World Model — March 2, 2026 (UPDATED)
+**⚠️ CRITICAL: Middle East regional war underway — Iran leadership decapitated, governance vacuum confirmed, Hormuz under closure threat, Qatar LNG halted, fertilizer/food cascade emerging**
 
 ## Files
 
 ### 🔴 ACTIVE CRISIS — Middle East Regional War
-- [iran_regional_war.md](iran_regional_war.md) — Iran under U.S./Israeli strikes; Khamenei dead; IRGC autonomous; attacking 9 countries
+- [iran_regional_war.md](iran_regional_war.md) — Iran under U.S./Israeli strikes; Khamenei dead; interim council (Larijani/Pezeshkian/Mohseni-Ejei); Vahidi/IRGC autonomous rival power center
+- [iran_succession.md](iran_succession.md) — NEW: Larijani vs. Vahidi power contest; Assembly of Experts timeline; governance vacuum analysis
 - [israel_gaza_middle_east.md](israel_gaza_middle_east.md) — Lebanon ceasefire over; Hezbollah re-engaged; multi-front war
 - [qatar_crisis.md](qatar_crisis.md) — Under Iranian attack; LNG halted; Al Udeid at risk
 - [red_sea_suez.md](red_sea_suez.md) — BACK TO DISRUPTION: Houthis resumed attacks
-- [energy_supply_chains.md](energy_supply_chains.md) — CRITICAL: Hormuz closure threat + Qatar LNG offline (~20% global LNG); fertilizer cascade risk
+- [energy_supply_chains.md](energy_supply_chains.md) — CRITICAL: Hormuz closure + Qatar LNG offline (~20% global LNG); Saudi refinery shuttered; fertilizer cascade; Qatar 3–6 week restart floors shock independently of diplomacy
 - [global_shipping.md](global_shipping.md) — Both Red Sea and Hormuz simultaneously threatened; Atlantic-basin rerouting emerging
-- [middle_east_overview.md](middle_east_overview.md) — Regional war: 9 countries under Iranian attack
+- [middle_east_overview.md](middle_east_overview.md) — Regional war: Saudi position shift; Gulf state alignment dynamics; Larijani–Vahidi split
 
 ### 🟠 EMERGING CRISIS — Energy Cascade / Food Supply
-- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — NEW: TTF spike → European nitrogen curtailment → spring planting season risk
-- [food_agriculture_supply.md](food_agriculture_supply.md) — UPDATED: 2026 planting season at risk from nitrogen shock
+- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — TTF above curtailment threshold; dual-channel disruption; physical 3–6 week restart floor floors shock independent of diplomacy; spring planting overlap near-certain
+- [food_agriculture_supply.md](food_agriculture_supply.md) — 2026 planting season at risk from nitrogen shock
 - [oil_gas_market.md](oil_gas_market.md) — 🔴 ACUTE CRISIS: Brent $77-81; LNG/TTF extreme spike
 
 ### Conflicts & Military Tensions
@@ -39,7 +40,7 @@
 - [energy_supply_chains.md](energy_supply_chains.md) — CRITICAL: Hormuz + Qatar LNG crisis + fertilizer cascade
 - [global_shipping.md](global_shipping.md) — Dual chokepoint crisis; Atlantic-basin rerouting
 - [oil_gas_market.md](oil_gas_market.md) — Prices spiking; TTF-Henry Hub spread key variable
-- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — NEW: Nitrogen supply shock, Tampa benchmark, spring planting risk
+- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — Nitrogen supply shock; physical restart floor independent of diplomacy
 
 ### Major Power Dynamics
 - [us_foreign_policy_2026.md](us_foreign_policy_2026.md) — Trump administration; now managing active war
@@ -48,12 +49,12 @@
 - [europe_security_posture.md](europe_security_posture.md) — Energy emergency scenario re-emerging
 
 ### Regional Overviews
-- [middle_east_overview.md](middle_east_overview.md) — 🔴 ACTIVE REGIONAL WAR
+- [middle_east_overview.md](middle_east_overview.md) — 🔴 ACTIVE REGIONAL WAR; Gulf alignment dynamics; Saudi position shift
 - [africa_overview.md](africa_overview.md) — Sahel, Sudan, DRC, great power competition
 - [asia_pacific_overview.md](asia_pacific_overview.md) — Taiwan Strait, South China Sea, Korea
 
 ### Commodities & Markets
 - [oil_gas_market.md](oil_gas_market.md) — 🔴 ACUTE CRISIS: Brent $77-81 confirmed; TTF extreme
 - [food_agriculture_supply.md](food_agriculture_supply.md) — 2026 spring planting season risk emerging
-- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — 🟠 NEW: Nitrogen shock cascade
+- [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md) — 🔴 ACTIVE: Nitrogen shock; physical restart floors spring overlap
 - [semiconductor_tech_supply.md](semiconductor_tech_supply.md) — Chip controls, Taiwan risk

@@ -40,7 +40,10 @@
 ## Natural Gas / LNG — ACUTE CRISIS
 - **Qatar (~20–22% global LNG):** Production HALTED — largest single LNG supply shock in history
 - **Qafco ammonia/urea exports:** Also halted — direct Middle East nitrogen supply channel disrupted
-- **Physical restart minimum timeline: 3–6 weeks** — safety inspections, equipment checks, recommissioning of liquefaction trains; floors duration of gas supply shock regardless of ceasefire timing
+- **Physical restart minimum timeline: 3–6 weeks** — safety inspections, equipment checks, recommissioning of liquefaction trains; **floors duration of gas supply shock regardless of ceasefire timing**
+  - This is a physical infrastructure constraint, NOT dependent on war continuation
+  - Even immediate ceasefire today = Qatar LNG offline minimum 3–6 more weeks
+  - Fertilizer cascade trade is a physical restart timeline bet, not a war-continuation bet
 - **TTF confirmed at €39.14/MWh:** Above the curtailment threshold from 2021–2022; fertilizer cascade mechanism definitively active
 - **Europe:** Emergency scenario confirmed; 2022-style energy crisis re-emerged
   - Qatar was Europe's #1 or #2 LNG supplier post-Russia pivot
@@ -61,11 +64,19 @@
   - Accelerated U.S. LNG import contracts (medium-term only)
 - **TTF–Henry Hub spread:** Key structural variable — wide spread signals U.S. producer advantage
 
+## Saudi Arabia's Geopolitical Position — NEW
+- Saudi publicly condemned Iranian attacks on Gulf states; did NOT condemn U.S.–Israeli strikes
+- State media expressing hope for Iranian regime collapse
+- **But:** Saudi core fear is Iranian *state* collapse = Hormuz chaos, Shia proxy instability, failed-state spillover
+- Saudi Arabia wants a weakened-but-functional Iran, not a failed state
+- OPEC+ decision-making paralyzed; Saudi production capacity threatened
+
 ## 2nd-Order: Ammonia / Nitrogen Fertilizer Curtailment — ACTIVE
 - TTF confirmed above threshold that triggered 2021–2022 curtailments
 - **Two-channel disruption** (structurally worse than 2021):
   - Channel 1: European factory economics (TTF above curtailment threshold)
   - Channel 2: Direct Middle East shutdown (Qatar/Saudi/UAE ammonia halted)
+- **Physical restart floor:** Qatar LNG/Qafco restart minimum 3–6 weeks = fertilizer shock duration is floors independently of diplomacy
 - **Tampa ammonia benchmark:** 3–5 week lag indicator from TTF spike; first hard data expected late March
 - **Spring planting season overlap (March–May 2026):** Worst-case timing confirmed
 - See: [fertilizer_agricultural_inputs.md](fertilizer_agricultural_inputs.md)
@@ -77,12 +88,12 @@
 - Ammonia/fertilizers: TTF transmission mechanism confirmed active; Middle East direct shutdown compounding
 
 ## Trajectory
-🔴 ACUTE GLOBAL ENERGY CRISIS — Physical Hormuz disruption confirmed (150 ships stranded); Saudi refinery shuttered; East-West pipeline bypass route compromised; TTF above fertilizer curtailment threshold; worst simultaneous chokepoint and supply shock scenario in modern history; 2nd-order fertilizer/food consequences confirmed active
+🔴 ACUTE GLOBAL ENERGY CRISIS — Physical Hormuz disruption confirmed (150 ships stranded); Saudi refinery shuttered; East-West pipeline bypass route compromised; TTF above fertilizer curtailment threshold; Qatar LNG minimum 3–6 week restart floors shock duration independently of diplomacy; worst simultaneous chokepoint and supply shock scenario in modern history; 2nd-order fertilizer/food consequences confirmed active
 
 ## Watch For
 - Hormuz: U.S. Navy vs. IRGC physical standoff; ship stranding count
 - Saudi/UAE infrastructure damage assessment (refinery shuttered is confirmed; what's next?)
-- Qatar LNG restart timeline (minimum 3–6 weeks; floors European gas shock duration)
+- Qatar LNG restart timeline (minimum 3–6 weeks; floors European gas shock duration; ceasefire does NOT accelerate this)
 - EU emergency energy response measures
 - IEA/U.S. SPR coordinated release announcement
 - OPEC+ emergency meeting
@@ -91,3 +102,4 @@
 - **Yara/OCI/BASF curtailment announcements this week** — fertilizer cascade confirmation
 - **TTF–Henry Hub spread trajectory** — U.S. fertilizer competitiveness signal
 - Tampa ammonia benchmark as 3–5 week lagging indicator (~late March)
+- Saudi Arabia: does 'regime collapse hope' translate into active measures vs. remaining rhetorical?

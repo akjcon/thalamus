@@ -24,6 +24,18 @@ from analyst import (
 from notifier import save_alert
 import yaml
 
+
+def try_sync_portfolio():
+    """Attempt to sync portfolio from Schwab. Silently skip if not configured."""
+    try:
+        from brokerage import sync_portfolio
+        sync_portfolio()
+        print("  Portfolio synced from Schwab")
+    except (ImportError, SystemExit):
+        pass  # schwab-py not installed or not configured
+    except Exception as e:
+        print(f"  [!] Portfolio sync failed (using manual portfolio): {e}")
+
 ROOT = Path(__file__).parent.parent
 
 
@@ -230,8 +242,23 @@ User question: {message.content}"""
             await message.reply(reply)
 
 
+def save_replay(timestamp: str, headlines: list, flagged: list, research: str):
+    """Save cycle data for replay without re-fetching."""
+    replay_dir = ROOT / "memory" / "replays"
+    replay_dir.mkdir(parents=True, exist_ok=True)
+    replay_file = replay_dir / f"{timestamp}.json"
+    replay_file.write_text(json.dumps({
+        "timestamp": timestamp,
+        "headlines": headlines,
+        "flagged": flagged,
+        "research": research,
+    }, indent=2))
+    print(f"  Saved replay to {replay_file.name}")
+
+
 def run_scan_cycle() -> dict | None:
     """Execute one scan cycle. Returns analysis result or None."""
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     print(f"\n{'='*60}")
     print(f"[{datetime.now(timezone.utc).isoformat()}] Starting scan cycle")
     print(f"{'='*60}")
@@ -240,8 +267,11 @@ def run_scan_cycle() -> dict | None:
     scanner_model = config["models"]["scanner"]
     analyst_model = config["models"]["analyst"]
 
+    # Step 0: Sync portfolio from brokerage (if configured)
+    try_sync_portfolio()
+
     # Step 1: Pull headlines
-    print("\n[1/5] Pulling RSS feeds...")
+    print("\n[1/6] Pulling RSS feeds...")
     headlines = pull_feeds(config)
     print(f"  Found {len(headlines)} new headlines")
 
@@ -250,7 +280,7 @@ def run_scan_cycle() -> dict | None:
         return None
 
     # Step 2: Classify
-    print("\n[2/5] Classifying headlines...")
+    print("\n[2/6] Classifying headlines...")
     world_model = load_world_model()
     model_summary = world_model[:3000] if len(world_model) > 3000 else world_model
     flagged = classify_headlines(anthropic_client, headlines, model_summary, scanner_model)
@@ -270,7 +300,7 @@ def run_scan_cycle() -> dict | None:
     analysis_items = (high + medium + low)[:10]
 
     # Step 3: Research
-    print("\n[3/5] Researching...")
+    print("\n[3/6] Researching...")
     all_questions = []
     for item in analysis_items:
         all_questions.extend(item.get("follow_up_questions", []))
@@ -279,8 +309,11 @@ def run_scan_cycle() -> dict | None:
     if all_questions:
         research = research_questions(anthropic_client, all_questions[:5], analyst_model)
 
+    # Save replay data (before analysis so we can re-analyze cheaply)
+    save_replay(timestamp, headlines, analysis_items, research)
+
     # Step 4: Deep analysis
-    print("\n[4/5] Analyzing...")
+    print("\n[4/6] Analyzing...")
     portfolio = load_portfolio()
     result = deep_analysis(
         anthropic_client, analysis_items, world_model, portfolio, research, analyst_model

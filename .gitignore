@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 memory/seen_headlines.json
 memory/alerts/
+memory/replays/
+.schwab_token.json
+.schwab_login_debug.png
