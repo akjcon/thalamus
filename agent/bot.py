@@ -168,6 +168,7 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 anthropic_client = None
 alert_channel = None
+_announced = False
 
 
 def get_chat_context() -> str:
@@ -344,6 +345,17 @@ def run_scan_cycle() -> dict | None:
     return result
 
 
+async def generate_idle_message() -> str:
+    """Generate a one-liner for quiet cycles."""
+    response = anthropic_client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=150,
+        system="You are Thalamus, a geopolitical intelligence agent that monitors world events for trading opportunities. You just finished scanning headlines and found nothing interesting. Say something in one sentence — be weird, funny, cryptic, philosophical, or darkly humorous. No emojis. Don't mention that you're an AI. You can reference geopolitics, markets, supply chains, or just be strange. Keep it under 200 characters.",
+        messages=[{"role": "user", "content": "What's on your mind?"}],
+    )
+    return response.content[0].text
+
+
 async def scan_loop():
     """Background task that runs the scan cycle periodically."""
     await client.wait_until_ready()
@@ -361,6 +373,10 @@ async def scan_loop():
                 embed = build_alert_embed(result)
                 view = AlertView(result)
                 await alert_channel.send(embed=embed, view=view)
+            elif alert_channel:
+                # Quiet cycle — say something weird
+                msg = await generate_idle_message()
+                await alert_channel.send(msg)
 
         except Exception as e:
             print(f"[!] Scan cycle error: {e}")
@@ -372,7 +388,7 @@ async def scan_loop():
 
 @client.event
 async def on_ready():
-    global alert_channel, anthropic_client
+    global alert_channel, anthropic_client, _announced
     anthropic_client = Anthropic()
 
     print(f"Thalamus bot logged in as {client.user}")
@@ -390,12 +406,15 @@ async def on_ready():
         print(f"[!] Could not find #{channel_name} channel!")
         print(f"    Available channels: {[ch.name for g in client.guilds for ch in g.text_channels]}")
 
-    # Send startup message
-    if alert_channel:
-        await alert_channel.send("**Thalamus online.** Scanning every 2 hours. Type here to ask me anything.")
+    # Send startup message (only once per process — on_ready can fire on reconnects)
+    if alert_channel and not _announced:
+        _announced = True
+        await alert_channel.send("**Thalamus online.** Scanning every 4 hours. Type here to ask me anything.")
 
     # Start the scan loop
-    client.loop.create_task(scan_loop())
+    if not hasattr(client, '_scan_started'):
+        client._scan_started = True
+        client.loop.create_task(scan_loop())
 
 
 @client.event
