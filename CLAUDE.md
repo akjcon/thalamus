@@ -76,6 +76,10 @@ python3 agent/replay.py 20260303_055901
 - Commit atomically — one logical change per commit
 - Use `/cp` to commit and push
 
+## Engineering Philosophy
+
+- When a solution is getting complex or hacky, stop and ask: is there a simpler way? Prefer leveraging existing state (files on disk, timestamps, etc.) over maintaining fragile in-memory state or timers.
+
 ## Conventions
 
 - All LLM JSON responses: strip markdown fences, parse with error handling, log first/last 500 chars on failure
