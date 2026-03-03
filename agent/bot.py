@@ -211,31 +211,41 @@ async def handle_chat(message: discord.Message):
     async with message.channel.typing():
         context = get_chat_context()
 
-        response = anthropic_client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=2048,
-            system="""You are Thalamus, a geopolitical intelligence agent. The user is a trader
+        def _call_api():
+            return anthropic_client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=4096,
+                tools=[{"type": "web_search_20250305"}],
+                system="""You are Thalamus, a geopolitical intelligence agent. The user is a trader
 who wants to discuss your analysis and world model. Be concise and direct.
 Think in supply chains and second/third order effects. If they ask about a trade,
-reason through it step by step. If you don't know something, say so.
+reason through it step by step. Use web search to look up current information
+when the user asks about recent events, prices, or news.
 
 Keep responses short — a few paragraphs max. Use bullet points.
 Do not suggest obvious, consensus trades. Your value is non-obvious connections.""",
-            messages=[{
-                "role": "user",
-                "content": f"""{context}
+                messages=[{
+                    "role": "user",
+                    "content": f"""{context}
 
 ---
 
 User question: {message.content}"""
-            }]
-        )
+                }]
+            )
 
-        reply = response.content[0].text
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(None, _call_api)
+
+        # Extract text blocks (web search tool results are handled server-side)
+        text_parts = [block.text for block in response.content if hasattr(block, "text")]
+        reply = "\n".join(text_parts)
+
+        if not reply:
+            reply = "I searched but couldn't find a useful answer. Try rephrasing?"
 
         # Discord message limit is 2000 chars
         if len(reply) > 1900:
-            # Split into chunks
             chunks = [reply[i:i+1900] for i in range(0, len(reply), 1900)]
             for chunk in chunks:
                 await message.reply(chunk)
@@ -347,12 +357,15 @@ def run_scan_cycle() -> dict | None:
 
 async def generate_idle_message() -> str:
     """Generate a one-liner for quiet cycles."""
-    response = anthropic_client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=150,
-        system="You are Thalamus, a geopolitical intelligence agent that monitors world events for trading opportunities. You just finished scanning headlines and found nothing interesting. Say something in one sentence — be weird, funny, cryptic, philosophical, or darkly humorous. No emojis. Don't mention that you're an AI. You can reference geopolitics, markets, supply chains, or just be strange. Keep it under 200 characters.",
-        messages=[{"role": "user", "content": "What's on your mind?"}],
-    )
+    def _call():
+        return anthropic_client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=150,
+            system="You are Thalamus, a geopolitical intelligence agent that monitors world events for trading opportunities. You just finished scanning headlines and found nothing interesting. Say something in one sentence — be weird, funny, cryptic, philosophical, or darkly humorous. No emojis. Don't mention that you're an AI. You can reference geopolitics, markets, supply chains, or just be strange. Keep it under 200 characters.",
+            messages=[{"role": "user", "content": "What's on your mind?"}],
+        )
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(None, _call)
     return response.content[0].text
 
 
@@ -360,8 +373,11 @@ async def scan_loop():
     """Background task that runs the scan cycle periodically."""
     await client.wait_until_ready()
 
+    # Wait before first scan — prevents spam if bot is crash-restarting
+    await asyncio.sleep(120)
+
     config = load_config()
-    interval_hours = config.get("scan_interval_hours", 2)
+    interval_hours = config.get("scan_interval_hours", 4)
     interval_seconds = interval_hours * 3600
 
     while not client.is_closed():
