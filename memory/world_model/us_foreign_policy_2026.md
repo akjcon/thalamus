@@ -1,5 +1,5 @@
 # U.S. Foreign Policy — Trump Administration 2026
-**As of: March 3, 2026**
+**As of: March 3, 2026 (UPDATED)**
 
 ## Core Posture
 - Transactional, America-First; bilateral deals over multilateral institutions
@@ -56,13 +56,25 @@
 - Stated nuclear rationale publicly contradicted by U.S. intelligence community's own most recent testimony
 - Weakens international legitimacy; gives non-Western partners additional grounds to withhold support
 
+## Trump-Xi Summit — CONFIRMED MARCH 31–APRIL 2, 2026 IN BEIJING
+- Summit confirmed from primary sources; pre-scheduled but now dramatically elevated in significance given Hormuz crisis
+- **Confirmed agenda:**
+  - Trade truce extension (primary)
+  - Taiwan arms sales (China's core concern)
+  - Energy cooperation (U.S.-China LNG/Alaska energy deal discussed at APEC Oct 2025; not yet formalized)
+- **Shared Hormuz interest creates rare cooperative dynamic** — both sides have strong incentive; summit is natural venue for diplomatic coordination on ceasefire facilitation
+- **For U.S.:** Summit creates diplomatic off-ramp opportunity; China's quiet Iran pressure is already happening but could be formalized/intensified
+- **Natural deadline effect:** Pre-summit period (now through March 31) should see intensified Oman channel activity if both parties want deliverables
+- Rare earth export control suspension extension likely on agenda (1-year suspension was Oct 2025 APEC concession)
+- U.S. 2025 trade deficit with China fell to ~$202B (21-year low); Supreme Court tariff ruling limits Trump unilateral tariff authority — China's negotiating position modestly improved
+
 ## Key Actions Taken (2025–2026)
 - **Iran/Middle East:** Operation Epic Fury; ~2,000 combined U.S.–Israeli strikes; Khamenei dead; ceasefire back-channel structurally damaged
 - **Venezuela:** Military capture of Maduro (Jan 3, 2026); managing transition
 - **Ukraine:** Mediating Geneva talks; backing security guarantees but pressuring Kyiv to negotiate
 - **Middle East:** Backed Israel throughout Gaza war; Lebanon ceasefire over; Hormuz standoff active
 - **DRC/Rwanda:** Brokered Washington peace deal; pursuing minerals agreements
-- **China:** Trade war truce (Oct 2025); reciprocal visits planned
+- **China:** Trade war truce (Oct 2025); Trump-Xi Beijing summit confirmed March 31–April 2
 - **Syria:** Welcomed al-Sharaa; lifted sanctions
 - **Latin America:** Cartel FTO designations; Colombia president sanctioned; Cuba back on SST list
 - **India–Pakistan:** Brokered ceasefire
@@ -76,6 +88,7 @@
 - **Fujairah/UAE:** Al Salam naval base struck; Fujairah energy terminal compromised
 - **RAF Akrotiri (Cyprus):** NATO-member UK military base struck — NATO Article 5 consultation implications; UK now active belligerent
 - **European allies:** Germany, France, Italy, Norway, Netherlands troops under attack at regional bases; Spain denied base access; Turkey ambiguous
+- **Trump-Xi summit preparation:** March 31–April 2 Beijing summit creates diplomatic timeline pressure; Hormuz coordination is shared agenda item
 
 ## Legal/Constitutional Constraints
 - **Iran campaign: No congressional authorization** — War Powers Act 60-day clock running
@@ -91,6 +104,7 @@
 - Ukraine negotiations stalled as Middle East consumes attention
 - Pakistan-Afghanistan escalation adds nuclear-state crisis with limited U.S. leverage
 - Congressional War Powers pressure adding domestic political management burden
+- **Trump-Xi summit (March 31–April 2) adding preparation/negotiation bandwidth demand** — but also potential for diplomatic wins across multiple theaters
 - Risk of strategic distraction and policy incoherence across all theaters
 
 ## Key Relationships
@@ -103,21 +117,21 @@
 | Saudi Arabia | Close; under Iranian attack; U.S. defending |
 | Qatar | Host to Al Udeid; under attack; LNG ally |
 | India | Strategic partner; managed Kashmir crisis |
-| China | Competitive; truce holding; both hurt by Hormuz; **strongest shared diplomatic incentive currently for both parties: Hormuz resolution** |
+| China | Competitive; truce holding; **Trump-Xi summit confirmed March 31–April 2**; **strongest shared diplomatic incentive currently: Hormuz resolution**; China applying quiet Iran pressure independently |
 | Russia | Mediating Ukraine; not involved in Iran crisis; benefiting from oil spike |
 | Iran | Active conflict (Operation Epic Fury) + structurally damaged Oman back-channel simultaneously |
 
 ## Trajectory
-🔴 MAXIMUM ENGAGEMENT — Active war in Middle East (Operation Epic Fury); **three-layer messaging incoherence confirmed from State Dept. transcripts** (VP/SecDef vs. Trump on goals; Trump vs. Rubio on causation; strikes mid-completed-negotiation); **Rubio 'hardest hits yet to come' + no defined end-state** = no credible U.S. off-ramp signal; **RAF Akrotiri struck — NATO Article 5 live issue**; European allies now active belligerents; **MAGA base backlash to Israel-as-cause narrative = domestic political constraint**; War Powers clock running with no congressional authorization + Democrats demanding justification; 'Pottery Barn Rule' signal increasingly accurate for duration; Hormuz standoff; UAE escalation; Ukraine stalled; Venezuela transition all simultaneous
+🔴 MAXIMUM ENGAGEMENT — Active war in Middle East (Operation Epic Fury); **three-layer messaging incoherence confirmed from State Dept. transcripts** (VP/SecDef vs. Trump on goals; Trump vs. Rubio on causation; strikes mid-completed-negotiation); **Rubio 'hardest hits yet to come' + no defined end-state** = no credible U.S. off-ramp signal; **RAF Akrotiri struck — NATO Article 5 live issue**; European allies now active belligerents; **MAGA base backlash to Israel-as-cause narrative = domestic political constraint**; War Powers clock running with no congressional authorization + Democrats demanding justification; **Trump-Xi Beijing summit confirmed March 31–April 2 = most significant near-term diplomatic event**; 'Pottery Barn Rule' signal increasingly accurate for duration; Hormuz standoff; Ukraine stalled; Venezuela transition all simultaneous
 
-## Watch For
-- **Whether Trump clarifies 'not regime change' + end-state conditions** — directly determines Oman channel viability; contradicts Rubio 'hardest hits'
-- **Whether MAGA base backlash to Israel-as-cause forces Trump to change framing** — potential forcing function
-- **Congressional War Powers Act pressure** as campaign extends past 4–5 weeks — Democrats have filed demands
-- **NATO Article 5 consultations** following RAF Akrotiri strike — does UK formally invoke or defer?
-- Oman channel ceasefire framework signal — now requires IRGC operational pause to be credible
-- Ukraine negotiation resumption post-Middle East stabilization
-- Trump–Xi summit (strongest shared diplomatic interest currently for both parties: Hormuz resolution)
-- Supreme Court tariff rulings; USMCA review (July 2026)
-- European diplomatic pressure for ceasefire given direct military stake
-- Whether no-defined-end-state creates bipartisan congressional pressure as campaign extends
+## Watch For (Priority Order)
+1. **Trump-Xi summit (March 31–April 2)** — trade truce extension; Hormuz coordination with China; LNG energy deal; single most important near-term diplomatic event
+2. **Whether Trump clarifies 'not regime change' + end-state conditions** — directly determines Oman channel viability; contradicts Rubio 'hardest hits'
+3. **Whether MAGA base backlash to Israel-as-cause forces Trump to change framing** — potential forcing function for policy clarification
+4. **Congressional War Powers Act pressure** as campaign extends past 4–5 weeks — Democrats have filed demands
+5. **NATO Article 5 consultations** following RAF Akrotiri strike — does UK formally invoke or defer?
+6. Oman channel ceasefire framework signal — now requires IRGC operational pause to be credible
+7. Ukraine negotiation resumption post-Middle East stabilization
+8. Supreme Court tariff rulings; USMCA review (July 2026)
+9. European diplomatic pressure for ceasefire given direct military stake
+10. Whether no-defined-end-state creates bipartisan congressional pressure as campaign extends

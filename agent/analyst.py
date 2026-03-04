@@ -160,7 +160,7 @@ def deep_analysis(client, flagged_items: list[dict], world_model: str,
     items_text = "\n\n".join(
         f"### {item['title']}\n"
         f"Source: {item['source']}\n"
-        f"Why flagged: {item['reason']}\n"
+        f"Why flagged: {item.get('what_is_new', item.get('reason', ''))}\n"
         f"Urgency: {item['urgency']}\n"
         f"Summary: {item.get('summary', 'N/A')}"
         for item in flagged_items
@@ -330,7 +330,7 @@ def update_world_model(client, current_model: str, updates: str, model: str):
 
     response = client.messages.create(
         model=model,
-        max_tokens=16384,
+        max_tokens=32768,
         system="""You maintain a world model — a set of markdown files that represent
 your current understanding of the geopolitical landscape. You are free to organize
 these files however you want. Create new files, update existing ones, or restructure
@@ -343,11 +343,14 @@ Output a JSON array of file operations:
 ]
 
 IMPORTANT RULES:
-- Only include files that ACTUALLY CHANGED. Do NOT rewrite files that have no updates.
-- Only update _index.md if you added or removed files.
+- ONLY include files that ACTUALLY CHANGED. Do NOT rewrite files that have no updates.
+  If a file's content would be identical to what's already there, DO NOT include it.
+- Only update _index.md if you added or removed files, or if section descriptions changed.
 - Keep files concise — bullet points, not paragraphs. Capture key facts and dynamics.
 - Filenames should be descriptive and use snake_case.
 - One topic per file.
+- Keep your total output SHORT. Fewer file operations = better. If the update only affects
+  2 files, only output 2 operations. Do not rewrite the entire world model.
 Respond with ONLY the JSON array.""",
         messages=[{
             "role": "user",
@@ -361,6 +364,11 @@ Apply these updates to the world model. Create, modify, or reorganize files as n
         }]
     )
 
+    # Truncation detection — if hit max_tokens, JSON is likely corrupt
+    if response.stop_reason == "max_tokens":
+        print(f"  [!] World model update hit max_tokens — output truncated, skipping to avoid corruption")
+        return
+
     try:
         text = response.content[0].text.strip()
         if text.startswith("```"):
@@ -368,7 +376,6 @@ Apply these updates to the world model. Create, modify, or reorganize files as n
         operations = json.loads(text)
     except (json.JSONDecodeError, IndexError) as e:
         print(f"  [!] Failed to parse world model updates: {e}")
-        # Dump first 500 chars so we can debug
         raw = response.content[0].text if response.content else "(empty)"
         print(f"  [!] Response starts with: {raw[:500]}")
         print(f"  [!] Response ends with: {raw[-500:]}")

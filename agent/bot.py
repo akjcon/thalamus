@@ -5,8 +5,10 @@ with expandable trade ideas and chat capability.
 """
 
 import os
+import re
 import json
 import asyncio
+import time
 import discord
 from discord import ui
 from datetime import datetime, timezone
@@ -168,7 +170,53 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 anthropic_client = None
 alert_channel = None
-_announced = False
+log_channel = None
+
+
+# ── CycleLog — collects structured log entries during a scan cycle ────
+
+class CycleLog:
+    """Collects log entries during a scan cycle (runs in thread executor — no async)."""
+
+    def __init__(self):
+        self.entries = []
+        self.start_time = time.monotonic()
+        self.headline_count = 0
+        self.flagged_count = 0
+        self.novel_count = 0
+        self.flagged_details = []
+        self.verdict = "quiet"
+        self.errors = []
+
+    def log(self, msg: str):
+        self.entries.append(msg)
+        print(msg)  # Also print to stdout for Railway logs
+
+    def error(self, msg: str):
+        self.errors.append(msg)
+        self.entries.append(f"[!] {msg}")
+        print(f"[!] {msg}")
+
+    def format_summary(self) -> str:
+        elapsed = time.monotonic() - self.start_time
+        lines = [f"**Scan cycle complete** ({elapsed:.0f}s)"]
+        lines.append(f"Headlines: {self.headline_count} new | {self.flagged_count} flagged | {self.novel_count} novel")
+        lines.append(f"Verdict: **{self.verdict}**")
+
+        if self.flagged_details:
+            lines.append("\n**Flagged:**")
+            for d in self.flagged_details[:10]:
+                lines.append(f"- [{d['urgency'].upper()}] {d['title'][:80]}")
+                what_is_new = d.get('what_is_new', d.get('reason', ''))
+                if what_is_new:
+                    lines.append(f"  → {what_is_new[:120]}")
+
+        if self.errors:
+            lines.append("\n**Errors:**")
+            for e in self.errors[:5]:
+                lines.append(f"- {e[:200]}")
+
+        return "\n".join(lines)
 
 
 def get_chat_context() -> str:
@@ -267,15 +315,17 @@ def save_replay(timestamp: str, headlines: list, flagged: list, research: str):
     print(f"  Saved replay to {replay_file.name}")
 
 
-def run_scan_cycle() -> dict | None:
-    """Execute one scan cycle. Returns analysis result or None."""
+def run_scan_cycle() -> tuple[dict | None, CycleLog]:
+    """Execute one scan cycle. Returns (analysis result or None, cycle log)."""
+    log = CycleLog()
+
     # Record scan start IMMEDIATELY — survives crashes, restarts, and quiet cycles
     record_scan_time()
 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    print(f"\n{'='*60}")
-    print(f"[{datetime.now(timezone.utc).isoformat()}] Starting scan cycle")
-    print(f"{'='*60}")
+    log.log(f"\n{'='*60}")
+    log.log(f"[{datetime.now(timezone.utc).isoformat()}] Starting scan cycle")
+    log.log(f"{'='*60}")
 
     config = load_config()
     scanner_model = config["models"]["scanner"]
@@ -285,36 +335,45 @@ def run_scan_cycle() -> dict | None:
     try_sync_portfolio()
 
     # Step 1: Pull headlines
-    print("\n[1/6] Pulling RSS feeds...")
+    log.log("[1/6] Pulling RSS feeds...")
     headlines = pull_feeds(config)
-    print(f"  Found {len(headlines)} new headlines")
+    log.headline_count = len(headlines)
+    log.log(f"  Found {len(headlines)} new headlines")
 
     if not headlines:
-        print("  Nothing new. Skipping cycle.")
-        return None
+        log.log("  Nothing new. Skipping cycle.")
+        log.verdict = "no new headlines"
+        return None, log
 
-    # Step 2: Classify
-    print("\n[2/6] Classifying headlines...")
+    # Step 2: Classify for novelty
+    log.log("[2/6] Classifying headlines for novelty...")
     world_model = load_world_model()
     model_summary = world_model[:3000] if len(world_model) > 3000 else world_model
     flagged = classify_headlines(anthropic_client, headlines, model_summary, scanner_model)
-    print(f"  Flagged {len(flagged)} significant items")
+    log.flagged_count = len(flagged)
+    log.flagged_details = flagged
+    log.log(f"  Flagged {len(flagged)} novel items")
 
     if not flagged:
-        print("  Quiet cycle.")
-        return None
+        log.log("  Quiet cycle — nothing novel.")
+        log.verdict = "quiet — no novel headlines"
+        return None, log
 
     for item in flagged:
-        print(f"  [{item['urgency'].upper()}] {item['title']}")
+        what_is_new = item.get('what_is_new', item.get('reason', ''))
+        log.log(f"  [{item['urgency'].upper()}] {item['title']}")
+        if what_is_new:
+            log.log(f"    → {what_is_new}")
 
     # Prioritize
     high = [f for f in flagged if f["urgency"] == "high"]
     medium = [f for f in flagged if f["urgency"] == "medium"]
     low = [f for f in flagged if f["urgency"] == "low"]
     analysis_items = (high + medium + low)[:10]
+    log.novel_count = len(analysis_items)
 
     # Step 3: Research
-    print("\n[3/6] Researching...")
+    log.log("[3/6] Researching...")
     all_questions = []
     for item in analysis_items:
         all_questions.extend(item.get("follow_up_questions", []))
@@ -327,18 +386,19 @@ def run_scan_cycle() -> dict | None:
     save_replay(timestamp, headlines, analysis_items, research)
 
     # Step 4: Deep analysis
-    print("\n[4/6] Analyzing...")
+    log.log("[4/6] Analyzing...")
     portfolio = load_portfolio()
     result = deep_analysis(
         anthropic_client, analysis_items, world_model, portfolio, research, analyst_model
     )
 
     if "error" in result:
-        print(f"  [!] Analysis error: {result['error']}")
-        return None
+        log.error(f"Analysis error: {result['error']}")
+        log.verdict = "error in analysis"
+        return None, log
 
     # Step 5: Update world model (always, even if no trade ideas)
-    print("\n[5/6] Updating world model...")
+    log.log("[5/6] Updating world model...")
     model_updates = result.get("world_model_updates", "")
     if model_updates:
         update_world_model(anthropic_client, world_model, model_updates, analyst_model)
@@ -346,37 +406,34 @@ def run_scan_cycle() -> dict | None:
     # Step 6: Price validation (only if there are trade ideas)
     trade_ideas = result.get("trade_ideas", [])
     if trade_ideas and result.get("alert_worthy", False):
-        print("\n[6/6] Checking prices to validate ideas...")
+        log.log("[6/6] Checking prices to validate ideas...")
         result["trade_ideas"] = validate_prices(
             anthropic_client, trade_ideas, analyst_model
         )
     else:
-        print("\n[6/6] No actionable ideas this cycle — world model updated quietly.")
+        log.log("[6/6] No actionable ideas this cycle — world model updated quietly.")
 
     # Programmatic dedup — filter out instruments already recommended recently
     if result.get("trade_ideas"):
         result["trade_ideas"] = filter_repeat_ideas(result["trade_ideas"])
         if not result["trade_ideas"]:
-            print("  All ideas were repeats — downgrading to quiet cycle.")
+            log.log("  All ideas were repeats — downgrading to quiet cycle.")
             result["alert_worthy"] = False
 
     save_alert(result)
-    print("Cycle complete.")
-    return result
 
+    if result.get("alert_worthy"):
+        ideas = result.get("trade_ideas", [])
+        tickers = []
+        for idea in ideas:
+            found = re.findall(r'\(([A-Z]{1,5})\)', idea.get("instrument", ""))
+            tickers.extend(found)
+        log.verdict = f"ALERT — {', '.join(tickers)}" if tickers else "ALERT"
+    else:
+        log.verdict = "quiet — world model updated, no new trades"
 
-async def generate_idle_message() -> str:
-    """Generate a one-liner for quiet cycles."""
-    def _call():
-        return anthropic_client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=150,
-            system="You are Thalamus, a geopolitical intelligence agent that monitors world events for trading opportunities. You just finished scanning headlines and found nothing interesting. Say something in one sentence — be weird, funny, cryptic, philosophical, or darkly humorous. No emojis. Don't mention that you're an AI. You can reference geopolitics, markets, supply chains, or just be strange. Keep it under 200 characters.",
-            messages=[{"role": "user", "content": "What's on your mind?"}],
-        )
-    loop = asyncio.get_event_loop()
-    response = await loop.run_in_executor(None, _call)
-    return response.content[0].text
+    log.log("Cycle complete.")
+    return result, log
 
 
 def last_scan_time() -> datetime | None:
@@ -410,9 +467,8 @@ def filter_repeat_ideas(trade_ideas: list[dict]) -> list[dict]:
             alert = json.loads(f.read_text())
             for idea in alert.get("trade_ideas", []):
                 instrument = idea.get("instrument", "")
-                if "(" in instrument and ")" in instrument:
-                    ticker = instrument.split("(")[1].split(")")[0].upper()
-                    recent_tickers.add(ticker)
+                tickers = re.findall(r'\(([A-Z]{1,5})\)', instrument)
+                recent_tickers.update(tickers)
         except Exception:
             pass
 
@@ -422,15 +478,27 @@ def filter_repeat_ideas(trade_ideas: list[dict]) -> list[dict]:
     filtered = []
     for idea in trade_ideas:
         instrument = idea.get("instrument", "")
-        ticker = ""
-        if "(" in instrument and ")" in instrument:
-            ticker = instrument.split("(")[1].split(")")[0].upper()
-        if ticker and ticker in recent_tickers:
-            print(f"  [*] Filtering repeat idea: {ticker} (already recommended)")
+        idea_tickers = re.findall(r'\(([A-Z]{1,5})\)', instrument)
+        overlap = set(idea_tickers) & recent_tickers
+        if overlap:
+            print(f"  [*] Filtering repeat idea: {', '.join(overlap)} (already recommended)")
             continue
         filtered.append(idea)
 
     return filtered
+
+
+async def send_to_log_channel(message: str):
+    """Send a message to the log channel, truncating if needed."""
+    if not log_channel:
+        return
+    # Discord limit is 2000 chars
+    if len(message) > 1900:
+        message = message[:1900] + "\n..."
+    try:
+        await log_channel.send(message)
+    except Exception as e:
+        print(f"[!] Failed to send to log channel: {e}")
 
 
 async def scan_loop():
@@ -453,49 +521,56 @@ async def scan_loop():
 
         try:
             # Run scan in thread pool to not block the bot
-            result = await asyncio.get_event_loop().run_in_executor(None, run_scan_cycle)
+            result, cycle_log = await asyncio.get_event_loop().run_in_executor(None, run_scan_cycle)
 
+            # Always log to #thal-logs
+            await send_to_log_channel(cycle_log.format_summary())
+
+            # Only send to #alerts if genuinely new trade ideas
             if result and result.get("alert_worthy", False) and alert_channel:
                 embed = build_alert_embed(result)
                 view = AlertView(result)
                 await alert_channel.send(embed=embed, view=view)
-            elif alert_channel:
-                # Quiet cycle — say something weird
-                msg = await generate_idle_message()
-                await alert_channel.send(msg)
 
         except Exception as e:
             print(f"[!] Scan cycle error: {e}")
             import traceback
             traceback.print_exc()
+            await send_to_log_channel(f"**Scan cycle error:** {e}")
 
         await asyncio.sleep(60)
 
 
 @client.event
 async def on_ready():
-    global alert_channel, anthropic_client, _announced
+    global alert_channel, log_channel, anthropic_client
     anthropic_client = Anthropic()
 
     print(f"Thalamus bot logged in as {client.user}")
 
-    # Find the alerts channel
-    channel_name = os.environ.get("DISCORD_CHANNEL_NAME", "alerts")
+    # Find channels
+    alert_channel_name = os.environ.get("DISCORD_CHANNEL_NAME", "alerts")
+    log_channel_name = os.environ.get("DISCORD_LOG_CHANNEL_NAME", "thal-logs")
+
     for guild in client.guilds:
         for ch in guild.text_channels:
-            if ch.name == channel_name:
+            if ch.name == alert_channel_name and not alert_channel:
                 alert_channel = ch
                 print(f"Alert channel: #{ch.name} in {guild.name}")
-                break
+            if ch.name == log_channel_name and not log_channel:
+                log_channel = ch
+                print(f"Log channel: #{ch.name} in {guild.name}")
 
     if not alert_channel:
-        print(f"[!] Could not find #{channel_name} channel!")
+        print(f"[!] Could not find #{alert_channel_name} channel!")
         print(f"    Available channels: {[ch.name for g in client.guilds for ch in g.text_channels]}")
+    if not log_channel:
+        print(f"[!] Could not find #{log_channel_name} channel — logs will only go to stdout")
 
-    # Send startup message (only once per process — on_ready can fire on reconnects)
-    if alert_channel and not _announced:
-        _announced = True
-        await alert_channel.send("**Thalamus online.** Scanning every 4 hours. Type here to ask me anything.")
+    # Startup message to log channel only (not #alerts)
+    if log_channel and not hasattr(client, '_announced'):
+        client._announced = True
+        await log_channel.send("**Thalamus online.** Scanning every 4 hours.")
 
     # Start the scan loop
     if not hasattr(client, '_scan_started'):

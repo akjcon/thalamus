@@ -34,6 +34,9 @@ rss_feeds:
 # How often to scan (hours)
 scan_interval_hours: 4
 
+# Discord channels
+discord_log_channel: "thal-logs"
+
 # Model configuration
 models:
   scanner: "claude-haiku-4-5-20251001"  # Fast, cheap headline classification
