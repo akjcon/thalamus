@@ -331,6 +331,7 @@ def update_world_model(client, current_model: str, updates: str, model: str):
     response = client.messages.create(
         model=model,
         max_tokens=32768,
+        timeout=600.0,
         system="""You maintain a world model — a set of markdown files that represent
 your current understanding of the geopolitical landscape. You are free to organize
 these files however you want. Create new files, update existing ones, or restructure
