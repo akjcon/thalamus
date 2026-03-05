@@ -221,7 +221,7 @@ class CycleLog:
 
 
 CHAT_TOOLS = [
-    {"type": "web_search_20250305"},
+    {"type": "web_search_20250305", "name": "web_search"},
     {
         "name": "read_world_model",
         "description": "Read a specific file from the world model. Use this to get detailed analysis on a topic. Available files are listed in the system prompt.",
