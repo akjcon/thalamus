@@ -25,6 +25,7 @@ from analyst import (
     deep_analysis, update_world_model, validate_prices,
 )
 from notifier import save_alert
+import costs
 import yaml
 
 
@@ -195,6 +196,7 @@ client = discord.Client(intents=intents)
 anthropic_client = None
 alert_channel = None
 log_channel = None
+cost_channel = None
 
 
 # ── CycleLog — collects structured log entries during a scan cycle ────
@@ -288,6 +290,14 @@ _chat_last_active: dict[int, float] = {}
 CHAT_HISTORY_MAX = 20  # max messages to keep (user + assistant)
 CHAT_HISTORY_TTL = 1800  # 30 minutes
 
+def _log_chat_cost(response):
+    """Print chat API cost to stdout without touching the shared cost log."""
+    usage = response.usage
+    pricing = costs.MODEL_PRICING.get("claude-sonnet-4-6", {"input": 0, "output": 0})
+    cost = (usage.input_tokens * pricing["input"] + usage.output_tokens * pricing["output"]) / 1_000_000
+    print(f"  [cost] chat: {usage.input_tokens:,}in/{usage.output_tokens:,}out = ${cost:.3f} (sonnet)")
+
+
 # Guard against concurrent scan runs (e.g., !scan while timer scan is running)
 _scan_lock = asyncio.Lock()
 
@@ -374,6 +384,8 @@ flows, input costs, shipping routes.
                     system=system_prompt,
                     messages=messages,
                 )
+                # Log chat cost to stdout only (don't pollute scan cycle cost log)
+                _log_chat_cost(response)
                 if response.stop_reason == "end_turn":
                     break
                 # Process tool_use blocks
@@ -450,6 +462,7 @@ def save_replay(timestamp: str, headlines: list, flagged: list, research: str):
 def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     """Execute one scan cycle. Returns (analysis result or None, cycle log)."""
     log = CycleLog()
+    costs.reset()
 
     # Record scan start IMMEDIATELY — survives crashes, restarts, and quiet cycles
     record_scan_time()
@@ -462,6 +475,7 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     config = load_config()
     scanner_model = config["models"]["scanner"]
     analyst_model = config["models"]["analyst"]
+    deep_analyst_model = config["models"].get("deep_analyst", analyst_model)
 
     # Step 0: Sync portfolio from brokerage (if configured)
     try_sync_portfolio()
@@ -521,7 +535,7 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     log.log("[4/6] Analyzing...")
     portfolio = load_portfolio()
     result = deep_analysis(
-        anthropic_client, analysis_items, world_model, portfolio, research, analyst_model
+        anthropic_client, analysis_items, world_model, portfolio, research, deep_analyst_model
     )
 
     if "error" in result:
@@ -632,6 +646,18 @@ async def send_to_log_channel(message: str):
         print(f"[!] Failed to send to log channel: {e}")
 
 
+async def send_cost_summary():
+    """Post cycle cost summary to #thal-costs (or stdout if no channel)."""
+    summary = costs.format_cycle_summary()
+    if cost_channel:
+        try:
+            await cost_channel.send(summary)
+        except Exception as e:
+            print(f"[!] Failed to send to cost channel: {e}")
+    else:
+        print(summary)
+
+
 async def scan_loop():
     """Background task that runs the scan cycle periodically."""
     await client.wait_until_ready()
@@ -650,6 +676,8 @@ async def scan_loop():
                 await asyncio.sleep(min(remaining, 300))  # Re-check every 5 min or when due
                 continue
 
+        result = None
+        cycle_log = None
         try:
             # Run scan in thread pool to not block the bot
             async with _scan_lock:
@@ -669,13 +697,16 @@ async def scan_loop():
             import traceback
             traceback.print_exc()
             await send_to_log_channel(f"**Scan cycle error:** {e}")
+        finally:
+            # Always post cost summary — even on error, partial costs are useful
+            await send_cost_summary()
 
         await asyncio.sleep(60)
 
 
 @client.event
 async def on_ready():
-    global alert_channel, log_channel, anthropic_client
+    global alert_channel, log_channel, cost_channel, anthropic_client
     anthropic_client = Anthropic()
     register_instance()
 
@@ -684,6 +715,7 @@ async def on_ready():
     # Find channels
     alert_channel_name = os.environ.get("DISCORD_CHANNEL_NAME", "alerts")
     log_channel_name = os.environ.get("DISCORD_LOG_CHANNEL_NAME", "thal-logs")
+    cost_channel_name = "thal-costs"
 
     for guild in client.guilds:
         for ch in guild.text_channels:
@@ -693,12 +725,17 @@ async def on_ready():
             if ch.name == log_channel_name and not log_channel:
                 log_channel = ch
                 print(f"Log channel: #{ch.name} in {guild.name}")
+            if ch.name == cost_channel_name and not cost_channel:
+                cost_channel = ch
+                print(f"Cost channel: #{ch.name} in {guild.name}")
 
     if not alert_channel:
         print(f"[!] Could not find #{alert_channel_name} channel!")
         print(f"    Available channels: {[ch.name for g in client.guilds for ch in g.text_channels]}")
     if not log_channel:
         print(f"[!] Could not find #{log_channel_name} channel — logs will only go to stdout")
+    if not cost_channel:
+        print(f"[!] Could not find #{cost_channel_name} channel — costs will only go to stdout")
 
     # Startup message to log channel only (not #alerts)
     if log_channel and not hasattr(client, '_announced'):
@@ -735,6 +772,7 @@ async def on_message(message: discord.Message):
                 try:
                     result, cycle_log = await asyncio.get_event_loop().run_in_executor(None, run_scan_cycle)
                     await send_to_log_channel(cycle_log.format_summary())
+                    await send_cost_summary()
                     if result and result.get("alert_worthy", False):
                         embed = build_alert_embed(result)
                         view = AlertView(result)

@@ -8,6 +8,7 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from costs import track as track_cost
 
 ROOT = Path(__file__).parent.parent
 MEMORY = ROOT / "memory"
@@ -70,6 +71,8 @@ For each question, provide:
         }]
     )
 
+    track_cost("research", response, model)
+
     # Extract text from response, handling tool use blocks
     text_parts = []
     for block in response.content:
@@ -110,6 +113,8 @@ and whether there's been unusual volume or movement.
 Be brief. One line per instrument."""
             }]
         )
+
+        track_cost("price_check", response, model)
 
         price_info = ""
         for block in response.content:
@@ -308,6 +313,7 @@ narratives — bullet points over paragraphs. If you can't find a genuinely
 non-obvious trade, say so — don't pad with consensus ideas.""",
         messages=[{"role": "user", "content": prompt}]
     )
+    track_cost("deep_analysis", response, model)
 
     try:
         text = response.content[0].text.strip()
@@ -367,6 +373,8 @@ Respond with ONLY the JSON array.""",
 Apply these updates to the world model. Create, modify, or reorganize files as needed."""
         }]
     )
+
+    track_cost("world_model_update", response, model)
 
     # Truncation detection — if hit max_tokens, JSON is likely corrupt
     if response.stop_reason == "max_tokens":

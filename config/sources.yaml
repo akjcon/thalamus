@@ -40,4 +40,5 @@ discord_log_channel: "thal-logs"
 # Model configuration
 models:
   scanner: "claude-haiku-4-5-20251001"  # Fast, cheap headline classification
-  analyst: "claude-sonnet-4-6"           # Deep analysis when triggered
+  analyst: "claude-sonnet-4-6"           # Research, world model, price checks
+  deep_analyst: "claude-opus-4-6"        # Deep analysis — better reasoning

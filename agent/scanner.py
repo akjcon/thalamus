@@ -12,6 +12,7 @@ import re
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from costs import track as track_cost
 
 ROOT = Path(__file__).parent.parent
 MEMORY = ROOT / "memory"
@@ -166,6 +167,7 @@ If nothing is genuinely new, return an empty array: []
 Respond with ONLY the JSON array, no other text."""
         }]
     )
+    track_cost("classify", response, model)
 
     try:
         text = response.content[0].text.strip()
