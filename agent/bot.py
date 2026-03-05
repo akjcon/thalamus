@@ -369,11 +369,16 @@ flows, input costs, shipping routes.
         # When web search runs server-side, the model generates text before AND after.
         # The pre-search text often disclaims ("I don't have data..."). Drop it.
         content = response.content
+        block_types = [getattr(b, "type", type(b).__name__) for b in content]
+        print(f"  [chat] Response block types: {block_types}")
+        # Find last search-related block (defensive: match any block with "search" in type)
         last_search_idx = -1
         for i, block in enumerate(content):
-            if getattr(block, "type", "") == "web_search_tool_result":
+            btype = getattr(block, "type", "")
+            if "search" in btype:
                 last_search_idx = i
         if last_search_idx >= 0:
+            print(f"  [chat] Stripping pre-search text (last search block at index {last_search_idx})")
             text_parts = [b.text for b in content[last_search_idx + 1:] if hasattr(b, "text")]
         else:
             text_parts = [b.text for b in content if hasattr(b, "text")]
