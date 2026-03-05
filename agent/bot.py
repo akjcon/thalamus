@@ -254,37 +254,86 @@ def get_chat_context() -> str:
 {alerts_text}"""
 
 
+# ── Chat conversation memory ─────────────────────────────────────────
+# Keeps recent conversation history so follow-up questions work.
+# Keyed by channel ID. Each entry is a list of {role, content} dicts.
+# Expires after 30 minutes of inactivity.
+
+_chat_history: dict[int, list[dict]] = {}
+_chat_last_active: dict[int, float] = {}
+CHAT_HISTORY_MAX = 20  # max messages to keep (user + assistant)
+CHAT_HISTORY_TTL = 1800  # 30 minutes
+
+
+def get_chat_history(channel_id: int) -> list[dict]:
+    """Get conversation history for a channel, clearing if stale."""
+    last = _chat_last_active.get(channel_id, 0)
+    if time.monotonic() - last > CHAT_HISTORY_TTL:
+        _chat_history.pop(channel_id, None)
+    return _chat_history.get(channel_id, [])
+
+
+def append_chat_history(channel_id: int, role: str, content: str):
+    """Append a message to conversation history."""
+    if channel_id not in _chat_history:
+        _chat_history[channel_id] = []
+    _chat_history[channel_id].append({"role": role, "content": content})
+    # Trim to max length (keep most recent)
+    if len(_chat_history[channel_id]) > CHAT_HISTORY_MAX:
+        _chat_history[channel_id] = _chat_history[channel_id][-CHAT_HISTORY_MAX:]
+    _chat_last_active[channel_id] = time.monotonic()
+
+
 async def handle_chat(message: discord.Message):
     """Respond to a user message using Claude + world model context."""
     async with message.channel.typing():
         context = get_chat_context()
+        history = get_chat_history(message.channel.id)
+
+        # Build messages: system context as first user message, then conversation history
+        messages = []
+        if not history:
+            # First message in conversation — include full context
+            messages.append({
+                "role": "user",
+                "content": f"""{context}
+
+---
+
+{message.content}"""
+            })
+        else:
+            # Ongoing conversation — context was in the first message
+            messages = list(history)
+            messages.append({"role": "user", "content": message.content})
 
         def _call_api():
             return anthropic_client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=4096,
                 tools=[{"type": "web_search_20250305"}],
-                system="""You are Thalamus, a geopolitical intelligence agent. The user is a trader
+                system=f"""You are Thalamus, a geopolitical intelligence agent. The user is a trader
 who wants to discuss your analysis and world model. Be concise and direct.
 Think in supply chains and second/third order effects. If they ask about a trade,
 reason through it step by step.
 
-CRITICAL: You have web search. USE IT PROACTIVELY. If your analysis depends on a
-data point (a price, a rate, a news development), LOOK IT UP before responding.
-Do not ask the user to check something you can check yourself. Do not say you
-"can't access real-time data" — you can, via web search. If you find yourself
-writing "What's X doing today?" or "I'd check Y" — stop and search for it first.
+CRITICAL RULES:
+1. You have web search. USE IT for every response that involves prices, rates, news,
+   or any factual claim about what's happening RIGHT NOW. Search BEFORE answering.
+   NEVER say "I can't check" or "I'd look at X" — just search for it.
+2. When you don't know something, search. When you think you know, search anyway to
+   verify. Your training data is stale. The user is making real trades.
+3. Be precise. Don't say a decision is "binary" unless you've verified it is. Don't
+   say something is "about urea" unless you've confirmed the specific scope.
+4. If the user pushes back or corrects you, take it seriously — they likely know more
+   about the specific situation than your training data does.
 
 Keep responses short — a few paragraphs max. Use bullet points.
-Do not suggest obvious, consensus trades. Your value is non-obvious connections.""",
-                messages=[{
-                    "role": "user",
-                    "content": f"""{context}
+Do not suggest obvious, consensus trades. Your value is non-obvious connections.
 
----
-
-User question: {message.content}"""
-                }]
+Current world model context (for reference if conversation doesn't include it):
+{context[:8000]}""",
+                messages=messages,
             )
 
         loop = asyncio.get_event_loop()
@@ -296,6 +345,14 @@ User question: {message.content}"""
 
         if not reply:
             reply = "I searched but couldn't find a useful answer. Try rephrasing?"
+
+        # Save conversation history
+        if not history:
+            # Store the first message with context
+            append_chat_history(message.channel.id, "user", f"{context}\n\n---\n\n{message.content}")
+        else:
+            append_chat_history(message.channel.id, "user", message.content)
+        append_chat_history(message.channel.id, "assistant", reply)
 
         # Discord message limit is 2000 chars
         if len(reply) > 1900:
