@@ -365,21 +365,19 @@ flows, input costs, shipping routes.
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, _run_harness)
 
-        # Extract text from final response — skip pre-search preamble
-        # When web search runs server-side, the model generates text before AND after.
-        # The pre-search text often disclaims ("I don't have data..."). Drop it.
+        # Extract only post-tool text from the final response.
+        # The model generates preamble text before tool use, then the real answer after.
+        # Take text blocks that come after the last non-text block (tool use, search, etc).
         content = response.content
         block_types = [getattr(b, "type", type(b).__name__) for b in content]
-        print(f"  [chat] Response block types: {block_types}")
-        # Find last search-related block (defensive: match any block with "search" in type)
-        last_search_idx = -1
+        print(f"  [chat] Response blocks: {block_types}", flush=True)
+        last_non_text_idx = -1
         for i, block in enumerate(content):
-            btype = getattr(block, "type", "")
-            if "search" in btype:
-                last_search_idx = i
-        if last_search_idx >= 0:
-            print(f"  [chat] Stripping pre-search text (last search block at index {last_search_idx})")
-            text_parts = [b.text for b in content[last_search_idx + 1:] if hasattr(b, "text")]
+            if not hasattr(block, "text"):
+                last_non_text_idx = i
+        if last_non_text_idx >= 0:
+            text_parts = [b.text for b in content[last_non_text_idx + 1:] if hasattr(b, "text")]
+            print(f"  [chat] Stripped pre-tool text (last non-text at idx {last_non_text_idx})", flush=True)
         else:
             text_parts = [b.text for b in content if hasattr(b, "text")]
         reply = "\n".join(text_parts)

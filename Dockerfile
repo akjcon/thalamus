@@ -14,6 +14,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && \
     playwright install chromium
 
+ENV PYTHONUNBUFFERED=1
+
 COPY . .
 
 # Seed world model gets baked into the image.
