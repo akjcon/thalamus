@@ -1,6 +1,6 @@
 # Iran — Active Regional War
-**Status: 🔴 ACTIVE WAR — Leadership Decapitated; IRGC Naval Assets Eliminated; Economic Targeting Systematic Across All 9 Target States; Ceasefire Back-Channel Structurally Destroyed (Confirmed); European Military Now Struck; Official IRGC Posture: No Ceasefire; Lebanon Front Now Fully Active — Hezbollah Declared 'Open War'**
-**As of: March 3, 2026 (UPDATED)**
+**Status: 🔴 ACTIVE WAR — Leadership Decapitated; IRGC Naval Assets Eliminated; Economic Targeting Systematic Across All 9 Target States; Ceasefire Back-Channel Structurally Destroyed (Confirmed); European Military Now Struck; Official IRGC Posture: No Ceasefire; Lebanon Front Now Fully Active — Hezbollah Declared 'Open War'; Internet Blackout Indicates Active Crackdown Architecture; U.S. Interceptor Stockpile Depletion Rate Now a Binding Duration Variable**
+**As of: March 4, 2026 (UPDATED)**
 
 ## Situation Overview
 - ~2,000 combined U.S.–Israeli airstrikes in 3 days preceding March 2, 2026
@@ -14,7 +14,7 @@
 - Strait of Hormuz **declared closed by IRGC** — now insurance-market-enforced, not militarily enforced; could reopen quickly with credible ceasefire
 - **Residual Iranian ballistic missile capability confirmed** — struck West Jerusalem post-strike
 - **IRGC official posture (confirmed):** 'This operation will continue relentlessly until the enemy is decisively defeated' — categorically hostile to ceasefire; not rhetorical
-- **U.S. operational timeline:** Trump stated U.S. expected **4–5 week campaign** (Operation Epic Fury) — now significantly underestimating actual duration given ceasefire mechanism destruction + IRGC stated posture + Lebanon front activation
+- **U.S. operational timeline:** Trump stated U.S. expected **4–5 week campaign** (Operation Epic Fury) — now significantly underestimating actual duration given ceasefire mechanism destruction + IRGC stated posture + Lebanon front activation + interceptor depletion dynamics
 
 ## CRITICAL UPDATE: Lebanon Front Now Fully Active
 - **Hezbollah has declared 'open war'** as of March 3, 2026
@@ -29,6 +29,29 @@
 - **Ceasefire baseline duration floor extends materially** due to Lebanon front activation
 - **Lebanese PM Nawaf Salam formally banned Hezbollah military activities, ordered arrests** — unprecedented state vs. militia legal record established; operationally irrelevant short-term; significant for post-conflict political architecture
 
+## CRITICAL: Internet Blackout — Crackdown Architecture Confirmed
+- **Post-strikes internet connectivity dropped to ~4% of normal** — most severe blackout in Iranian history
+- **Pattern confirmed (not a new phenomenon):** Internet shutdowns are systematic precursors to mass crackdowns, not regime transition signals
+  - January 2026 blackout (prior severe instance) preceded the largest internal crackdown since the 2022 Mahsa Amini protests
+  - Current post-strikes blackout follows same pattern — active crackdown underway or imminent
+- **'White SIM card' two-tier internet architecture (formalized July 2025):**
+  - Government/security forces maintain full connectivity
+  - Civilian population cut off (including Starlink, landlines, text messaging blocked)
+  - This is a **deliberate crackdown infrastructure**, not a technical failure
+  - Regime has invested in maintaining state function during civilian unrest
+- **Monitoring caveat:** Internal Iranian resistance reporting will be severely lagged and underreported during blackout periods
+  - All Iran internal stability assessments should carry a 'data blackout' caveat for the duration of internet restrictions
+  - Regime collapse from internal pressure alone is **less likely than media coverage implies** — crackdown architecture is operational and tested
+- **Implication for duration assessment:** Regime has significant coercive capacity intact despite Khamenei's death; internal pressure alone is unlikely to produce fast collapse
+
+## CRITICAL: Interceptor Stockpile Depletion — NEW DURATION VARIABLE
+- **~$10B in interceptor spending** already in current conflict; ~25% of THAAD stockpile depleted in prior 12-day June 2025 episode
+- **Cost asymmetry:** Patriot PAC-3 at $13.5M per missile vs. Shahed at $30K = 450:1 cost disadvantage
+- Pentagon publicly shopping for alternatives; **U.S.-Ukraine interceptor drone swap negotiations confirmed** (Zelensky statement)
+- **Interceptor depletion creates a U.S.-side forcing function for ceasefire at ~8–12 week horizon** — independent of IRGC posture
+- **Iran's 'relentless until victory' posture may be deliberately exploiting this asymmetry** — attrition of expensive Western interceptors with cheap drones is a coherent strategy
+- See: [us_military_logistics.md](us_military_logistics.md)
+
 ## CRITICAL: Ceasefire Back-Channel Structurally Destroyed — CONFIRMED FROM RECORD
 - **Oman FM issued a 'breakthrough' statement on February 27** — deal was publicly signaled as imminent
 - **Iran FM Araghchi stated on CBS that a deal was 'within reach' and negotiations were hours from conclusion** when U.S.–Israeli strikes began — on record from State Dept. transcripts
@@ -37,7 +60,7 @@
 - **Structural consequence:** This timing has **empirically validated the IRGC hardliner argument** that no negotiated exit is available — the U.S. will strike regardless of diplomatic progress
 - IRGC commanders now have concrete, publicly documented evidence that diplomatic engagement does not produce security guarantees
 - Larijani civilian council's ability to credibly promise IRGC that standing down leads to a deal has been **fundamentally undermined by documented record**
-- Duration baseline should be extended beyond Trump's stated 4–5 weeks: the mechanism that would enable a rapid ceasefire has been structurally damaged, not merely disrupted
+- Duration baseline should be extended beyond Trump's stated 4–5 weeks
 - **Rubio's statement 'the hardest hits are yet to come'** — official U.S. posture is sustained operations; categorically incompatible with a near-term off-ramp signal
 - **Lebanon front now compounds:** Hezbollah open war declaration means any future deal also requires Hezbollah stand-down — additional constraint that was not present during February 27 near-deal
 
@@ -84,7 +107,7 @@
   - Ras Tanura refinery (Saudi Arabia) — SHUTDOWN; 550,000 b/d refined products offline
   - Kuwait International Airport — struck; civilian aviation targeted
   - Fujairah Oil Industry Zone (UAE) — fire confirmed from Iranian drone debris (strategic, not random)
-  - Al Salam Naval Base (Abu Dhabi, UAE) — **first confirmed hit on UAE military infrastructure**
+  - Al Salam Naval Base (Abu Dhabi, UAE) — first confirmed hit on UAE military infrastructure
   - Qatar LNG production facilities — halted
   - Al Udeid Air Base (Qatar) — targeted; largest U.S. base in region
   - **RAF Akrotiri (Cyprus) — Shahed drone strike; NATO-member military base; geographic expansion of doctrine**
@@ -107,9 +130,10 @@
 | Surface naval vessels (Gulf of Oman) | 🔴 ELIMINATED — 0 remaining |
 | Fast-attack boats (shallow Gulf waters) | ⚠️ Still active — shallower theater |
 | Shore-based ballistic missiles | ⚠️ CONFIRMED RESIDUAL — struck West Jerusalem; RAF Akrotiri; inventory depleting |
-| Drone capability | ⚠️ Active — 541+ drones launched against Qatar; Shahed struck RAF Akrotiri |
+| Drone capability | ⚠️ Active — 541+ drones launched against Qatar; Shahed struck RAF Akrotiri; **cheap vs. expensive interceptors = attrition strategy** |
 | Air force | 🔴 SEVERELY DEGRADED — 2 jets downed over Qatar; air supremacy lost |
 | Proxy networks (Hezbollah, Houthis, Iraqi militias) | ⚠️ Still operational — **Hezbollah now in open war** |
+| Internet/information control | 🔴 MAXIMUM — 4% connectivity; white SIM architecture operational; crackdown underway |
 
 ## Iranian Strikes — Targets & Doctrine
 | Target | Status | Notes |
@@ -135,18 +159,23 @@
 - **No Hezbollah restraint mechanism:** Khamenei's death eliminated the authorization threshold that previously governed Hezbollah activation; Larijani council cannot substitute
 - **No defined U.S. end-state:** Confirmed from official sources; extends conflict duration uncertainty
 - **Nuclear escalation:** Autonomous IRGC actors; no clear command authority — HIGHEST SYSTEMIC RISK
+- **Crackdown architecture active:** Internet blackout + white SIM system = regime has significant coercive capacity; internal collapse less likely than headlines suggest
+- **Interceptor depletion:** U.S./allied interceptor stockpiles depleting at 450:1 cost disadvantage; creates independent U.S. forcing function for ceasefire at 8–12 week horizon
 
 ## Duration Signals — REVISED (Extended)
 - Trump: U.S. expected **4–5 week campaign** — **materially underestimating** actual duration
 - **IRGC official posture:** 'Operation will continue relentlessly until enemy decisively defeated'
-- **Rubio:** 'Hardest hits are yet to come' — official sustained escalation posture
+- **Rubio:** 'Hardest hits yet to come' — official sustained escalation posture
 - **Lebanon front now active:** Hezbollah open war declaration adds new front requiring resolution
 - **No Khamenei-equivalent to authorize Hezbollah stand-down:** Duration floor extended by this structural gap
 - **Pre-war deal terms now harder to achieve:** Hezbollah freeze was a term; Hezbollah is now at war
+- **Internet blackout + crackdown architecture:** Regime has coercive capacity intact; rapid internal collapse unlikely
+- **Interceptor attrition dynamic:** Iran's Shahed-heavy strategy exploiting 450:1 cost asymmetry; creates U.S. pressure point at ~8–12 weeks independent of IRGC posture
+- **Trump-Xi summit (March 31–April 2)** is first plausible diplomatic catalyst; represents ~4 week floor from current date
 - **'Pottery Barn Rule' establishment signal** increasingly accurate — all updated information reinforces longer campaign
 
 ## Trajectory
-🔴 ACUTE ESCALATION — IRGC naval threat eliminated but autonomous operations continuing; **ceasefire back-channel structurally destroyed (confirmed)**; IRGC official posture is no ceasefire; Rubio 'hardest hits yet to come'; no defined U.S. end-state; **Lebanon front now fully active — Hezbollah declared open war; Ramat David/Meron/Camp Yitzhak targeted; no Khamenei-equivalent restraint mechanism exists**; Lebanese state formally opposing Hezbollah (operationally irrelevant now; post-conflict architecture significant); **baseline conflict duration floor extended materially**; pre-war deal terms now harder to achieve (Hezbollah freeze term; Hezbollah is at war)
+🔴 ACUTE ESCALATION — IRGC naval threat eliminated but autonomous operations continuing; **ceasefire back-channel structurally destroyed (confirmed)**; IRGC official posture is no ceasefire; Rubio 'hardest hits yet to come'; no defined U.S. end-state; **Lebanon front now fully active — Hezbollah declared open war; Ramat David/Meron/Camp Yitzhak targeted; no Khamenei-equivalent restraint mechanism exists**; **internet blackout + white SIM crackdown architecture = regime coercive capacity intact; internal collapse less likely than headlines imply; monitoring of internal resistance severely degraded**; Lebanese state formally opposing Hezbollah (operationally irrelevant now; post-conflict architecture significant); **baseline conflict duration floor extended materially**; **interceptor depletion adds U.S.-side forcing function at 8–12 week horizon — Iran may be deliberately exploiting cost asymmetry**
 
 ## Watch For
 - **Hezbollah attack rate and capability vs. 'open war' declaration** — degraded state means declaration may exceed capability; watch for gap
@@ -155,9 +184,13 @@
 - Whether interim leadership council gains control over IRGC + Hezbollah autonomous operations
 - **NATO Article 5 consultations** following RAF Akrotiri strike
 - **Residual Iranian ballistic missile inventory depletion rate**
+- **Iranian internet connectivity recovery** — restoration = crackdown phase ending; sustained blackout = ongoing suppression
+- **Reports of internal Iranian unrest** — heavily lagged by information blackout; treat absence of reports as data gap, not stability signal
 - Lebanese PM Nawaf Salam's Hezbollah arrest orders — operationally irrelevant now; watch for post-conflict enforcement
 - **Lebanese displacement acceleration** — 31,000+ newly displaced as of March 3; 11,000/day crossing into Syria
 - European diplomatic pressure for ceasefire
 - **Congressional War Powers clock** (no authorization; Democrats demanding justification)
+- **Pentagon interceptor procurement/production rate announcements** — signals awareness of depletion constraint
+- **Iranian attack pattern shift toward Shaheds vs. ballistic missiles** — confirms deliberate cost-asymmetry attrition strategy
 - Chinese diplomatic intervention
 - Pre-war deal terms (zero enrichment + IAEA + proxy freeze including Hezbollah) as baseline — now harder to achieve

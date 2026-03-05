@@ -1,5 +1,5 @@
 # Iran — Succession & Post-Khamenei Governance
-**Status: 🔴 ACTIVE — Deep governance vacuum; contested power centers; ceasefire credibility structurally impaired (confirmed from record); Larijani sanctions complicate back-channel; IRGC hardliner position empirically validated; IRGC official stated posture: no ceasefire; Hezbollah restraint mechanism eliminated by Khamenei's death**
+**Status: 🔴 ACTIVE — Deep governance vacuum; contested power centers; ceasefire credibility structurally impaired (confirmed from record); Larijani sanctions complicate back-channel; IRGC hardliner position empirically validated; IRGC official stated posture: no ceasefire; Hezbollah restraint mechanism eliminated by Khamenei's death; Internet crackdown architecture active — regime coercive capacity intact**
 **As of: March 3, 2026 (UPDATED)**
 
 ## Constitutional Framework
@@ -33,7 +33,7 @@
 - **IRGC official stated posture:** 'This operation will continue relentlessly until the enemy is decisively defeated' — categorically opposed to ceasefire
 - Vahidi's orientation: **hostile to ceasefire based on official IRGC statements**
 
-## CRITICAL NEW: Hezbollah Restraint Mechanism — ELIMINATED
+## CRITICAL: Hezbollah Restraint Mechanism — ELIMINATED
 - **Pre-March 2 Hezbollah restraint** was explicitly contingent on **Supreme Leader (Khamenei) authorization threshold**
 - Khamenei's death was that threshold — Hezbollah has now declared open war
 - **No future civilian council can restrain Hezbollah via the same mechanism** — Larijani council cannot substitute for Khamenei-level religious/political authority over Hezbollah
@@ -42,6 +42,21 @@
   - Hezbollah is in open war, not proxy posture
   - No clear authorization pathway for stand-down exists
   - Hezbollah's degraded state may create incentive for ceasefire from Hezbollah side eventually, but no institutional mechanism to translate this into action
+
+## CRITICAL: Internet Crackdown Architecture — Regime Coercive Capacity Intact
+- **Post-strikes internet connectivity at ~4%** — most severe blackout in Iranian history
+- **Pattern confirmed:** Internet shutdowns are systematic **precursors to mass crackdowns**, not regime transition signals
+  - January 2026 blackout preceded largest internal crackdown since 2022 Mahsa Amini protests
+  - Current blackout = active crackdown underway or imminent, not collapse
+- **'White SIM card' two-tier architecture (formalized July 2025):**
+  - Government/security forces maintain full connectivity
+  - Civilians cut off (Starlink, landlines, text messaging all blocked)
+  - **Deliberate, pre-planned crackdown infrastructure** — not improvised response
+- **Implication for succession/stability assessment:**
+  - Regime has significant coercive capacity intact despite Khamenei's death
+  - Internal collapse from popular pressure alone is **less likely than media coverage implies**
+  - This is not a replay of 1979 — regime has a tested crackdown infrastructure the Shah lacked
+- **Monitoring caveat:** All internal Iranian resistance/opposition reporting must carry a 'data blackout' caveat for the duration of internet restrictions; absence of reports ≠ stability
 
 ## The Core Power Contest — Ceasefire Credibility Problem (Confirmed)
 ```
@@ -72,9 +87,16 @@ Hezbollah
     → No Khamenei-equivalent in Larijani council structure
     → Degraded state (heavy missile inventory depleted 2024) — may create eventual incentive for stand-down
     → But no institutional authorization mechanism for stand-down currently exists
+
+IRGC Internal Security / Basij
+    → Internet crackdown architecture operational (white SIM system)
+    → Active crackdown underway post-strikes
+    → Demonstrates security apparatus still functional under civilian political vacuum
+    → Reduces probability of rapid internal collapse
 ```
 - **Ceasefire agreements signed by the civilian council have structurally limited credibility** — empirically and institutionally damaged
 - **Resolution of Hezbollah restraint mechanism gap** is now an additional obstacle to any ceasefire framework beyond the IRGC-council split
+- **Crackdown architecture functioning** = regime more durable than pure leadership decapitation analysis suggests
 
 ## U.S. Messaging Incoherence — Three Confirmed Layers
 **Layer 1: War Goals**
@@ -105,6 +127,7 @@ Hezbollah
 ## Empirical Test of Council Authority
 - **IRGC attack rate + Hezbollah attack rate are the empirical tests**
 - **CURRENT SIGNAL: Both escalating** — IRGC expanding geographically (RAF Akrotiri); Hezbollah declaring open war
+- **Internet blackout + crackdown = security apparatus still operational** — IRGC-aligned internal security functioning independently
 - **Any operational pause coinciding with Oman channel communication → strongest possible signal** — now harder to achieve and requires dual pause (IRGC + Hezbollah)
 
 ## Assembly of Experts — Supreme Leader Timeline
@@ -113,18 +136,20 @@ Hezbollah
 - Wartime conditions complicate convening
 - **Timeline estimate:** Weeks to months minimum; potentially much longer if war continues
 - **Critical question:** Does a new Supreme Leader resolve the Hezbollah restraint gap, or does Hezbollah operate as an increasingly autonomous actor?
+- A new Supreme Leader with sufficient religious/political authority over Hezbollah is the only institutional mechanism to restore the Hezbollah restraint architecture
 
 ## Key Indicators to Watch (Priority Order)
 1. **IRGC attack rate trajectory** — current signal: expanding, not contracting
 2. **Hezbollah attack rate and capability ceiling** — degraded state; watch for gap between 'open war' declaration and actual capability
 3. **Who, if anyone, can authorize Hezbollah stand-down** — single biggest structural gap in ceasefire architecture
 4. **Whether any Oman channel communication produces BOTH IRGC AND Hezbollah operational pause**
-5. **IRGC commander (Vahidi) public statements** — 'relentless until victory' posture; watch for softening
-6. **U.S. signals on Larijani sanctions modification** — would signal U.S. seriousness about ceasefire
-7. **Assembly of Experts convening** — determines Supreme Leader timeline; new SL might restore Hezbollah restraint mechanism or might not
-8. **Whether Trump contradicts Rubio/Vance/Hegseth again** — each contradiction further impairs ceasefire credibility
-9. **MAGA base reaction to war duration extension** — domestic political constraint
-10. **Lebanese PM Salam Hezbollah ban** — post-conflict architecture signal; watch enforcement trajectory
+5. **Iranian internet connectivity** — restoration = crackdown phase ending; report absence ≠ internal stability signal during blackout
+6. **IRGC commander (Vahidi) public statements** — 'relentless until victory' posture; watch for softening
+7. **U.S. signals on Larijani sanctions modification** — would signal U.S. seriousness about ceasefire
+8. **Assembly of Experts convening** — determines Supreme Leader timeline; new SL might restore Hezbollah restraint mechanism or might not
+9. **Whether Trump contradicts Rubio/Vance/Hegseth again** — each contradiction further impairs ceasefire credibility
+10. **MAGA base reaction to war duration extension** — domestic political constraint
+11. **Lebanese PM Salam Hezbollah ban** — post-conflict architecture signal; watch enforcement trajectory
 
 ## Trajectory
-🔴 DEEPLY UNSTABLE — No legitimate Supreme Leader; interim council lacks constitutional mandate and IRGC command authority; **Hezbollah restraint mechanism eliminated by Khamenei's death; Hezbollah now in open war with no clear authorization mechanism for stand-down**; ceasefire mechanism structurally destroyed (confirmed from record); IRGC official posture is 'relentless until victory'; three-layer U.S. messaging incoherence confirmed; **ceasefire now requires IRGC + Hezbollah dual stand-down with no clear mechanism for either**; duration baseline extended materially
+🔴 DEEPLY UNSTABLE — No legitimate Supreme Leader; interim council lacks constitutional mandate and IRGC command authority; **Hezbollah restraint mechanism eliminated by Khamenei's death; Hezbollah now in open war with no clear authorization mechanism for stand-down**; ceasefire mechanism structurally destroyed (confirmed from record); IRGC official posture is 'relentless until victory'; three-layer U.S. messaging incoherence confirmed; **ceasefire now requires IRGC + Hezbollah dual stand-down with no clear mechanism for either**; **internet crackdown architecture operational — regime coercive capacity intact; rapid internal collapse less likely than media coverage implies; internal resistance reporting severely degraded by blackout**; duration baseline extended materially
