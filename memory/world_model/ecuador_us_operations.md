@@ -1,49 +1,61 @@
 # Ecuador — U.S. Special Forces Operations
-**Status: 🟡 LOW PRIORITY — Monitor for escalation; limited current global supply chain impact**
-**As of: March 3, 2026**
+**Status: 🟡 MONITOR — Advisory/intelligence/logistics role confirmed (NOT direct combat); Manta Air Base re-activated; cartel retaliation risk to export infrastructure**
+**As of: March 3, 2026 (UPDATED)**
 
-## Situation Overview
-- **U.S. Special Forces ground operations confirmed active as of March 3, 2026**
-- Legal framework: SOFA covers temporary deployments
-- **Constitutional ban on permanent foreign military bases upheld in November 2025 referendum** (>60% voted against permanent bases)
+## Situation Overview — CONFIRMED DETAILS
+- **U.S. role confirmed:** Advisory, intelligence-sharing, and logistics support — **NOT direct combat participation in raids** (key distinction from earlier characterization)
+- **SOUTHCOM General Donovan + SOCOM Rear Admiral Schafer visited Ecuador March 2** — met President Noboa and Minister of Defense immediately before operations launched
+- **Eloy Alfaro Air Base (Manta) confirmed hosting U.S. Air Force elements since December 2025** — this is a **re-activation of former Forward Operating Base** from the early 2000s
+- **Ecuador formally requested the U.S. presence:** Noboa ordered foreign ministry to seek agreements in February 2026
+- SOFA covers temporary deployments
+- **Constitutional ban on permanent foreign military bases upheld in November 2025 referendum** (>60% voted against permanent bases) — Manta presence is formally temporary; legal ambiguity remains
 - Noboa government **weakened post-referendum**; active constitutional court conflict
 - Three political shutdowns since 2019; Noboa declared 'internal armed conflict' against 20+ designated cartel organizations
+
+## Security Context
+- **Homicide rate:** 6.7/100k in 2020 → **44.5/100k in 2025** — highest in South America; dramatic deterioration
+- U.S. cartel FTO designations align with Noboa's internal armed conflict declaration
+- **Americas Counter Cartel Conference (March 4, SecDef Hegseth):** Regional coordination signal — Ecuador operations part of broader U.S. counter-cartel offensive
+- Noboa's domestic political weakness = dependency on U.S. support, but referendum outcome limits options
 
 ## Political-Economic Context
 - **GDP:** -2.0% in 2024; +3.8% recovery in 2025; ~2% forecast for 2026
 - **Fiscal deficit:** $5.3B with no clear coverage plan
 - **IMF financing:** Expanded to $5B
-- U.S. cartel FTO designations align with Noboa's internal armed conflict declaration
-- Noboa's domestic political weakness = dependency on U.S. support, but referendum outcome limits options
+- Noboa's domestic political weakness = dependency on U.S. support, but referendum outcome limits permanent basing options
 
 ## Key Infrastructure — Relevance to Global Supply Chains
 | Port/Facility | Function | Current Status |
 |---|---|---|
-| Guayaquil (main port) | Primary container/export port | No disruption confirmed |
-| Manta (air base/port) | Air base cited as cocaine transit point | No legitimate trade disruption |
+| Guayaquil (main port) | Primary container/export port; banana, shrimp, cocoa exports | No disruption confirmed |
+| Manta (Eloy Alfaro Air Base) | Re-activated U.S. Air Force Forward Operating Base since Dec 2025 | Operational; cited as prior cocaine transit point |
 
 - **Key commercial ports not disrupted** by current operations
 - Ecuador is the **world's largest banana exporter**; also significant: shrimp, cocoa, cut flowers, crude oil
-- **None of these export flows currently disrupted** by U.S. Special Forces operations
+- **None of these export flows currently disrupted** by U.S. advisory operations
 
 ## Cartel Threat to Infrastructure
 - Ecuadorian cartels (Los Choneros, Lobos, others — many with Mexico cartel affiliations) have targeted infrastructure before
 - Port facilities and energy infrastructure could be targeted in retaliation for military operations
-- U.S. Special Forces presence may deter or may inflame cartel response
+- U.S. advisory presence may deter or may inflame cartel response
+- **Cartel retaliation risk to Guayaquil:** Low probability but non-zero; would have global food/retail supply chain impact given banana export concentration
 
 ## Connection to Broader U.S. Latin America Posture
 - Part of broader Trump administration counter-cartel/counter-narcotics offensive
 - Consistent with FTO designations of Mexican cartels, MS-13, Tren de Aragua
 - Ecuador had become a major cocaine transshipment point post-2020 due to cartel territorial expansion
 - Noboa's weakness post-referendum creates political risk for U.S. operational footprint
+- **Americas Counter Cartel Conference (March 4):** Ecuador is model case for regional coordination
 
 ## Trajectory
-🟡 LOW CURRENT IMPACT — Monitor for escalation; primary risk is cartel retaliation targeting export infrastructure (banana/shrimp ports) or political collapse of Noboa government forcing U.S. operational pause
+🟡 LOW CURRENT IMPACT — Monitor for escalation; primary risk is cartel retaliation targeting export infrastructure (banana/shrimp ports) or political collapse of Noboa government forcing U.S. operational pause; Manta re-activation confirms deeper U.S. commitment than initially characterized
 
 ## Watch For
-- Cartel retaliatory attacks on Guayaquil or Manta port/airport infrastructure
+- **Cartel retaliatory attacks on Guayaquil or Manta port/airport infrastructure** (low probability; high impact)
 - **Banana export disruption** (world's largest exporter; concentrated through Guayaquil) — would have global food/retail supply chain impact
+- **Americas Counter Cartel Conference outcomes** (March 4, SecDef Hegseth) — regional coordination signal and potential Ecuador escalation signal
 - Noboa constitutional court standoff resolution
-- Whether November 2025 referendum result forces U.S. to renegotiate operational terms
+- Whether November 2025 referendum result forces U.S. to renegotiate Manta operational terms
 - IMF compliance review (fiscal deficit $5.3B with no clear coverage plan)
 - Political collapse scenario: premature elections or coup would immediately affect U.S. operational legal basis
+- Whether 'advisory' role expands toward direct operational participation over time

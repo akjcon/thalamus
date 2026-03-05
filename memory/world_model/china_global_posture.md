@@ -15,8 +15,10 @@
   - **Iranian oil:** ~85%+ of Iranian exports go to China; sanctioned crude imports ~2.6 mb/d in 2025 (~22% of total Chinese oil imports)
   - **Qatar LNG:** Major Chinese customer; production halted
   - **Saudi/UAE oil:** China's primary non-Iran Gulf suppliers; infrastructure under attack
-- **CONFIRMED: China NOT notified of U.S.-Israel strikes in advance** (China MFA statement, March 3, 2026)
-  - Standard diplomatic protest language; not escalatory
+- **CONFIRMED: China NOT notified of U.S.-Israel strikes in advance** (China MFA statement, March 3, 2026) — standard diplomatic protest language; not escalatory
+- **CONFIRMED: China evacuated 3,000+ nationals from Iran before providing any material support signal** — reveals strategic priority ordering clearly: self-interest (energy access, national protection) ahead of alliance rhetoric
+- **CONFIRMED: China publicly denied arms transfer of CM-302 anti-ship missiles to Iran** (March 2 press conference) — reduces near-term risk of Chinese military hardware flowing to Iran-aligned forces during current conflict
+- **China-Russia-Iran trilateral pact (January 29, 2026) confirmed** — diplomatic/intelligence coordination framework, NOT a mutual defense treaty; China retains full freedom of action
 - **CONFIRMED: Chinese-flagged vessels receiving de facto Hormuz exemption from Iran**
   - Chinese-flagged VLCC (New Vision, China Merchants Group) confirmed transiting Hormuz March 1 (Kpler)
   - Iran granting de facto transit access to Chinese-flagged vessels while excluding Western operators
@@ -26,6 +28,7 @@
   - Driven by **self-interest** (50% of Chinese energy imports transit Hormuz), NOT as a U.S. concession
   - China MFA has communicated directly to Tehran on Hormuz stability
 - **Confirmed response: muted verbal condemnation of strikes; no material support pledge for Iran**
+- **Net strategic posture:** China is *comfortable* with current status quo — Hormuz exemption + 3-month stockpile = not pushing for fastest possible resolution; incentive is managed resolution, not rapid resolution
 
 ### China's Energy Buffer — CRITICAL MITIGATING FACTOR
 - **CONFIRMED: China holds 1.2–1.4 billion barrels of oil in strategic/commercial stockpiles (Kpler)**
@@ -39,6 +42,10 @@
   - **No Chinese demand destruction providing price relief** — China will draw stocks before cutting purchasing; sustains demand for Atlantic-basin crudes
 - **CONFIRMED: China's 15th Five-Year Plan (drafting) formally designated energy security as top priority**
   - Stock build is both strategic and policy-driven
+- **Chinese state refiners (Sinopec, CNOOC, PetroChina) structurally diversifying procurement** toward Atlantic-basin crude (West Africa, U.S. Gulf) while maintaining some Gulf access via Chinese-flagged vessel exemption
+  - This procurement relationship shift is likely to persist **quarters post-ceasefire**, not just during active conflict
+  - Creates sustained VLCC demand on West Africa→Asia and U.S. Gulf→Asia routes independent of war risk premium
+  - Reinforces durability of Atlantic-basin VLCC route shift (Frontline/FRO, Nordic American Tankers/NAT as proxies)
 
 ### Two Sessions (March 2026) — IMMINENT UREA DECISION
 - China's **'two sessions' meeting is active now (March 2026)** — this is the forum where urea export restriction decision will be signaled
@@ -102,6 +109,7 @@
 
 ### Russia Relationship
 - 'No limits' partnership maintained; buying Russian oil, gas; providing dual-use goods
+- **China-Russia-Iran trilateral pact (Jan 29, 2026):** Diplomatic/intelligence coordination framework only — NOT mutual defense; China retains freedom of action
 - Russia benefits from energy price spike; China partially cushioned by Hormuz vessel exemption
 - **Power of Siberia 2 acceleration: strongest shared interest in relationship right now**
 
@@ -117,7 +125,7 @@
 - **5% YoY GDP growth in Nov 2025** — relative economic strength; may increase willingness to restrict urea exports for domestic food security
 
 ## Trajectory
-⚠️ ASSERTIVE but managing energy supply crisis with significant mitigation via stockpiles + Hormuz vessel exemption; **not desperate** — 3-month buffer gives China patience European buyers lack; incentive to maintain muted posture; applying quiet Iran pressure on Hormuz from self-interest; **two sessions urea export restriction decision imminent (days, not weeks) — #1 swing variable for global nitrogen markets**; Trump-Xi summit March 31–April 2 is key diplomatic moment; Power of Siberia 2 acceleration likely; CPEC risk from Pakistan-Afghanistan escalation
+⚠️ ASSERTIVE but managing energy supply crisis with significant mitigation via stockpiles + Hormuz vessel exemption; **not desperate** — 3-month buffer + preferential Hormuz access gives China patience European buyers lack; evacuated nationals before signaling any support for Iran — self-interest confirmed dominant; CM-302 arms transfer denied — not directly arming Iran; trilateral pact is coordination, not mutual defense; incentive to maintain muted posture; applying quiet Iran pressure on Hormuz from self-interest; **two sessions urea export restriction decision imminent (days, not weeks) — #1 swing variable for global nitrogen markets**; Trump-Xi summit March 31–April 2 is key diplomatic moment; Power of Siberia 2 acceleration likely; Chinese state refiner procurement shift toward Atlantic-basin crude is structural (quarters-long, not just spot)
 
 ## Watch For (Priority Order)
 1. **Two sessions press briefings on domestic fertilizer supply adequacy** (active NOW — days, not weeks) — **#1 swing variable for global nitrogen markets**; watch Ministry of Commerce and agriculture ministry statements
@@ -125,8 +133,9 @@
 3. **Hormuz pressure on Iran via Chinese back-channels** — any signal China is escalating pressure = ceasefire acceleration signal
 4. **Power of Siberia 2 negotiation signals** — acceleration = China expecting prolonged Qatar LNG outage
 5. **Whether Chinese-flagged vessel Hormuz exemption holds** — any change would sharply alter China's incentive structure
-6. **Chinese strategic stockpile draw-down rate** (Kpler) — if accelerates, China's patience calculus changes
-7. Chinese MFA statements on Pakistan-Afghanistan = CPEC threat assessment proxy
-8. JKM price trajectory as Chinese gas cost indicator
-9. Chinese rare earth export control decisions (less likely while summit approaching)
-10. NK dialogue posture changes as axis-consolidation signal
+6. **Chinese state refiner procurement data** (Sinopec/CNOOC/PetroChina) — Atlantic-basin crude purchase volumes as structural demand shift confirmation
+7. **Chinese strategic stockpile draw-down rate** (Kpler) — if accelerates, China's patience calculus changes
+8. Chinese MFA statements on Pakistan-Afghanistan = CPEC threat assessment proxy
+9. JKM price trajectory as Chinese gas cost indicator
+10. Chinese rare earth export control decisions (less likely while summit approaching)
+11. Any CM-302 or other Chinese military hardware appearing in Iranian-aligned theater — would contradict denial

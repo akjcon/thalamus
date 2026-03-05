@@ -1,5 +1,5 @@
 # Oil & Gas Markets — Key Drivers
-**Status: 🔴 ACUTE PRICE SPIKE — Refined products shock MORE acute than crude; Iraq forced shut-ins adding to supply removal; bifurcated oil market emerging; China 3-month stockpile buffer sustaining Atlantic-basin crude demand; Atlantic-basin VLCC route shift MORE DURABLE than war risk premium**
+**Status: 🔴 ACUTE PRICE SPIKE — Refined products shock MORE acute than crude; Iraq forced shut-ins adding to supply removal; bifurcated oil market emerging; China 3-month stockpile buffer + state refiner procurement shift sustaining Atlantic-basin crude demand (quarters-long, not spot); Atlantic-basin VLCC route shift MORE DURABLE than war risk premium**
 **As of: March 3, 2026 (UPDATED)**
 
 ## CURRENT CRISIS — CONFIRMED PRICE DATA
@@ -19,9 +19,13 @@
 ## China Demand Dynamics — NO RELIEF FROM CHINESE DEMAND DESTRUCTION
 - **CONFIRMED: China holds 1.2–1.4 billion barrels of oil stockpile (Kpler)** — roughly 3 months of supply buffer
 - **China will draw down stocks before cutting purchasing** — means no Chinese demand destruction providing price relief during initial weeks/months of crisis
+- **Chinese state refiners (Sinopec, CNOOC, PetroChina) structurally diversifying procurement toward Atlantic-basin crude** (West Africa, U.S. Gulf) while maintaining some Gulf access via Chinese-flagged vessel exemption
+  - This procurement relationship shift is likely to persist **quarters post-ceasefire**, reinforcing durable VLCC demand on Atlantic-basin routes
+  - Driven by strategic energy security directive (15th Five-Year Plan) + current disruption — not a temporary spot decision
 - Sustains demand for **Atlantic-basin crudes** (West Africa, U.S. Gulf) as Chinese buyers seek non-Gulf, Western-insurable alternatives
 - China's buffer also means Beijing is not desperate for fast Hormuz resolution
-- **Chinese sanctioned crude imports were ~2.6 mb/d in 2025 (22% of total imports)** — volume of disrupted supply channels is large, reinforcing stock draw-down pattern
+- **Chinese-flagged vessels receiving de facto Hormuz exemption** — China accessing Gulf crude at discount via Chinese-flagged vessels while Western benchmark (Brent–Dubai spread) stays elevated
+- **CONFIRMED: China evacuated 3,000+ nationals from Iran before providing any material support signal** — self-interest dominant; CM-302 arms transfer denied — China not directly arming Iran
 - **5% YoY GDP growth in Nov 2025** — economic strength; 15th Five-Year Plan designates energy security as top priority; stock build is policy-driven
 
 ## Refined Products — CRITICAL: MORE DISRUPTED THAN CRUDE
@@ -38,9 +42,10 @@
 - Naphtha from Ras Tanura is primary feedstock for plastics, synthetic fibers, chemical intermediates, packaging
 - **Distinct downstream industries** from fuel shock
 - European petrochemical companies face: higher naphtha feedstock costs + higher energy costs (TTF) simultaneously
-- **30–60 day contract buffer** before naphtha shortage fully hits plastics company financials — first earnings guidance warnings expected 4–6 weeks out
+- **30–60 day contract buffer** before naphtha shortage fully hits plastics company financials
+- **Sharpened timeline: first earnings guidance impacts expected late March to mid-April 2026**
 - **Specific company proxies:**
-  - **LyondellBasell (LYB)** — plastics/polyolefins; primary proxy
+  - **LyondellBasell (LYB)** — plastics/polyolefins; **primary proxy**; watch for earnings guidance pre-announcements late March
   - **BASF** — chemicals; **dual exposure**: fertilizer (nitrogen) AND petrochemical (naphtha) channels
   - **Covestro** — specialty chemicals
   - **Ineos** — polyolefins, chemical intermediates
@@ -71,7 +76,7 @@
 - **Venezuela:** Still disrupted from U.S. intervention
 - **Iran:** ~1.5–2 mb/d effectively offline (Hormuz insurance-closed + conflict)
 - **Russia:** Shadow fleet continues; not directly affected; **benefiting significantly from price spike**
-- **West Africa (Nigeria, Angola) and U.S. Gulf (WTI):** Becoming premium alternatives for Asian buyers seeking non-Gulf crude; structural demand shift confirmed
+- **West Africa (Nigeria, Angola) and U.S. Gulf (WTI):** Becoming premium alternatives for Asian buyers seeking non-Gulf crude; structural demand shift confirmed — **Chinese state refiner procurement diversification makes this quarters-long, not temporary**
 
 ## Bifurcated Oil Market — NEW STRUCTURAL DYNAMIC
 - **Western benchmark (Brent):** Priced at full war risk premium; Western-insured operators locked out of Gulf
@@ -79,11 +84,12 @@
   - Iraqi crude physically stuck in storage; Iranian crude also Hormuz-blocked for Western operators
   - Chinese/Iranian-flagged vessels continuing limited transit (Kpler confirmed)
   - **Shadow fleet absorbing Gulf trade at discounted prices**
+  - **Brent–Dubai spread** = primary real-time bifurcation severity indicator
 - **Atlantic-basin crude (West Africa, U.S. Gulf):** Structural demand surge from Asian buyers seeking non-Gulf, Western-insurable alternatives
   - Nigeria, Angola, U.S. Gulf (WTI) grades becoming premium alternatives
   - **VLCC ton-mile demand on West Africa→Asia and U.S. Gulf→Asia routes spiking materially**
-  - **China's stock draw-down sustains this demand even as Hormuz remains closed**
-  - **More durable than general war risk premium** — structural even if Gulf partially reopens; Asian refinery procurement relationships create stickiness
+  - **China's stock draw-down + state refiner procurement diversification sustains this demand durably** even as Hormuz remains closed or partially reopens
+  - **More durable than general war risk premium** — structural via (1) Chinese state refiner supply agreement restructuring, (2) 15th Five-Year Plan energy security directive, (3) Asian refinery procurement relationship changes
 - **VLCC company proxies for structural Atlantic-basin shift:**
   - **Frontline (FRO)** — VLCC-heavy; primary proxy
   - **Nordic American Tankers (NAT)** — Suezmax fleet; Atlantic-basin routes
@@ -92,6 +98,7 @@
   - West Africa (Nigerian Bonny Light, Angolan Girassol) spot premiums vs. Gulf crudes
   - **West Africa→Asia VLCC charter rates** — structural demand shift confirmation
   - **U.S. Gulf→Asia VLCC charter rates** — structural demand shift confirmation
+  - Chinese state refiner (Sinopec/CNOOC/PetroChina) Atlantic-basin procurement volumes
 
 ## LNG Market — ACUTE CRISIS
 - Qatar halted: ~77 mt/year (~20% global supply) offline
@@ -142,11 +149,12 @@
 - **Ammonia/nitrogen fertilizers:** TTF above curtailment threshold; Tampa benchmark spike ~late March; IRGC posture implies duration extends through planting season
 - **Petrochemicals (distinct channel):**
   - Naphtha from Ras Tanura offline → 30–60 day contract buffer before hitting company financials
-  - First earnings guidance warnings: 4–6 weeks (LYB, BASF, Covestro, Ineos, Borealis)
+  - **First earnings guidance impacts: late March to mid-April 2026** (LYB, BASF, Covestro, Ineos, Borealis)
+  - LyondellBasell (LYB) as primary proxy — watch for late March earnings pre-announcements
   - Currently undertracked by markets
 - **Refined product crack spreads:** Widening sharply; most acute indicator for refinery-poor nations
 - **Iraq reservoir damage (new):** Structural supply floor even post-ceasefire; slower production recovery than market is pricing
-- **Atlantic-basin VLCC route shift:** More durable than general war risk premium; Asian refinery relationship changes create stickiness post-ceasefire; **Frontline (FRO) and Nordic American Tankers (NAT) as proxies**
+- **Atlantic-basin VLCC route shift:** More durable than general war risk premium; Chinese state refiner procurement diversification creates structural stickiness (quarters-long); **Frontline (FRO) and Nordic American Tankers (NAT) as proxies**
 
 ## Key Price Drivers Ranked (March 3, 2026)
 1. **IRGC/U.S. posture evolution** — 'relentless until victory' + 'hardest hits' = duration baseline extended; any posture change is primary inflection
@@ -156,13 +164,14 @@
 5. **Trump-Xi summit (March 31–April 2)** — first plausible diplomatic catalyst for ceasefire framework
 6. **Fujairah bypass recovery** — GPS jamming + fire status; strategic re-targeting risk means recovery may not be durable
 7. **Bifurcated market spread** — Brent–Dubai spread; West Africa/U.S. Gulf premiums; VLCC Atlantic routes
-8. **Saudi/UAE additional infrastructure damage** — Iran doctrine = will continue systematic targeting
-9. **Hormuz insurance re-engagement** — fastest-resolving variable in theory; needs credible ceasefire; near-term implausible
-10. **U.S. SPR/IEA release** — downside crude price pressure if deployed
-11. **Chinese urea export restriction** — key nitrogen market variable; two sessions active NOW (days, not weeks)
+8. **Chinese state refiner procurement shift durability** — Sinopec/CNOOC/PetroChina Atlantic-basin volumes as structural demand signal
+9. **Saudi/UAE additional infrastructure damage** — Iran doctrine = will continue systematic targeting
+10. **Hormuz insurance re-engagement** — fastest-resolving variable in theory; needs credible ceasefire; near-term implausible
+11. **U.S. SPR/IEA release** — downside crude price pressure if deployed
+12. **Chinese urea export restriction** — key nitrogen market variable; two sessions active NOW (days, not weeks)
 
 ## Trajectory
-🔴 ACUTE CRISIS — Brent now settled $81.40 (+12% from conflict onset; $23+ above pre-conflict EIA baseline); refined products MORE disrupted than crude; **Iraq forced shut-ins (1.5–3 mb/d) adding structural supply removal beyond Hormuz closure, with reservoir damage risk extending recovery timeline post-ceasefire**; **Saudi Red Sea rerouting attempt FAILING — confirmed NO viable bypass at meaningful volumes**; **bifurcated market emerging** (Brent war premium vs. distressed Gulf crude for shadow fleet); **China's 3-month stockpile buffer means no Chinese demand destruction — sustains Atlantic-basin crude demand durably**; **West Africa→Asia and U.S. Gulf→Asia VLCC route shift more durable than general war risk premium (Frontline/FRO and Nordic American Tankers/NAT as proxies)**; Fujairah bypass partially compromised + strategic re-targeting doctrine; Hormuz insurance-enforced; Qatar LNG minimum 3–6 week physical floor (likely extends further); **naphtha/petrochemical shock distinct and undertracked** (30–60 day contract buffer; first earnings warnings 4–6 weeks: LYB, BASF, Covestro, Ineos, Borealis)
+🔴 ACUTE CRISIS — Brent now settled $81.40 (+12% from conflict onset; $23+ above pre-conflict EIA baseline); refined products MORE disrupted than crude; **Iraq forced shut-ins (1.5–3 mb/d) adding structural supply removal beyond Hormuz closure, with reservoir damage risk extending recovery timeline post-ceasefire**; **Saudi Red Sea rerouting attempt FAILING — confirmed NO viable bypass at meaningful volumes**; **bifurcated market emerging** (Brent–Dubai spread; Brent war premium vs. distressed Gulf crude for shadow fleet); **China's 3-month stockpile buffer + state refiner procurement diversification = no Chinese demand destruction; sustained Atlantic-basin crude demand that is quarters-long, not spot**; **West Africa→Asia and U.S. Gulf→Asia VLCC route shift more durable than general war risk premium (Frontline/FRO and Nordic American Tankers/NAT as proxies)**; Fujairah bypass partially compromised + strategic re-targeting doctrine; Hormuz insurance-enforced; Qatar LNG minimum 3–6 week physical floor (likely extends further); **naphtha/petrochemical shock distinct and undertracked** (30–60 day contract buffer; first earnings impacts late March to mid-April: LYB primary proxy, BASF, Covestro, Ineos, Borealis)
 
 ## Watch For (Priority Order)
 1. **Trump-Xi summit (March 31–April 2)** — first plausible diplomatic catalyst; Hormuz ceasefire framework signal
@@ -170,18 +179,19 @@
 3. **Iraq storage fill rate and production cut trajectory** — watch for 3 mb/d doubling; reservoir damage timeline
 4. **Crack spread trajectory (diesel, gasoline, jet fuel separately from crude)** — refined products shortage signal
 5. **West Africa→Asia and U.S. Gulf→Asia VLCC charter rates** — structural Atlantic-basin demand shift confirmation; track separately from Gulf war risk premium; **Frontline (FRO) and Nordic American Tankers (NAT) as proxies**
-6. **Brent–Dubai spread and West Africa spot premiums (Nigerian Bonny Light, Angolan Girassol) vs. Gulf crudes** — bifurcated market signal
-7. **Naphtha price and European/Asian petrochemical margin guidance** — LYB, BASF, Covestro, Ineos earnings pre-announcements in 4–6 weeks
-8. **Fujairah vessel backlog and GPS jamming status** — bypass recovery; note strategic re-targeting risk
-9. **Saudi Red Sea rerouting status** — currently failing; any Houthi stand-down would change calculus
-10. **Lloyd's/P&I club Gulf zone insurance pricing** — ceasefire credibility barometer; March 5 next hard catalyst
-11. **Qatar LNG restart signal** (not before 3–6 weeks minimum)
-12. Ras Tanura damage assessment and restart timeline
-13. IEA/U.S. SPR coordinated release announcement
-14. OPEC+ emergency statement
-15. China emergency energy response (strategic reserve draw-down rate; Power of Siberia 2 signals)
-16. **Two sessions urea restriction signal** — active NOW; days, not weeks
-17. **TTF–Henry Hub spread trajectory** — fertilizer producer advantage duration signal
-18. **Yara/OCI/BASF curtailment announcements** — fertilizer cascade confirmation this week
-19. Tampa ammonia benchmark (~late March)
-20. Rubio/Trump public statements on campaign duration/end-state
+6. **Chinese state refiner (Sinopec/CNOOC/PetroChina) Atlantic-basin crude procurement volumes** — confirms quarters-long structural shift
+7. **Brent–Dubai spread and West Africa spot premiums (Nigerian Bonny Light, Angolan Girassol) vs. Gulf crudes** — bifurcated market signal
+8. **Naphtha price and LyondellBasell (LYB) earnings pre-announcements** — late March to mid-April; BASF, Covestro, Ineos, Borealis secondary
+9. **Fujairah vessel backlog and GPS jamming status** — bypass recovery; note strategic re-targeting risk
+10. **Saudi Red Sea rerouting status** — currently failing; any Houthi stand-down would change calculus
+11. **Lloyd's/P&I club Gulf zone insurance pricing** — ceasefire credibility barometer; March 5 next hard catalyst
+12. **Qatar LNG restart signal** (not before 3–6 weeks minimum)
+13. Ras Tanura damage assessment and restart timeline
+14. IEA/U.S. SPR coordinated release announcement
+15. OPEC+ emergency statement
+16. China emergency energy response (strategic reserve draw-down rate; Power of Siberia 2 signals)
+17. **Two sessions urea restriction signal** — active NOW; days, not weeks
+18. **TTF–Henry Hub spread trajectory** — fertilizer producer advantage duration signal
+19. **Yara/OCI/BASF curtailment announcements** — fertilizer cascade confirmation this week
+20. Tampa ammonia benchmark (~late March)
+21. Rubio/Trump public statements on campaign duration/end-state

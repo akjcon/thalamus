@@ -1,5 +1,5 @@
 # Global Shipping — Disruptions & Routes
-**Status: 🔴 UNPRECEDENTED DUAL CHOKEPOINT + TRAPPED FLEET CRISIS — P&I Club Withdrawals Effective March 5; Iraq storage overflow compounding supply removal; bifurcated tanker market forming; Atlantic-basin VLCC route shift MORE DURABLE than war risk premium**
+**Status: 🔴 UNPRECEDENTED DUAL CHOKEPOINT + TRAPPED FLEET CRISIS — P&I Club Withdrawals Effective March 5; Iraq storage overflow compounding supply removal; bifurcated tanker market forming; Atlantic-basin VLCC route shift MORE DURABLE than war risk premium — sustained by Chinese state refiner procurement shift (quarters-long, not spot)**
 **As of: March 3, 2026 (UPDATED)**
 
 ## CRITICAL SITUATION: Trapped Fleet — Most Underpriced Consequence
@@ -36,11 +36,12 @@
 ## Bifurcated Tanker Market — STRUCTURAL DYNAMIC
 - **Shadow fleet absorbing Gulf trade:** Iranian, Chinese, and other non-Western-insured vessels continuing limited Hormuz transit; buying discounted Gulf crude
 - **Compliant fleet scarce on Atlantic-basin routes:** As Western operators flee Gulf, capacity redeploys to Atlantic-basin routes → Atlantic VLCC rates spiking
-- **Atlantic-basin crude routing — structural demand shift:**
+- **Atlantic-basin crude routing — structural demand shift (more durable than war risk premium):**
   - Gulf crude disruption redirecting Asian buyer attention to West Africa (Nigeria, Angola) and U.S. Gulf (WTI)
   - **VLCC ton-mile demand on West Africa→Asia and U.S. Gulf→Asia routes spiking materially**
+  - **Chinese state refiners (Sinopec, CNOOC, PetroChina) structurally diversifying procurement toward Atlantic-basin crude** — procurement relationship changes create stickiness lasting quarters post-ceasefire, not just spot purchases during conflict
   - **China's 3-month stockpile buffer means China will draw stocks and keep purchasing Atlantic-basin crude** — no demand destruction; sustained demand even if Hormuz partially reopens
-  - **This route shift is MORE DURABLE than general war risk premium** — Asian refinery procurement relationship changes create stickiness post-ceasefire; refiners restructure medium-term supply agreements, not just spot purchases
+  - **This route shift is MORE DURABLE than general war risk premium:** (1) Asian refinery procurement relationship changes, (2) Chinese state refiner structural diversification directive, (3) medium-term supply agreements, not just spot purchases
 - **Company proxies for structural Atlantic-basin shift:**
   - **Frontline (FRO)** — VLCC-heavy; primary proxy for Atlantic-basin route shift
   - **Nordic American Tankers (NAT)** — Suezmax fleet; Atlantic-basin routes
@@ -48,6 +49,7 @@
   - West Africa→Asia VLCC charter rates (Nigerian Bonny Light, Angolan Girassol as spot premium proxies)
   - U.S. Gulf→Asia VLCC charter rates
   - Rising rates on these specific routes = confirmation of sustained structural route shift, not just temporary disruption
+  - Brent–Dubai spread as bifurcation severity indicator
 
 ## Red Sea / Bab el-Mandeb (🔴 ACTIVE ATTACKS)
 - Houthis resumed attacks on U.S. and Israeli-flagged ships
@@ -100,7 +102,7 @@
 - Container rates: Spiking sharply as Red Sea reopening reverses + 450,000 TEU trapped
 - Tanker rates: **Extreme spike** — Hormuz + Red Sea simultaneously; VLCC Atlantic routes surging
 - **Bifurcated tanker market:** Atlantic-basin VLCC (West Africa→Asia, U.S. Gulf→Asia) rates spiking as compliant fleet redeploys away from Gulf; shadow fleet absorbing Gulf trade at different price structure
-- **Atlantic-basin route shift more durable than war risk premium** — stickiness via refinery procurement relationship changes; China's 3-month stockpile sustains demand
+- **Atlantic-basin route shift more durable than war risk premium** — stickiness via Chinese state refiner procurement diversification (quarters-long); refinery supply agreement restructuring; China's 3-month stockpile sustains demand
 - War risk insurance: **P&I clubs withdrawing coverage effective March 5** — functional exclusion for ~90% of global tonnage
 - Dry bulk: Elevated; commodity disruptions rippling through
 
@@ -116,20 +118,21 @@
 | Turkish Straits | Russian Black Sea oil | ⚠️ Moderate |
 
 ## Trajectory
-🔴 UNPRECEDENTED — Both chokepoints simultaneously disrupted; P&I club coverage withdrawals effective March 5 (Gard, Skuld, NorthStandard, London P&I, American Club) make Gulf effectively uninsurable for ~90% of global tonnage; 170 containerships + 150+ tankers trapped; Jebel Ali paralyzed; DXB air cargo disrupted; Hormuz transit down 81%; **Iraq storage overflow adding physical supply removal beyond Hormuz closure; bifurcated tanker market forming (shadow fleet at discount vs. Atlantic-basin VLCC surge)**; **Atlantic-basin VLCC route shift more durable than war risk premium — China's 3-month stockpile sustains demand; Frontline (FRO) and Nordic American Tankers (NAT) as structural shift proxies**; Saudi Red Sea rerouting attempt confirmed failing; no viable bypass at meaningful volumes for Western-insured vessels; Cape rerouting creating permanent throughput reduction; 6–8 week retail consequence window becoming high-confidence if no resolution by ~March 17; **Trump-Xi summit (March 31–April 2) is first plausible diplomatic catalyst for P&I re-engagement**
+🔴 UNPRECEDENTED — Both chokepoints simultaneously disrupted; P&I club coverage withdrawals effective March 5 (Gard, Skuld, NorthStandard, London P&I, American Club) make Gulf effectively uninsurable for ~90% of global tonnage; 170 containerships + 150+ tankers trapped; Jebel Ali paralyzed; DXB air cargo disrupted; Hormuz transit down 81%; **Iraq storage overflow adding physical supply removal beyond Hormuz closure; bifurcated tanker market forming (shadow fleet at discount vs. Atlantic-basin VLCC surge)**; **Atlantic-basin VLCC route shift more durable than war risk premium — Chinese state refiner procurement diversification is structural (quarters-long); China's 3-month stockpile sustains demand; Frontline (FRO) and Nordic American Tankers (NAT) as structural shift proxies**; Saudi Red Sea rerouting attempt confirmed failing; no viable bypass at meaningful volumes for Western-insured vessels; Cape rerouting creating permanent throughput reduction; 6–8 week retail consequence window becoming high-confidence if no resolution by ~March 17; **Trump-Xi summit (March 31–April 2) is first plausible diplomatic catalyst for P&I re-engagement**
 
 ## Watch For (Priority Order)
 1. **P&I club and Lloyd's Gulf zone re-engagement** — primary ceasefire credibility signal; March 5 effective date is next key catalyst; Trump-Xi summit is next plausible catalyst after that
 2. **Iraq production cut trajectory** — watch for doubling to 3 mb/d; reservoir damage timeline from extended shut-ins
 3. **Trapped containership count** (Linerlytica weekly data) — March 17 is key threshold for late April/May retail shock confirmation
-4. **West Africa→Asia and U.S. Gulf→Asia VLCC charter rates** — structural demand shift confirmation; track separately from Gulf war risk premium; more durable than spot war risk premium; **Frontline (FRO) and Nordic American Tankers (NAT) as proxies**
-5. **West Africa spot crude premiums (Nigerian Bonny Light, Angolan Girassol) vs. Gulf crudes** — bifurcated market severity indicator
-6. **Jebel Ali operational status** (DP World announcements) — port activity resumption signal
-7. **Saudi Red Sea rerouting status** — currently failing; Houthi stand-down would change calculus
-8. **Panama Canal throughput and capacity data** — surge pressure indicator
-9. **Brent–Dubai spread** — bifurcated market severity indicator
-10. **East Africa/South Asia retail shortage declarations** (~6–8 weeks if unresolved)
-11. **DXB air cargo resumption** — early recovery indicator
-12. Major carrier formal Red Sea suspension announcements
-13. Force majeure declarations from shipping companies
-14. U.S. Navy Hormuz posture changes
+4. **West Africa→Asia and U.S. Gulf→Asia VLCC charter rates** — structural demand shift confirmation; track separately from Gulf war risk premium; **Frontline (FRO) and Nordic American Tankers (NAT) as proxies**
+5. **Chinese state refiner (Sinopec/CNOOC/PetroChina) Atlantic-basin crude procurement volumes** — confirms quarters-long structural shift independent of war risk premium
+6. **West Africa spot crude premiums (Nigerian Bonny Light, Angolan Girassol) vs. Gulf crudes** — bifurcated market severity indicator
+7. **Jebel Ali operational status** (DP World announcements) — port activity resumption signal
+8. **Saudi Red Sea rerouting status** — currently failing; Houthi stand-down would change calculus
+9. **Panama Canal throughput and capacity data** — surge pressure indicator
+10. **Brent–Dubai spread** — bifurcated market severity indicator
+11. **East Africa/South Asia retail shortage declarations** (~6–8 weeks if unresolved)
+12. **DXB air cargo resumption** — early recovery indicator
+13. Major carrier formal Red Sea suspension announcements
+14. Force majeure declarations from shipping companies
+15. U.S. Navy Hormuz posture changes
