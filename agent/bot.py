@@ -39,6 +39,7 @@ def try_sync_portfolio():
         print(f"  [!] Portfolio sync failed (using manual portfolio): {e}")
 
 ROOT = Path(__file__).parent.parent
+WORLD_MODEL_DIR = ROOT / "memory" / "world_model"
 
 
 def load_config():
@@ -219,39 +220,35 @@ class CycleLog:
         return "\n".join(lines)
 
 
-def get_chat_context() -> str:
-    """Build context string for chat responses."""
-    world_model = load_world_model()
-    portfolio = load_portfolio()
+CHAT_TOOLS = [
+    {"type": "web_search_20250305"},
+    {
+        "name": "read_world_model",
+        "description": "Read a specific file from the world model. Use this to get detailed analysis on a topic. Available files are listed in the system prompt.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string",
+                    "description": "The filename to read (e.g., 'energy_supply_chains.md', 'oil_gas_market.md')"
+                }
+            },
+            "required": ["filename"]
+        }
+    }
+]
 
-    # Load recent alerts
-    alerts_dir = ROOT / "memory" / "alerts"
-    recent_alerts = []
-    if alerts_dir.exists():
-        alert_files = sorted(alerts_dir.iterdir(), reverse=True)[:3]
-        for f in alert_files:
-            try:
-                alert = json.loads(f.read_text())
-                # Just include trade ideas, not the full narrative
-                ideas = alert.get("trade_ideas", [])
-                for idea in ideas:
-                    recent_alerts.append(
-                        f"- {idea.get('direction', '').upper()} {idea.get('instrument', '')}: "
-                        f"{idea.get('thesis', '')[:200]}"
-                    )
-            except Exception:
-                pass
 
-    alerts_text = "\n".join(recent_alerts) if recent_alerts else "(No recent alerts)"
-
-    return f"""## Current World Model
-{world_model[:12000]}
-
-## Portfolio
-{portfolio}
-
-## Recent Trade Ideas
-{alerts_text}"""
+def execute_tool(name: str, tool_input: dict) -> str:
+    """Handle client-side tool calls from chat harness."""
+    if name == "read_world_model":
+        filename = tool_input.get("filename", "")
+        filepath = WORLD_MODEL_DIR / filename
+        print(f"  [chat] read_world_model({filename})")
+        if filepath.exists() and filepath.suffix == ".md":
+            return filepath.read_text()
+        return f"File not found: {filename}"
+    return f"Unknown tool: {name}"
 
 
 # ── Chat conversation memory ─────────────────────────────────────────
@@ -285,73 +282,103 @@ def append_chat_history(channel_id: int, role: str, content: str):
 
 
 async def handle_chat(message: discord.Message):
-    """Respond to a user message using Claude + world model context."""
+    """Respond to a user message using Claude with tool-calling loop."""
     async with message.channel.typing():
-        context = get_chat_context()
-        history = get_chat_history(message.channel.id)
+        # Build system prompt with world model index (not full content)
+        index_path = WORLD_MODEL_DIR / "_index.md"
+        index_content = index_path.read_text() if index_path.exists() else "(No world model index)"
+        portfolio = load_portfolio()
 
-        # Build messages: system context as first user message, then conversation history
-        messages = []
-        if not history:
-            # First message in conversation — include full context
-            messages.append({
-                "role": "user",
-                "content": f"""{context}
+        # Recent trade ideas (small, include directly)
+        alerts_dir = ROOT / "memory" / "alerts"
+        recent_alerts = []
+        if alerts_dir.exists():
+            for f in sorted(alerts_dir.iterdir(), reverse=True)[:3]:
+                try:
+                    alert = json.loads(f.read_text())
+                    for idea in alert.get("trade_ideas", []):
+                        recent_alerts.append(
+                            f"- {idea.get('direction', '').upper()} {idea.get('instrument', '')}: "
+                            f"{idea.get('thesis', '')[:200]}"
+                        )
+                except Exception:
+                    pass
+        alerts_text = "\n".join(recent_alerts) if recent_alerts else "(No recent alerts)"
 
----
-
-{message.content}"""
-            })
-        else:
-            # Ongoing conversation — context was in the first message
-            messages = list(history)
-            messages.append({"role": "user", "content": message.content})
-
-        def _call_api():
-            return anthropic_client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=4096,
-                tools=[{"type": "web_search_20250305"}],
-                system=f"""You are Thalamus, a geopolitical intelligence agent. The user is a trader
-who wants to discuss your analysis and world model. Be concise and direct.
-Think in supply chains and second/third order effects. If they ask about a trade,
+        system_prompt = f"""You are Thalamus, a geopolitical intelligence agent. The user is a trader \
+who wants to discuss your analysis and world model. Be concise and direct. \
+Think in supply chains and second/third order effects. If they ask about a trade, \
 reason through it step by step.
 
 CRITICAL RULES:
-1. You have web search. USE IT for every response that involves prices, rates, news,
-   or any factual claim about what's happening RIGHT NOW. Search BEFORE answering.
-   NEVER say "I can't check" or "I'd look at X" — just search for it.
-2. When you don't know something, search. When you think you know, search anyway to
-   verify. Your training data is stale. The user is making real trades.
-3. Be precise. Don't say a decision is "binary" unless you've verified it is. Don't
-   say something is "about urea" unless you've confirmed the specific scope.
-4. If the user pushes back or corrects you, take it seriously — they likely know more
-   about the specific situation than your training data does.
+1. You have web search and world model tools. USE THEM. Search for current prices, \
+rates, news before answering. Read world model files for your analysis context. \
+NEVER say "I can't check" or "I'd look at X" — just use your tools.
+2. When you don't know something, search. When you think you know, search anyway to \
+verify. Your training data is stale. The user is making real trades.
+3. Use read_world_model to get detailed analysis on topics listed in the index below. \
+Don't guess at what your world model says — read it.
+4. If the user pushes back or corrects you, take it seriously — they likely know more \
+about the specific situation than your training data does.
 
 Keep responses short — a few paragraphs max. Use bullet points.
 Do not suggest obvious, consensus trades. Your value is non-obvious connections.
 
-Current world model context (for reference if conversation doesn't include it):
-{context[:8000]}""",
-                messages=messages,
-            )
+## World Model Index (use read_world_model to get full details)
+{index_content}
+
+## Portfolio
+{portfolio}
+
+## Recent Trade Ideas
+{alerts_text}"""
+
+        # Build messages from conversation history + new user message
+        history = get_chat_history(message.channel.id)
+        messages = list(history) + [{"role": "user", "content": message.content}]
+
+        def _run_harness():
+            max_turns = 10
+            response = None
+            for turn in range(max_turns):
+                response = anthropic_client.messages.create(
+                    model="claude-sonnet-4-6",
+                    max_tokens=4096,
+                    tools=CHAT_TOOLS,
+                    system=system_prompt,
+                    messages=messages,
+                )
+                if response.stop_reason == "end_turn":
+                    break
+                # Process tool_use blocks
+                messages.append({"role": "assistant", "content": response.content})
+                tool_results = []
+                for block in response.content:
+                    if block.type == "tool_use":
+                        result = execute_tool(block.name, block.input)
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": result,
+                        })
+                if not tool_results:
+                    break  # Only server-side tools used, response is complete
+                print(f"  [chat] Turn {turn + 1}: {len(tool_results)} tool call(s)")
+                messages.append({"role": "user", "content": tool_results})
+            return response
 
         loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(None, _call_api)
+        response = await loop.run_in_executor(None, _run_harness)
 
-        # Extract text blocks (web search tool results are handled server-side)
+        # Extract text from final response
         text_parts = [block.text for block in response.content if hasattr(block, "text")]
         reply = "\n".join(text_parts)
 
         if not reply:
             reply = "I searched but couldn't find a useful answer. Try rephrasing?"
 
-        # Save conversation history
-        if not history:
-            # Store the first message with context
-            append_chat_history(message.channel.id, "user", f"{context}\n\n---\n\n{message.content}")
-        else:
-            append_chat_history(message.channel.id, "user", message.content)
+        # Save to conversation history (user message + final text reply only)
+        append_chat_history(message.channel.id, "user", message.content)
         append_chat_history(message.channel.id, "assistant", reply)
 
         # Discord message limit is 2000 chars
@@ -482,9 +509,8 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
             log.log("  All ideas were repeats — downgrading to quiet cycle.")
             result["alert_worthy"] = False
 
-    save_alert(result)
-
     if result.get("alert_worthy"):
+        save_alert(result)
         ideas = result.get("trade_ideas", [])
         tickers = []
         for idea in ideas:
