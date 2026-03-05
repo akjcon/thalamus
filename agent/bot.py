@@ -9,6 +9,7 @@ import re
 import json
 import asyncio
 import time
+import uuid
 import discord
 from discord import ui
 from datetime import datetime, timezone
@@ -40,6 +41,25 @@ def try_sync_portfolio():
 
 ROOT = Path(__file__).parent.parent
 WORLD_MODEL_DIR = ROOT / "memory" / "world_model"
+
+# Instance lock — prevents deploy overlap from causing double responses.
+# Each deploy writes a unique ID to the shared volume on startup.
+# Before processing a message, check we're still the active instance.
+INSTANCE_ID = str(uuid.uuid4())
+INSTANCE_MARKER = ROOT / "memory" / "instance.txt"
+
+
+def register_instance():
+    INSTANCE_MARKER.parent.mkdir(parents=True, exist_ok=True)
+    INSTANCE_MARKER.write_text(INSTANCE_ID)
+    print(f"Registered instance: {INSTANCE_ID[:8]}", flush=True)
+
+
+def is_current_instance() -> bool:
+    try:
+        return INSTANCE_MARKER.read_text().strip() == INSTANCE_ID
+    except Exception:
+        return True
 
 
 def load_config():
@@ -641,6 +661,7 @@ async def scan_loop():
 async def on_ready():
     global alert_channel, log_channel, anthropic_client
     anthropic_client = Anthropic()
+    register_instance()
 
     print(f"Thalamus bot logged in as {client.user}")
 
@@ -678,6 +699,10 @@ async def on_ready():
 async def on_message(message: discord.Message):
     # Ignore own messages
     if message.author == client.user:
+        return
+
+    # Deploy overlap guard — only the latest instance processes messages
+    if not is_current_instance():
         return
 
     # Only respond in the alerts channel
