@@ -79,6 +79,7 @@ python3 agent/replay.py 20260303_055901
 ## Engineering Philosophy
 
 - When a solution is getting complex or hacky, stop and ask: is there a simpler way? Prefer leveraging existing state (files on disk, timestamps, etc.) over maintaining fragile in-memory state or timers.
+- **Always enter plan mode for non-trivial changes.** This bot is in production, handling real trades. Multi-file changes, behavioral changes, prompt rewrites, and anything touching the scan/alert pipeline MUST go through plan mode first. Read the relevant code, understand the current state, propose the change, get approval. "Quick fixes" that skip planning have repeatedly caused deploy failures and broken behavior. The only exception is true one-liners (typo fix, config value change).
 
 ## Conventions
 
