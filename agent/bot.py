@@ -283,6 +283,7 @@ def append_chat_history(channel_id: int, role: str, content: str):
 
 async def handle_chat(message: discord.Message):
     """Respond to a user message using Claude with tool-calling loop."""
+    print(f"  [chat] handle_chat called: {message.content[:80]}", flush=True)
     async with message.channel.typing():
         # Build system prompt with world model index (not full content)
         index_path = WORLD_MODEL_DIR / "_index.md"
@@ -338,7 +339,7 @@ flows, input costs, shipping routes.
             for turn in range(max_turns):
                 response = anthropic_client.messages.create(
                     model="claude-sonnet-4-6",
-                    max_tokens=4096,
+                    max_tokens=1200,
                     tools=CHAT_TOOLS,
                     system=system_prompt,
                     messages=messages,
@@ -385,17 +386,16 @@ flows, input costs, shipping routes.
         if not reply:
             reply = "I searched but couldn't find a useful answer. Try rephrasing?"
 
+        print(f"  [chat] Reply: {len(reply)} chars", flush=True)
+
         # Save to conversation history (user message + final text reply only)
         append_chat_history(message.channel.id, "user", message.content)
         append_chat_history(message.channel.id, "assistant", reply)
 
-        # Discord message limit is 2000 chars
+        # Cap at one Discord message — brevity is a feature
         if len(reply) > 1900:
-            chunks = [reply[i:i+1900] for i in range(0, len(reply), 1900)]
-            for chunk in chunks:
-                await message.reply(chunk)
-        else:
-            await message.reply(reply)
+            reply = reply[:1897] + "..."
+        await message.reply(reply)
 
 
 def save_replay(timestamp: str, headlines: list, flagged: list, research: str):
