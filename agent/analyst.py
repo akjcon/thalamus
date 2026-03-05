@@ -387,7 +387,11 @@ Apply these updates to the world model. Create, modify, or reorganize files as n
         return
 
     for op in operations:
-        filepath = WORLD_MODEL_DIR / op["filename"]
+        filepath = (WORLD_MODEL_DIR / op["filename"]).resolve()
+        # Path traversal guard — must stay within WORLD_MODEL_DIR
+        if not filepath.is_relative_to(WORLD_MODEL_DIR.resolve()):
+            print(f"  [!] Path traversal blocked in world model update: {op['filename']}")
+            continue
         if op["action"] == "write":
             filepath.write_text(op["content"])
             print(f"  [*] Updated world model: {op['filename']}")

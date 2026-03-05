@@ -51,7 +51,10 @@ INSTANCE_MARKER = ROOT / "memory" / "instance.txt"
 
 def register_instance():
     INSTANCE_MARKER.parent.mkdir(parents=True, exist_ok=True)
-    INSTANCE_MARKER.write_text(INSTANCE_ID)
+    # Atomic write — write to temp file then rename to avoid partial reads
+    tmp = INSTANCE_MARKER.with_suffix(".tmp")
+    tmp.write_text(INSTANCE_ID)
+    tmp.rename(INSTANCE_MARKER)
     print(f"Registered instance: {INSTANCE_ID[:8]}", flush=True)
 
 
@@ -59,7 +62,7 @@ def is_current_instance() -> bool:
     try:
         return INSTANCE_MARKER.read_text().strip() == INSTANCE_ID
     except Exception:
-        return True
+        return False
 
 
 def load_config():
@@ -263,8 +266,12 @@ def execute_tool(name: str, tool_input: dict) -> str:
     """Handle client-side tool calls from chat harness."""
     if name == "read_world_model":
         filename = tool_input.get("filename", "")
-        filepath = WORLD_MODEL_DIR / filename
+        filepath = (WORLD_MODEL_DIR / filename).resolve()
         print(f"  [chat] read_world_model({filename})")
+        # Path traversal guard — must stay within WORLD_MODEL_DIR
+        if not filepath.is_relative_to(WORLD_MODEL_DIR.resolve()):
+            print(f"  [!] Path traversal blocked: {filename}")
+            return f"Invalid filename: {filename}"
         if filepath.exists() and filepath.suffix == ".md":
             return filepath.read_text()
         return f"File not found: {filename}"
@@ -280,6 +287,9 @@ _chat_history: dict[int, list[dict]] = {}
 _chat_last_active: dict[int, float] = {}
 CHAT_HISTORY_MAX = 20  # max messages to keep (user + assistant)
 CHAT_HISTORY_TTL = 1800  # 30 minutes
+
+# Guard against concurrent scan runs (e.g., !scan while timer scan is running)
+_scan_lock = asyncio.Lock()
 
 
 def get_chat_history(channel_id: int) -> list[dict]:
@@ -383,8 +393,13 @@ flows, input costs, shipping routes.
                 messages.append({"role": "user", "content": tool_results})
             return response
 
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(None, _run_harness)
+        try:
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, _run_harness)
+        except Exception as e:
+            print(f"  [!] Chat harness error: {e}", flush=True)
+            await message.reply("Something went wrong — try again in a moment.")
+            return
 
         # Extract only post-tool text from the final response.
         # The model generates preamble text before tool use, then the real answer after.
@@ -637,7 +652,8 @@ async def scan_loop():
 
         try:
             # Run scan in thread pool to not block the bot
-            result, cycle_log = await asyncio.get_event_loop().run_in_executor(None, run_scan_cycle)
+            async with _scan_lock:
+                result, cycle_log = await asyncio.get_event_loop().run_in_executor(None, run_scan_cycle)
 
             # Always log to #thal-logs
             await send_to_log_channel(cycle_log.format_summary())
@@ -687,7 +703,9 @@ async def on_ready():
     # Startup message to log channel only (not #alerts)
     if log_channel and not hasattr(client, '_announced'):
         client._announced = True
-        await log_channel.send("**Thalamus online.** Scanning every 4 hours.")
+        config = load_config()
+        interval = config.get("scan_interval_hours", 6)
+        await log_channel.send(f"**Thalamus online.** Scanning every {interval} hours.")
 
     # Start the scan loop
     if not hasattr(client, '_scan_started'):
@@ -709,18 +727,22 @@ async def on_message(message: discord.Message):
     if alert_channel and message.channel.id == alert_channel.id:
         # Manual scan trigger
         if message.content.strip().lower() == "!scan":
-            await message.reply("Starting scan cycle...")
-            try:
-                result, cycle_log = await asyncio.get_event_loop().run_in_executor(None, run_scan_cycle)
-                await send_to_log_channel(cycle_log.format_summary())
-                if result and result.get("alert_worthy", False):
-                    embed = build_alert_embed(result)
-                    view = AlertView(result)
-                    await message.channel.send(embed=embed, view=view)
-                else:
-                    await message.reply(f"Scan complete: {cycle_log.verdict}")
-            except Exception as e:
-                await message.reply(f"Scan error: {e}")
+            if _scan_lock.locked():
+                await message.reply("A scan is already running.")
+                return
+            async with _scan_lock:
+                await message.reply("Starting scan cycle...")
+                try:
+                    result, cycle_log = await asyncio.get_event_loop().run_in_executor(None, run_scan_cycle)
+                    await send_to_log_channel(cycle_log.format_summary())
+                    if result and result.get("alert_worthy", False):
+                        embed = build_alert_embed(result)
+                        view = AlertView(result)
+                        await message.channel.send(embed=embed, view=view)
+                    else:
+                        await message.reply(f"Scan complete: {cycle_log.verdict}")
+                except Exception as e:
+                    await message.reply(f"Scan error: {e}")
             return
         await handle_chat(message)
 
