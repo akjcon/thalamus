@@ -155,7 +155,7 @@ def deep_analysis(client, flagged_items: list[dict], world_model: str,
     Run deep analysis on flagged items. Returns structured analysis
     with trade implications.
     """
-    recent_alerts = load_recent_alerts()
+    recent_alerts = load_recent_alerts(n=10)
 
     items_text = "\n\n".join(
         f"### {item['title']}\n"
@@ -224,12 +224,15 @@ not intraday reactions. The best ideas are ones where:
 For each trade idea, ask yourself: "Would a smart person who only reads headlines
 come up with this?" If yes, discard it and dig deeper.
 
-**DO NOT REPEAT TRADE IDEAS YOU ALREADY SENT.** Check the "Recent Alerts" section
-above. If you already recommended an instrument (e.g., CF Industries, corn futures),
-do NOT recommend it again UNLESS there is a genuinely new development that materially
-changes the thesis, entry point, or confidence level. "More articles about the same
-situation" is NOT a new development. If the same situation is still playing out as
-expected, that's confirmation — not a new alert. Just update the world model quietly.
+**DO NOT REPEAT TRADE IDEAS — BY CONCEPT, NOT JUST TICKER.** Check the "Recent Alerts"
+section above. If you already recommended a trade based on a particular thesis or causal
+chain, do NOT recommend another trade on the same CONCEPT — even with a different ticker.
+For example: if you already alerted on CF Industries because of the nitrogen/TTF spread,
+do NOT then alert on Bunge, Yara, or corn futures for the same fertilizer supply chain
+disruption. Same thesis = same alert, regardless of instrument. Only alert again if there
+is a genuinely new development that MATERIALLY changes the thesis — a new event, not
+just "more articles about the same situation." If the situation is playing out as
+expected, that's confirmation, not a new alert. Update the world model quietly.
 
 **MOST CYCLES SHOULD HAVE ZERO TRADE IDEAS.** Only suggest a trade when you have
 genuine conviction — a clear, non-obvious chain of reasoning where you can explain
