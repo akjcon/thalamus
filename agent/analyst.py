@@ -361,6 +361,9 @@ IMPORTANT RULES:
 - One topic per file.
 - Keep your total output SHORT. Fewer file operations = better. If the update only affects
   2 files, only output 2 operations. Do not rewrite the entire world model.
+- HARD CAP: Maximum 5 file operations per cycle. If more than 5 files need updating,
+  pick the 5 most important changes and skip the rest.
+- Maximum 800 words per file. Be ruthlessly concise — key facts and dynamics only.
 Respond with ONLY the JSON array.""",
         messages=[{
             "role": "user",

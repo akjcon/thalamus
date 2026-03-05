@@ -12,7 +12,7 @@ import time
 import uuid
 import discord
 from discord import ui
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from dotenv import load_dotenv
 from anthropic import Anthropic
@@ -246,7 +246,7 @@ class CycleLog:
 
 
 CHAT_TOOLS = [
-    {"type": "web_search_20250305", "name": "web_search"},
+    {"type": "web_search_20250305", "name": "web_search", "max_uses": 3},
     {
         "name": "read_world_model",
         "description": "Read a specific file from the world model. Use this to get detailed analysis on a topic. Available files are listed in the system prompt.",
@@ -374,7 +374,7 @@ flows, input costs, shipping routes.
         messages = list(history) + [{"role": "user", "content": message.content}]
 
         def _run_harness():
-            max_turns = 10
+            max_turns = 5
             response = None
             for turn in range(max_turns):
                 response = anthropic_client.messages.create(
@@ -658,24 +658,47 @@ async def send_cost_summary():
         print(summary)
 
 
+SCAN_TIMES = [0, 6, 12, 18]  # Fixed UTC hours
+
+
+def next_scan_dt() -> datetime:
+    """Compute the next scheduled scan time from current UTC."""
+    now = datetime.now(timezone.utc)
+    for hour in SCAN_TIMES:
+        candidate = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+        if candidate > now:
+            return candidate
+    # All today's times have passed — first slot tomorrow
+    tomorrow = now.replace(hour=SCAN_TIMES[0], minute=0, second=0, microsecond=0)
+    return tomorrow + timedelta(days=1)
+
+
 async def scan_loop():
-    """Background task that runs the scan cycle periodically."""
+    """Background task that runs the scan cycle at fixed UTC times."""
     await client.wait_until_ready()
 
-    config = load_config()
-    interval_hours = config.get("scan_interval_hours", 4)
-
     while not client.is_closed():
-        # Check if enough time has passed since last scan (survives restarts + disconnects)
+        now = datetime.now(timezone.utc)
+        target = next_scan_dt()
+        remaining = (target - now).total_seconds()
+
+        # Guard: if a scan already ran within 1 hour of the upcoming slot, skip it
         last = last_scan_time()
-        if last:
-            elapsed = (datetime.now(timezone.utc) - last).total_seconds()
-            remaining = (interval_hours * 3600) - elapsed
-            if remaining > 0:
-                print(f"  Last scan was {elapsed/60:.0f}m ago, next in {remaining/60:.0f}m")
-                await asyncio.sleep(min(remaining, 300))  # Re-check every 5 min or when due
+        if last and remaining < 60:
+            # We're at a scan time — but did we already run?
+            since_last = (now - last).total_seconds()
+            if since_last < 3600:
+                print(f"  Scan already ran {since_last/60:.0f}m ago, skipping this slot")
+                await asyncio.sleep(60)
                 continue
 
+        if remaining > 60:
+            print(f"  Next scan at {target.strftime('%H:%M')} UTC ({remaining/60:.0f}m away)")
+            await asyncio.sleep(min(remaining, 60))
+            continue
+
+        # Time to scan
+        print(f"  Scan scheduled for {target.strftime('%H:%M')} UTC — starting now")
         result = None
         cycle_log = None
         try:
@@ -740,9 +763,8 @@ async def on_ready():
     # Startup message to log channel only (not #alerts)
     if log_channel and not hasattr(client, '_announced'):
         client._announced = True
-        config = load_config()
-        interval = config.get("scan_interval_hours", 6)
-        await log_channel.send(f"**Thalamus online.** Scanning every {interval} hours.")
+        schedule = ", ".join(f"{h:02d}:00" for h in SCAN_TIMES)
+        await log_channel.send(f"**Thalamus online.** Scan schedule: {schedule} UTC")
 
     # Start the scan loop
     if not hasattr(client, '_scan_started'):

@@ -31,9 +31,6 @@ rss_feeds:
   - name: "EIA Today in Energy"
     url: "https://www.eia.gov/rss/todayinenergy.xml"
 
-# How often to scan (hours)
-scan_interval_hours: 6
-
 # Discord channels
 discord_log_channel: "thal-logs"
 
@@ -41,4 +38,3 @@ discord_log_channel: "thal-logs"
 models:
   scanner: "claude-haiku-4-5-20251001"  # Fast, cheap headline classification
   analyst: "claude-sonnet-4-6"           # Research, world model, price checks
-  deep_analyst: "claude-opus-4-6"        # Deep analysis — better reasoning
