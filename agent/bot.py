@@ -682,6 +682,21 @@ async def on_message(message: discord.Message):
 
     # Only respond in the alerts channel
     if alert_channel and message.channel.id == alert_channel.id:
+        # Manual scan trigger
+        if message.content.strip().lower() == "!scan":
+            await message.reply("Starting scan cycle...")
+            try:
+                result, cycle_log = await asyncio.get_event_loop().run_in_executor(None, run_scan_cycle)
+                await send_to_log_channel(cycle_log.format_summary())
+                if result and result.get("alert_worthy", False):
+                    embed = build_alert_embed(result)
+                    view = AlertView(result)
+                    await message.channel.send(embed=embed, view=view)
+                else:
+                    await message.reply(f"Scan complete: {cycle_log.verdict}")
+            except Exception as e:
+                await message.reply(f"Scan error: {e}")
+            return
         await handle_chat(message)
 
 
