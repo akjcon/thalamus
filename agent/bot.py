@@ -556,9 +556,9 @@ def filter_repeat_ideas(trade_ideas: list[dict]) -> list[dict]:
     if not alerts_dir.exists():
         return trade_ideas
 
-    # Collect tickers from recent alerts
+    # Collect tickers from recent alerts (wide window — ~3 days at 6h cycles)
     recent_tickers = set()
-    for f in sorted(alerts_dir.iterdir(), reverse=True)[:5]:
+    for f in sorted(alerts_dir.iterdir(), reverse=True)[:15]:
         try:
             alert = json.loads(f.read_text())
             for idea in alert.get("trade_ideas", []):
@@ -577,7 +577,7 @@ def filter_repeat_ideas(trade_ideas: list[dict]) -> list[dict]:
         idea_tickers = re.findall(r'\(([A-Z]{1,5})\)', instrument)
         overlap = set(idea_tickers) & recent_tickers
         if overlap:
-            print(f"  [*] Filtering repeat idea: {', '.join(overlap)} (already recommended)")
+            print(f"  [*] Filtering repeat idea: {', '.join(overlap)} (already recommended)", flush=True)
             continue
         filtered.append(idea)
 

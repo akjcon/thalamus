@@ -32,7 +32,7 @@ rss_feeds:
     url: "https://www.eia.gov/rss/todayinenergy.xml"
 
 # How often to scan (hours)
-scan_interval_hours: 4
+scan_interval_hours: 6
 
 # Discord channels
 discord_log_channel: "thal-logs"
