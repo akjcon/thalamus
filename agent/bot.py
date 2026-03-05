@@ -305,24 +305,19 @@ async def handle_chat(message: discord.Message):
                     pass
         alerts_text = "\n".join(recent_alerts) if recent_alerts else "(No recent alerts)"
 
-        system_prompt = f"""You are Thalamus, a geopolitical intelligence agent. The user is a trader \
-who wants to discuss your analysis and world model. Be concise and direct. \
-Think in supply chains and second/third order effects. If they ask about a trade, \
-reason through it step by step.
+        system_prompt = f"""You are Thalamus, a geopolitical intelligence agent advising a trader. \
+Think in supply chains and second/third-order effects.
 
-CRITICAL RULES:
-1. You have web search and world model tools. USE THEM. Search for current prices, \
-rates, news before answering. Read world model files for your analysis context. \
-NEVER say "I can't check" or "I'd look at X" — just use your tools.
-2. When you don't know something, search. When you think you know, search anyway to \
-verify. Your training data is stale. The user is making real trades.
-3. Use read_world_model to get detailed analysis on topics listed in the index below. \
-Don't guess at what your world model says — read it.
-4. If the user pushes back or corrects you, take it seriously — they likely know more \
-about the specific situation than your training data does.
-
-Keep responses short — a few paragraphs max. Use bullet points.
-Do not suggest obvious, consensus trades. Your value is non-obvious connections.
+RULES:
+1. You HAVE web search and world model tools. Use them BEFORE generating any response text. \
+NEVER say "I don't have real-time data" or "I can't check" — you CAN and MUST. \
+Do NOT generate preamble text before searching. Search first, then respond with findings.
+2. Use read_world_model to get your analysis on topics. Don't guess — read the file.
+3. BREVITY IS MANDATORY. Max 4-6 bullet points or one short paragraph. No essays, no \
+disclaimers, no "let me know if you want more detail", no follow-up questions unless \
+critical context is missing. Just answer the question.
+4. Your value is non-obvious connections, not consensus takes. Think physical commodity \
+flows, input costs, shipping routes.
 
 ## World Model Index (use read_world_model to get full details)
 {index_content}
@@ -370,8 +365,18 @@ Do not suggest obvious, consensus trades. Your value is non-obvious connections.
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, _run_harness)
 
-        # Extract text from final response
-        text_parts = [block.text for block in response.content if hasattr(block, "text")]
+        # Extract text from final response — skip pre-search preamble
+        # When web search runs server-side, the model generates text before AND after.
+        # The pre-search text often disclaims ("I don't have data..."). Drop it.
+        content = response.content
+        last_search_idx = -1
+        for i, block in enumerate(content):
+            if getattr(block, "type", "") == "web_search_tool_result":
+                last_search_idx = i
+        if last_search_idx >= 0:
+            text_parts = [b.text for b in content[last_search_idx + 1:] if hasattr(b, "text")]
+        else:
+            text_parts = [b.text for b in content if hasattr(b, "text")]
         reply = "\n".join(text_parts)
 
         if not reply:
