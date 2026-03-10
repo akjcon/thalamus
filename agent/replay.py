@@ -17,7 +17,7 @@ from anthropic import Anthropic
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from analyst import load_world_model, load_portfolio, deep_analysis
+from analyst import load_world_model, load_portfolio, deep_analysis, validate_prices
 
 ROOT = Path(__file__).parent.parent
 REPLAY_DIR = ROOT / "memory" / "replays"
@@ -85,6 +85,12 @@ def replay(replay_id: str | None = None):
         print(f"Analysis error: {result['error']}")
         return
 
+    # Price validation (uses Schwab API, falls back to web_search)
+    ideas = result.get("trade_ideas", [])
+    if ideas and result.get("alert_worthy", False):
+        print(f"\nValidating prices for {len(ideas)} trade idea(s)...")
+        result["trade_ideas"] = validate_prices(client, ideas, "claude-sonnet-4-6")
+
     # Print results
     alert_worthy = result.get("alert_worthy", False)
     print(f"Alert worthy: {'YES' if alert_worthy else 'no'}")
@@ -120,6 +126,14 @@ def replay(replay_id: str | None = None):
             if counter:
                 print(f"\n   What could go wrong:")
                 print(f"   {counter}")
+
+            overlap = idea.get("overlap_check", "")
+            if overlap:
+                print(f"\n   Overlap check: {overlap}")
+
+            price_ctx = idea.get("price_context", "")
+            if price_ctx:
+                print(f"\n   Price context: {price_ctx}")
     else:
         print("\nNo trade ideas this cycle.")
 

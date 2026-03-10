@@ -81,15 +81,186 @@ For each question, provide:
     return "\n".join(text_parts)
 
 
+def _fetch_schwab_price_data(trade_ideas: list[dict]) -> tuple[str, bool]:
+    """
+    Collect price_queries from trade ideas, fetch from Schwab API.
+    Returns (formatted price data string, success bool).
+    """
+    try:
+        from brokerage import get_price_history, get_quotes_batch
+    except (ImportError, Exception) as e:
+        print(f"  [!] Brokerage import failed: {e}")
+        return "", False
+
+    # Collect all unique symbols and their queries
+    all_queries = []
+    all_symbols = set()
+    for idea in trade_ideas:
+        for pq in idea.get("price_queries", []):
+            sym = pq.get("symbol", "").strip()
+            if sym:
+                all_symbols.add(sym)
+                all_queries.append(pq)
+
+    # If no price_queries specified, extract tickers from instrument names
+    if not all_symbols:
+        import re
+        for idea in trade_ideas:
+            instrument = idea.get("instrument", "")
+            tickers = re.findall(r'\(([A-Z/]{1,10})\)', instrument)
+            all_symbols.update(tickers)
+
+    if not all_symbols:
+        return "", False
+
+    lines = []
+    success_count = 0
+
+    # Batch quotes for current prices
+    try:
+        quotes = get_quotes_batch(list(all_symbols))
+        for sym, q in quotes.items():
+            last = q.get("last")
+            change_pct = q.get("change_pct")
+            volume = q.get("volume")
+            high52 = q.get("52w_high")
+            low52 = q.get("52w_low")
+            if last is not None:
+                pct_str = f"{change_pct:+.2f}%" if change_pct is not None else "n/a"
+                vol_str = f"{volume:,}" if volume else "n/a"
+                if high52 is not None and low52 is not None:
+                    range_str = f"52w range: ${low52:.2f}-${high52:.2f}"
+                else:
+                    range_str = "52w range: n/a"
+                lines.append(
+                    f"**{sym}** — Last: ${last:.2f} | Day change: {pct_str} | "
+                    f"Volume: {vol_str} | {range_str}"
+                )
+                success_count += 1
+    except Exception as e:
+        print(f"  [!] Batch quotes failed: {e}")
+
+    # Price history for each query
+    for pq in all_queries:
+        sym = pq.get("symbol", "").strip()
+        period = pq.get("period", "1m")
+        freq = pq.get("frequency", "daily")
+        try:
+            hist = get_price_history(sym, period, freq)
+            candles = hist.get("candles", [])
+            if candles and len(candles) >= 2:
+                first_close = candles[0]["close"]
+                last_close = candles[-1]["close"]
+                period_change = ((last_close - first_close) / first_close) * 100
+                high = max(c["high"] for c in candles)
+                low = min(c["low"] for c in candles)
+                avg_vol = sum(c["volume"] for c in candles if c["volume"]) / len(candles)
+                lines.append(
+                    f"**{sym}** ({period} {freq}): {first_close:.2f} → {last_close:.2f} "
+                    f"({period_change:+.1f}%) | Range: {low:.2f}-{high:.2f} | "
+                    f"Avg volume: {avg_vol:,.0f}"
+                )
+                success_count += 1
+        except Exception as e:
+            print(f"  [!] Price history for {sym} failed: {e}")
+
+    if not lines:
+        return "", False
+
+    return "\n".join(lines), success_count > 0
+
+
 def validate_prices(client, trade_ideas: list[dict], model: str) -> list[dict]:
     """
     After trade ideas are formed, check if the instruments have already
-    moved significantly. This is validation only — never idea generation.
-    Returns updated trade ideas with price context added.
+    moved significantly. Tries Schwab API first (free), falls back to
+    web_search if Schwab is unavailable.
+    Returns updated trade ideas with price context, filtering ideas
+    where the move already happened.
     """
     if not trade_ideas:
         return trade_ideas
 
+    # Try Schwab API first
+    price_data, schwab_ok = _fetch_schwab_price_data(trade_ideas)
+
+    if schwab_ok and price_data:
+        # Schwab path: structured data → single Sonnet call, no web_search
+        ideas_text = "\n\n".join(
+            f"**{i+1}. {idea.get('direction', '').upper()} {idea.get('instrument', '')}**\n"
+            f"Thesis: {idea.get('one_liner', '')}"
+            for i, idea in enumerate(trade_ideas)
+        )
+
+        try:
+            response = client.messages.create(
+                model=model,
+                max_tokens=2048,
+                messages=[{
+                    "role": "user",
+                    "content": f"""Here are trade ideas and their price data. For each idea, determine
+if the expected move has ALREADY happened (priced in) or if there's still opportunity.
+
+## Trade Ideas
+{ideas_text}
+
+## Price Data
+{price_data}
+
+For each idea, output one of:
+- KEEP — the move hasn't happened yet or is early
+- DROP — the move already happened, it's priced in
+- REVISE — the data suggests a modification
+
+Output JSON:
+{{
+    "decisions": [
+        {{"index": 1, "action": "KEEP|DROP|REVISE", "reason": "brief explanation", "price_context": "1-2 sentences of key price facts"}}
+    ]
+}}
+
+Respond with ONLY the JSON."""
+                }]
+            )
+            track_cost("price_check", response, model)
+
+            text = response.content[0].text.strip()
+            if text.startswith("```"):
+                text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+            result = json.loads(text)
+
+            # Apply decisions
+            surviving = []
+            decisions = result.get("decisions", [])
+            for i, idea in enumerate(trade_ideas):
+                decision = next((d for d in decisions if d.get("index") == i + 1), None)
+                if decision:
+                    action = decision.get("action", "KEEP").upper()
+                    if action == "DROP":
+                        print(f"  [*] Dropping idea {i+1}: {decision.get('reason', '')}")
+                        continue
+                    idea["price_context"] = decision.get("price_context", "")
+                    if action == "REVISE":
+                        idea["price_context"] += f" (Note: {decision.get('reason', '')})"
+                surviving.append(idea)
+
+            return surviving
+
+        except (json.JSONDecodeError, IndexError, KeyError) as e:
+            print(f"  [!] Price validation parse error: {e}")
+            # Attach raw price data and return all ideas
+            for idea in trade_ideas:
+                idea["price_context"] = price_data
+            return trade_ideas
+
+        except Exception as e:
+            print(f"  [!] Price validation Sonnet call failed: {e}")
+            for idea in trade_ideas:
+                idea["price_context"] = price_data
+            return trade_ideas
+
+    # Fallback: web_search (Schwab unavailable)
+    print("  [*] Schwab unavailable — falling back to web_search for price validation")
     tickers = []
     for idea in trade_ideas:
         instrument = idea.get("instrument", "")
@@ -114,19 +285,18 @@ Be brief. One line per instrument."""
             }]
         )
 
-        track_cost("price_check", response, model)
+        track_cost("price_check_fallback", response, model)
 
         price_info = ""
         for block in response.content:
             if hasattr(block, "text"):
                 price_info += block.text
 
-        # Add price context to each idea
         for idea in trade_ideas:
-            idea["price_check"] = price_info
+            idea["price_context"] = price_info
 
     except Exception as e:
-        print(f"  [!] Price validation failed: {e}")
+        print(f"  [!] Price validation fallback failed: {e}")
 
     return trade_ideas
 
@@ -273,6 +443,27 @@ it's already up 20% this week, that's useful — the move may be priced in. But 
 should NEVER look at asset prices to generate ideas. You are a geopolitical analyst,
 not a quant.
 
+**POSITION OVERLAP — HARD FILTER**
+Before recommending ANY trade, check the Current Portfolio above. If the portfolio
+already has exposure that profits from the same fundamental thesis, SUPPRESS the idea.
+Do not include it in trade_ideas at all.
+
+This applies even if the instruments are different:
+- Portfolio has long /NG → do NOT recommend long CF, UAN, or any nat-gas-input company
+- Portfolio has long XOM → do NOT recommend long CVX, OXY, or any crude oil play
+- Portfolio has short EUR/USD → do NOT recommend long DXY or short European equities for
+  the same macro reason
+
+The test: "If the thesis behind my existing position plays out as expected, would this new
+trade also profit for the same reason?" If yes → suppress.
+
+Exception: A genuinely DISTINCT second-order effect that traces to a different causal
+mechanism may survive. But "different ticker, same bet" is not distinct. Be ruthless here —
+when in doubt, suppress.
+
+For each trade idea you DO include, add an "overlap_check" field explaining why it is NOT
+redundant with existing positions.
+
 ## WRITING STYLE
 
 The user is a smart trader but NOT a geopolitics expert. Write in plain English:
@@ -299,13 +490,23 @@ Then produce your output as JSON with this structure:
             "order": "2nd/3rd — label which order effect this trade captures",
             "counter_thesis": "what could make this wrong, in plain English",
             "confidence": "low/medium/high",
-            "time_horizon": "weeks/months — be specific"
+            "time_horizon": "weeks/months — be specific",
+            "overlap_check": "why this is NOT redundant with existing portfolio positions",
+            "price_queries": [
+                {{"symbol": "CF", "period": "1m", "frequency": "daily"}},
+                {{"symbol": "/NG", "period": "3m", "frequency": "weekly"}}
+            ]
         }}
     ],
     "world_model_updates": "Markdown text describing what should be updated in the world model",
     "new_questions": ["questions to investigate in future cycles"],
     "alert_worthy": true/false
 }}
+
+**price_queries explained:** For each trade idea, specify 1-3 symbols you want price history
+for so we can validate whether the move has already happened. Use the main instrument ticker
+plus any key related instruments (e.g., an input commodity). Available periods: 1w, 1m, 3m,
+6m, 1y. Frequencies: daily, weekly, monthly. Use daily for shorter periods, weekly for 6m+.
 
 Respond with ONLY the JSON, no other text."""
 

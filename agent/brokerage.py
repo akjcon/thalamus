@@ -330,6 +330,129 @@ def get_quote(symbol: str) -> dict:
     }
 
 
+def get_quotes_batch(symbols: list[str]) -> dict[str, dict]:
+    """
+    Batch quote lookup — one API call for multiple symbols.
+    Returns dict of symbol → quote data.
+    """
+    if not symbols:
+        return {}
+    sym_str = ",".join(s.strip() for s in symbols)
+    try:
+        data = _api_get(f"/marketdata/v1/quotes?symbols={sym_str}")
+    except Exception as e:
+        print(f"  [!] Batch quote failed: {e}")
+        return {}
+
+    result = {}
+    for sym in symbols:
+        quote = data.get(sym, {}).get("quote", {})
+        if quote:
+            result[sym] = {
+                "symbol": sym,
+                "last": quote.get("lastPrice"),
+                "bid": quote.get("bidPrice"),
+                "ask": quote.get("askPrice"),
+                "change": quote.get("netChange"),
+                "change_pct": quote.get("netPercentChangeInDouble"),
+                "volume": quote.get("totalVolume"),
+                "52w_high": quote.get("52WkHigh"),
+                "52w_low": quote.get("52WkLow"),
+            }
+    return result
+
+
+def _parse_period(period_str: str, frequency_str: str = "daily") -> dict:
+    """
+    Convert analyst shorthand → Schwab API params.
+    period_str: '1w', '1m', '3m', '6m', '1y', etc.
+    frequency_str: 'daily', 'weekly', 'monthly'
+    Returns dict with periodType, period, frequencyType, frequency.
+    """
+    freq_map = {
+        "daily": ("minute", 30) if False else ("daily", 1),
+        "weekly": ("weekly", 1),
+        "monthly": ("monthly", 1),
+    }
+    # Fix: daily is just daily/1
+    freq_map = {
+        "daily": {"frequencyType": "daily", "frequency": 1},
+        "weekly": {"frequencyType": "weekly", "frequency": 1},
+        "monthly": {"frequencyType": "monthly", "frequency": 1},
+    }
+
+    # Parse period string like "1m", "3m", "1y", "1w"
+    if not period_str or len(period_str) < 2:
+        return {}
+
+    try:
+        num = int(period_str[:-1])
+    except ValueError:
+        return {}
+
+    unit = period_str[-1].lower()
+
+    period_map = {
+        "d": {"periodType": "day", "period": num},
+        "w": {"periodType": "day", "period": num * 5},  # weeks → trading days
+        "m": {"periodType": "month", "period": num},
+        "y": {"periodType": "year", "period": num},
+    }
+
+    if unit not in period_map:
+        return {}
+
+    params = period_map[unit]
+    params.update(freq_map.get(frequency_str, freq_map["daily"]))
+    return params
+
+
+def get_price_history(symbol: str, period: str = "1m",
+                      frequency: str = "daily") -> dict:
+    """
+    Fetch price history from Schwab API.
+    symbol: ticker (e.g. 'CF', '/NG')
+    period: '1w', '1m', '3m', '6m', '1y'
+    frequency: 'daily', 'weekly', 'monthly'
+    Returns dict with 'symbol', 'candles' (list of {date, open, high, low, close, volume}),
+    or empty dict on error.
+    """
+    params = _parse_period(period, frequency)
+    if not params:
+        print(f"  [!] Invalid period/frequency: {period}/{frequency}")
+        return {}
+
+    query = (
+        f"/marketdata/v1/pricehistory"
+        f"?symbol={symbol}"
+        f"&periodType={params['periodType']}"
+        f"&period={params['period']}"
+        f"&frequencyType={params['frequencyType']}"
+        f"&frequency={params['frequency']}"
+    )
+
+    try:
+        data = _api_get(query)
+    except Exception as e:
+        print(f"  [!] Price history failed for {symbol}: {e}")
+        return {}
+
+    raw_candles = data.get("candles", [])
+    candles = []
+    for c in raw_candles:
+        dt = datetime.fromtimestamp(c["datetime"] / 1000, tz=timezone.utc)
+        candles.append({
+            "date": dt.strftime("%Y-%m-%d"),
+            "open": c.get("open"),
+            "high": c.get("high"),
+            "low": c.get("low"),
+            "close": c.get("close"),
+            "volume": c.get("volume"),
+        })
+
+    return {"symbol": symbol, "candles": candles}
+
+
 def sync_portfolio() -> str:
     """
     Fetch positions and write portfolio.md.
@@ -435,9 +558,10 @@ def login():
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage:")
-        print("  python3 brokerage.py --login     # First-time authentication")
-        print("  python3 brokerage.py --sync      # Sync positions to portfolio.md")
-        print("  python3 brokerage.py --quote CF   # Get a quote")
+        print("  python3 brokerage.py --login          # First-time authentication")
+        print("  python3 brokerage.py --sync           # Sync positions to portfolio.md")
+        print("  python3 brokerage.py --quote CF        # Get a quote")
+        print("  python3 brokerage.py --history CF 1m daily  # Price history")
         sys.exit(0)
 
     cmd = sys.argv[1]
@@ -452,5 +576,16 @@ if __name__ == "__main__":
         quote = get_quote(sys.argv[2])
         for k, v in quote.items():
             print(f"  {k}: {v}")
+    elif cmd == "--history" and len(sys.argv) > 2:
+        symbol = sys.argv[2]
+        period = sys.argv[3] if len(sys.argv) > 3 else "1m"
+        freq = sys.argv[4] if len(sys.argv) > 4 else "daily"
+        result = get_price_history(symbol, period, freq)
+        if result and result.get("candles"):
+            print(f"\n{symbol} — {period} {freq} ({len(result['candles'])} candles)")
+            for c in result["candles"][-10:]:  # Last 10
+                print(f"  {c['date']}  O:{c['open']:.2f}  H:{c['high']:.2f}  L:{c['low']:.2f}  C:{c['close']:.2f}  V:{c['volume']:,}")
+        else:
+            print(f"No data for {symbol}")
     else:
         print(f"Unknown command: {cmd}")
