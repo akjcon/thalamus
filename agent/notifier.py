@@ -84,6 +84,19 @@ def format_alert_discord(analysis: dict) -> list[dict]:
                 {"name": "Counter-thesis", "value": _trunc(counter, MAX_FIELD), "inline": False}
             )
 
+        assumptions = idea.get("key_assumptions", [])
+        if assumptions:
+            assumptions_text = "\n".join(f"- {a}" for a in assumptions)
+            trade_embed["fields"].append(
+                {"name": "Key Assumptions", "value": _trunc(assumptions_text, MAX_FIELD), "inline": False}
+            )
+
+        invalidation = idea.get("invalidation_signal", "")
+        if invalidation:
+            trade_embed["fields"].append(
+                {"name": "Invalidation Signal", "value": _trunc(invalidation, MAX_FIELD), "inline": False}
+            )
+
         embeds.append(trade_embed)
 
     return embeds

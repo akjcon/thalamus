@@ -367,8 +367,10 @@ Analyze these events for second and third-order effects. Think step by step:
 5. **Supply chain implications** — what commodity flows, shipping routes, or input costs are affected DOWNSTREAM?
 6. **Tradeable implications** — what specific instruments could move, and in what direction?
 7. **Counter-thesis** — argue against your own conclusion. What would invalidate this?
-8. **Confidence** — given the counter-thesis, how confident are you? (low/medium/high)
-9. **Portfolio impact** — how does this affect existing positions, if any?
+8. **Assumption audit** — List the 2-3 assumptions this thesis depends on. For each: how confident are you, and what evidence would break it? If any assumption is "the market hasn't priced this in," replace it with a structural reason you have an edge.
+9. **"What would change my mind?"** — Name one specific, observable thing that would falsify this thesis in the next 2 weeks. Not a vague risk — a concrete signal you could check.
+10. **Confidence** — given the counter-thesis AND the assumption audit, how confident are you? (low/medium/high)
+11. **Portfolio impact** — how does this affect existing positions, if any?
 
 ## CRITICAL RULES FOR TRADE IDEAS
 
@@ -491,6 +493,8 @@ Then produce your output as JSON with this structure:
             "counter_thesis": "what could make this wrong, in plain English",
             "confidence": "low/medium/high",
             "time_horizon": "weeks/months — be specific",
+            "key_assumptions": ["assumption 1 — the load-bearing belief", "assumption 2"],
+            "invalidation_signal": "one specific, observable thing to watch that would kill this thesis in the next 2 weeks",
             "overlap_check": "why this is NOT redundant with existing portfolio positions",
             "price_queries": [
                 {{"symbol": "CF", "period": "1m", "frequency": "daily"}},
@@ -584,6 +588,12 @@ IMPORTANT RULES:
 - HARD CAP: Maximum 5 file operations per cycle. If more than 5 files need updating,
   pick the 5 most important changes and skip the rest.
 - Maximum 800 words per file. Be ruthlessly concise — key facts and dynamics only.
+- Each world model file should end with a `## Watch For` section — 2-3 open questions
+  or specific signals to monitor in future cycles. These feed back as context for the
+  next analysis, creating a self-questioning loop. Examples: "Watch for: whether Hormuz
+  insurance premiums spike above X", "Watch for: Q2 earnings guidance from fertilizer
+  producers mentioning input cost pass-through." If nothing is worth watching, the topic
+  may not be worth a file.
 Respond with ONLY the JSON array.""",
         messages=[{
             "role": "user",
