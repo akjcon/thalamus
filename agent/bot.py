@@ -672,7 +672,7 @@ async def send_cost_summary():
         print(summary)
 
 
-SCAN_TIMES = [0, 6, 12, 18]  # Fixed UTC hours
+SCAN_TIMES = [0, 12]  # Fixed UTC hours
 
 
 def next_scan_dt() -> datetime:
