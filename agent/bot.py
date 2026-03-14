@@ -559,6 +559,20 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     else:
         log.log("[6/6] No actionable ideas this cycle — world model updated quietly.")
 
+    # Filter out low-confidence ideas — only medium and high survive
+    if result.get("trade_ideas"):
+        before = len(result["trade_ideas"])
+        result["trade_ideas"] = [
+            idea for idea in result["trade_ideas"]
+            if idea.get("confidence", "low").split("-")[0] in ("medium", "high")
+        ]
+        dropped = before - len(result["trade_ideas"])
+        if dropped:
+            log.log(f"  Filtered {dropped} low-confidence idea(s).")
+        if not result["trade_ideas"]:
+            log.log("  No ideas survived confidence filter — downgrading to quiet cycle.")
+            result["alert_worthy"] = False
+
     # Programmatic dedup — filter out instruments already recommended recently
     if result.get("trade_ideas"):
         result["trade_ideas"] = filter_repeat_ideas(result["trade_ideas"])
@@ -658,7 +672,7 @@ async def send_cost_summary():
         print(summary)
 
 
-SCAN_TIMES = [0, 6, 12, 18]  # Fixed UTC hours
+SCAN_TIMES = [0, 12]  # Fixed UTC hours
 
 
 def next_scan_dt() -> datetime:

@@ -466,6 +466,77 @@ when in doubt, suppress.
 For each trade idea you DO include, add an "overlap_check" field explaining why it is NOT
 redundant with existing positions.
 
+## TRADE ALERT QUALITY FILTERS
+
+Before including ANY trade idea, apply these filters sequentially. If any filter fails,
+discard the idea entirely. Do NOT include it in trade_ideas.
+
+**1. Instrument-Thesis Tightness Test**
+Ask: "Is there a direct, mechanistic link between the catalyst and THIS specific
+company's revenue or margins — or does the thesis require 3+ inferential hops?"
+- PASS: Hormuz closes → fertilizer supply destroyed → CF's cheap US gas feedstock
+  creates widening margin advantage (2 hops, each mechanistic and quantifiable)
+- FAIL: War → Dubai flights disrupted → Indian pharma logistics collapse → US
+  injectable shortage → ICUI pricing power (4 hops, each uncertain)
+- Rule: Maximum 2 causal hops between catalyst and earnings impact. Each hop must be
+  supported by a quantifiable supply/demand mechanism, not a narrative.
+
+**2. Stale Company Data Check**
+Before alerting on any ticker, verify:
+- Has the company divested, spun off, or restructured the relevant business segment
+  in the last 18 months?
+- Does the current revenue mix actually match the thesis? Base this on the most recent
+  10-K/10-Q, not historical descriptions.
+- Rule: Never alert on a company based on a business line it no longer operates.
+
+**3. "Is There a Tighter Instrument?" Test**
+For every alert, ask: "Is there another publicly traded company or futures contract
+that captures this exact thesis with fewer assumptions?"
+- If yes, alert on that instrument instead.
+- If the tighter instrument doesn't exist, that's a signal the thesis may be too
+  niche to trade.
+
+**4. Substitution and Rerouting Analysis**
+For any supply chain disruption thesis, explicitly check:
+- Can the disrupted flow reroute? (e.g., air freight via Singapore instead of Dubai)
+- Can the affected buyers substitute from other sources? (e.g., US LNG terminals
+  already at max capacity means Henry Hub doesn't follow TTF)
+- Is the disrupted channel actually the primary channel? (e.g., Indian pharma moves
+  mostly by ocean, not air through Dubai)
+- Rule: If rerouting or substitution can neutralize the disruption within the trade's
+  timeframe, do not alert.
+
+**5. "Already Priced In" Check**
+Assess how obvious the thesis is:
+- Is the catalyst already front-page news?
+- Has the stock already moved significantly on the catalyst?
+- Are sell-side analysts already publishing on this exact thesis?
+- Rule: If the thesis is consensus, the edge is gone. Only alert on second/third-order
+  effects that mainstream coverage hasn't connected yet.
+
+**6. Risk/Reward Asymmetry Check**
+Before alerting, assess:
+- What is the downside if the thesis is wrong? (e.g., shorting a beaten-down stock
+  has poor risk/reward)
+- Is the stock already priced for distress? (e.g., a company that lost $738M last
+  year doesn't have much further to fall)
+- Is the position exposed to headline reversal risk? (e.g., a single ceasefire
+  headline could wipe the trade)
+- Rule: Only alert when the upside on the thesis being correct meaningfully exceeds
+  the downside of being wrong.
+
+**7. Timeline Specificity Requirement**
+Every alert must include:
+- A specific catalyst with a date or date range (e.g., "USDA crop report May 12"
+  not "6-10 weeks")
+- A defined exit trigger if the thesis fails
+- Rule: If you cannot name a specific upcoming event that will confirm or deny the
+  thesis, the idea is too vague to trade.
+
+For each trade idea, add a "quality_filter_notes" field — a brief sentence confirming
+it passed the above filters (e.g., "2 causal hops, no substitution path, catalyst is
+OPEC meeting June 1").
+
 ## WRITING STYLE
 
 The user is a smart trader but NOT a geopolitics expert. Write in plain English:
@@ -495,6 +566,9 @@ Then produce your output as JSON with this structure:
             "time_horizon": "weeks/months — be specific",
             "key_assumptions": ["assumption 1 — the load-bearing belief", "assumption 2"],
             "invalidation_signal": "one specific, observable thing to watch that would kill this thesis in the next 2 weeks",
+            "exit_trigger": "specific condition or date that kills the thesis — when to get out",
+            "catalyst_date": "specific upcoming event + date that confirms/denies thesis (e.g., 'USDA crop report May 12')",
+            "quality_filter_notes": "brief confirmation this idea passed all 7 quality filters",
             "overlap_check": "why this is NOT redundant with existing portfolio positions",
             "price_queries": [
                 {{"symbol": "CF", "period": "1m", "frequency": "daily"}},
