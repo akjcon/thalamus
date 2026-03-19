@@ -29,16 +29,27 @@ import costs
 import yaml
 
 
-def try_sync_portfolio():
+def try_sync_portfolio(log=None):
     """Attempt to sync portfolio from Schwab. Silently skip if not configured."""
     try:
         from brokerage import sync_portfolio
-        sync_portfolio()
-        print("  Portfolio synced from Schwab")
+        content = sync_portfolio()
+        # Count positions from the returned markdown
+        pos_count = content.count("\n| ") - content.count("\n| Symbol")  # table rows minus headers
+        msg = f"Portfolio synced from Schwab ({max(pos_count, 0)} positions)"
+        print(f"  {msg}")
+        if log:
+            log.log(f"  {msg}")
     except (ImportError, SystemExit):
-        pass  # schwab-py not installed or not configured
+        msg = "Portfolio sync skipped (brokerage not configured)"
+        print(f"  {msg}")
+        if log:
+            log.log(f"  {msg}")
     except Exception as e:
-        print(f"  [!] Portfolio sync failed (using manual portfolio): {e}")
+        msg = f"[!] Portfolio sync failed: {e} — overlap filter will not work"
+        print(f"  {msg}")
+        if log:
+            log.error(f"Portfolio sync failed: {e} — overlap filter will not work")
 
 ROOT = Path(__file__).parent.parent
 WORLD_MODEL_DIR = ROOT / "memory" / "world_model"
@@ -478,7 +489,7 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     deep_analyst_model = config["models"].get("deep_analyst", analyst_model)
 
     # Step 0: Sync portfolio from brokerage (if configured)
-    try_sync_portfolio()
+    try_sync_portfolio(log)
 
     # Step 1: Pull headlines
     log.log("[1/6] Pulling RSS feeds...")
@@ -576,8 +587,9 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     # Programmatic dedup — filter out instruments already recommended recently
     if result.get("trade_ideas"):
         result["trade_ideas"] = filter_repeat_ideas(result["trade_ideas"])
+        result["trade_ideas"] = filter_portfolio_overlap(result["trade_ideas"])
         if not result["trade_ideas"]:
-            log.log("  All ideas were repeats — downgrading to quiet cycle.")
+            log.log("  All ideas filtered (repeats or portfolio overlap) — downgrading to quiet cycle.")
             result["alert_worthy"] = False
 
     if result.get("alert_worthy"):
@@ -585,7 +597,7 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
         ideas = result.get("trade_ideas", [])
         tickers = []
         for idea in ideas:
-            found = re.findall(r'\(([A-Z]{1,5})\)', idea.get("instrument", ""))
+            found = re.findall(r'\(([A-Z/]{1,10})\)', idea.get("instrument", ""))
             tickers.extend(found)
         log.verdict = f"ALERT — {', '.join(tickers)}" if tickers else "ALERT"
     else:
@@ -626,7 +638,7 @@ def filter_repeat_ideas(trade_ideas: list[dict]) -> list[dict]:
             alert = json.loads(f.read_text())
             for idea in alert.get("trade_ideas", []):
                 instrument = idea.get("instrument", "")
-                tickers = re.findall(r'\(([A-Z]{1,5})\)', instrument)
+                tickers = re.findall(r'\(([A-Z/]{1,10})\)', instrument)
                 recent_tickers.update(tickers)
         except Exception:
             pass
@@ -637,10 +649,42 @@ def filter_repeat_ideas(trade_ideas: list[dict]) -> list[dict]:
     filtered = []
     for idea in trade_ideas:
         instrument = idea.get("instrument", "")
-        idea_tickers = re.findall(r'\(([A-Z]{1,5})\)', instrument)
+        idea_tickers = re.findall(r'\(([A-Z/]{1,10})\)', instrument)
         overlap = set(idea_tickers) & recent_tickers
         if overlap:
             print(f"  [*] Filtering repeat idea: {', '.join(overlap)} (already recommended)", flush=True)
+            continue
+        filtered.append(idea)
+
+    return filtered
+
+
+def filter_portfolio_overlap(trade_ideas: list[dict]) -> list[dict]:
+    """Remove trade ideas for instruments the user already holds."""
+    portfolio_path = ROOT / "memory" / "portfolio.md"
+    if not portfolio_path.exists():
+        return trade_ideas
+
+    content = portfolio_path.read_text()
+    # Extract symbols from portfolio table rows: "| SYMBOL | TYPE | ..."
+    portfolio_symbols = set()
+    for line in content.splitlines():
+        line = line.strip()
+        if line.startswith("|") and not line.startswith("| Symbol") and not line.startswith("|---"):
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) >= 2 and parts[1]:
+                portfolio_symbols.add(parts[1])
+
+    if not portfolio_symbols:
+        return trade_ideas
+
+    filtered = []
+    for idea in trade_ideas:
+        instrument = idea.get("instrument", "")
+        idea_tickers = re.findall(r'\(([A-Z/]{1,10})\)', instrument)
+        overlap = set(idea_tickers) & portfolio_symbols
+        if overlap:
+            print(f"  [*] Filtering portfolio overlap: {', '.join(overlap)} (already held)", flush=True)
             continue
         filtered.append(idea)
 
