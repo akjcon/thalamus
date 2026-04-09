@@ -716,7 +716,7 @@ async def send_cost_summary():
         print(summary)
 
 
-SCAN_TIMES = [0, 12]  # Fixed UTC hours
+SCAN_TIMES = [0]  # Fixed UTC hours — once daily (24h cadence)
 
 
 def next_scan_dt() -> datetime:
