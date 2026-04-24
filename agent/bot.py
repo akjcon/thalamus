@@ -716,47 +716,28 @@ async def send_cost_summary():
         print(summary)
 
 
-SCAN_TIMES = [0]  # Fixed UTC hours — once daily (24h cadence)
-
-
-def next_scan_dt() -> datetime:
-    """Compute the next scheduled scan time from current UTC."""
-    now = datetime.now(timezone.utc)
-    for hour in SCAN_TIMES:
-        candidate = now.replace(hour=hour, minute=0, second=0, microsecond=0)
-        if candidate > now:
-            return candidate
-    # All today's times have passed — first slot tomorrow
-    tomorrow = now.replace(hour=SCAN_TIMES[0], minute=0, second=0, microsecond=0)
-    return tomorrow + timedelta(days=1)
+SCAN_INTERVAL_HOURS = 48  # Hours between scan cycles
 
 
 async def scan_loop():
-    """Background task that runs the scan cycle at fixed UTC times."""
+    """Background task that runs the scan cycle on a fixed interval."""
     await client.wait_until_ready()
 
     while not client.is_closed():
         now = datetime.now(timezone.utc)
-        target = next_scan_dt()
-        remaining = (target - now).total_seconds()
-
-        # Guard: if a scan already ran within 1 hour of the upcoming slot, skip it
         last = last_scan_time()
-        if last and remaining < 60:
-            # We're at a scan time — but did we already run?
-            since_last = (now - last).total_seconds()
-            if since_last < 3600:
-                print(f"  Scan already ran {since_last/60:.0f}m ago, skipping this slot")
-                await asyncio.sleep(60)
+
+        if last:
+            next_scan = last + timedelta(hours=SCAN_INTERVAL_HOURS)
+            remaining = (next_scan - now).total_seconds()
+            if remaining > 60:
+                hours_left = remaining / 3600
+                print(f"  Next scan at {next_scan.strftime('%Y-%m-%d %H:%M')} UTC ({hours_left:.1f}h away)")
+                await asyncio.sleep(min(remaining, 300))  # Re-check every 5 min
                 continue
 
-        if remaining > 60:
-            print(f"  Next scan at {target.strftime('%H:%M')} UTC ({remaining/60:.0f}m away)")
-            await asyncio.sleep(min(remaining, 60))
-            continue
-
-        # Time to scan
-        print(f"  Scan scheduled for {target.strftime('%H:%M')} UTC — starting now")
+        # Time to scan (either interval elapsed or first run)
+        print(f"  Scan interval reached — starting now")
         result = None
         cycle_log = None
         try:
@@ -821,8 +802,7 @@ async def on_ready():
     # Startup message to log channel only (not #alerts)
     if log_channel and not hasattr(client, '_announced'):
         client._announced = True
-        schedule = ", ".join(f"{h:02d}:00" for h in SCAN_TIMES)
-        await log_channel.send(f"**Thalamus online.** Scan schedule: {schedule} UTC")
+        await log_channel.send(f"**Thalamus online.** Scan interval: every {SCAN_INTERVAL_HOURS}h")
 
     # Start the scan loop
     if not hasattr(client, '_scan_started'):

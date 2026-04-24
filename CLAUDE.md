@@ -88,7 +88,7 @@ python3 agent/replay.py 20260303_055901
 - **web_search is expensive.** Server-managed web search injects large result content into context. Always set `max_uses` (3 is a good default). In multi-turn tool loops, each turn re-sends all previous search results, so limit `max_turns` too.
 - **Never use Opus in automated pipelines** without explicit approval. Opus output tokens are 5x Sonnet. Reserve it for one-off deep analysis, not recurring cycles.
 - **Cost tracking exists** — `agent/costs.py` tracks every API call. Check #thal-costs after deploys to verify costs match expectations. If a cycle costs more than ~$1.50, investigate.
-- **Budget target: ~$4/day ($120/month).** 4 scan cycles at ~$0.70-1.00 each + chat usage.
+- **Budget target: ~$1/day ($30/month).** 1 scan cycle every 48h at ~$0.70-1.00 + chat usage.
 
 ## Critical Deployment Rules
 
