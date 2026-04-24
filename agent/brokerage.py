@@ -117,6 +117,50 @@ def _refresh_access_token(token: dict) -> dict:
     return new_token
 
 
+def _dump_debug(page, label: str) -> tuple[Path, Path]:
+    """Save screenshot + HTML of the current page for debugging. Returns (png, html) paths."""
+    debug_dir = MEMORY / "schwab_debug"
+    debug_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    png_path = debug_dir / f"{ts}_{label}.png"
+    html_path = debug_dir / f"{ts}_{label}.html"
+    try:
+        page.screenshot(path=str(png_path), full_page=True)
+    except Exception as e:
+        print(f"  [!] Screenshot failed: {e}")
+    try:
+        html_path.write_text(page.content())
+    except Exception as e:
+        print(f"  [!] HTML dump failed: {e}")
+    return png_path, html_path
+
+
+def _fill_first_match(page, selectors: list[str], value: str, field_label: str) -> str:
+    """Try a list of selectors, fill the first one that matches. Returns the selector used."""
+    for sel in selectors:
+        try:
+            loc = page.locator(sel).first
+            if loc.count() > 0 and loc.is_visible(timeout=2000):
+                loc.fill(value)
+                return sel
+        except Exception:
+            continue
+    raise RuntimeError(f"No matching selector for {field_label}. Tried: {selectors}")
+
+
+def _click_first_match(page, selectors: list[str], button_label: str) -> str:
+    """Try a list of selectors, click the first one that matches."""
+    for sel in selectors:
+        try:
+            loc = page.locator(sel).first
+            if loc.count() > 0 and loc.is_visible(timeout=2000):
+                loc.click()
+                return sel
+        except Exception:
+            continue
+    raise RuntimeError(f"No matching selector for {button_label}. Tried: {selectors}")
+
+
 def _auto_login_playwright() -> str:
     """
     Use Playwright to automate the Schwab OAuth login flow.
@@ -127,73 +171,100 @@ def _auto_login_playwright() -> str:
     app_key = os.environ.get("SCHWAB_APP_KEY")
     username = os.environ.get("SCHWAB_USERNAME")
     password = os.environ.get("SCHWAB_PASSWORD")
+    headless = os.environ.get("SCHWAB_HEADLESS", "true").lower() not in ("false", "0", "no")
 
     if not username or not password:
         raise ValueError("SCHWAB_USERNAME and SCHWAB_PASSWORD must be set in .env for auto-login")
 
     auth_url = f"{SCHWAB_AUTH_URL}?client_id={app_key}&redirect_uri={CALLBACK_URL}"
 
+    # Try a list of known ID patterns plus generic fallbacks
+    username_selectors = [
+        "#loginIdInput", "#username", "input[name='loginId']",
+        "input[name='username']", "input[type='text']",
+    ]
+    password_selectors = [
+        "#passwordInput", "#password", "input[name='password']",
+        "input[type='password']",
+    ]
+    login_button_selectors = [
+        "#btnLogin", "button[type='submit']", "input[type='submit']",
+        "button:has-text('Log In')", "button:has-text('Login')", "button:has-text('Sign In')",
+    ]
+
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=headless)
         context = browser.new_context()
         page = context.new_page()
 
-        print("  Auto-login: navigating to Schwab...")
-        page.goto(auth_url)
-        page.wait_for_load_state("networkidle")
-
-        # Fill login form
-        print("  Auto-login: entering credentials...")
-        page.fill("#loginIdInput", username)
-        page.fill("#passwordInput", password)
-        page.click("#btnLogin")
-
-        # Wait for redirect or 2FA page
-        # Schwab may show a "terms" or "authorize" page
-        page.wait_for_load_state("networkidle", timeout=30000)
-
-        # Check if we need to accept/authorize
         try:
-            accept_btn = page.locator("text=Accept", timeout=5000)
-            if accept_btn.is_visible():
-                print("  Auto-login: accepting authorization...")
-                accept_btn.click()
-                page.wait_for_load_state("networkidle", timeout=15000)
-        except Exception:
-            pass  # No accept button, that's fine
+            print(f"  Auto-login: navigating to Schwab (headless={headless})...")
+            page.goto(auth_url)
+            page.wait_for_load_state("networkidle")
 
-        # Try to find the "Allow" button for OAuth consent
-        try:
-            allow_btn = page.locator("#acceptTerms, text=Allow, text=Authorize", timeout=5000)
-            if allow_btn.is_visible():
-                print("  Auto-login: granting access...")
-                allow_btn.click()
-                page.wait_for_load_state("networkidle", timeout=15000)
-        except Exception:
-            pass
+            print("  Auto-login: entering credentials...")
+            try:
+                used = _fill_first_match(page, username_selectors, username, "username")
+                print(f"    matched username field: {used}")
+                used = _fill_first_match(page, password_selectors, password, "password")
+                print(f"    matched password field: {used}")
+                used = _click_first_match(page, login_button_selectors, "login button")
+                print(f"    matched login button: {used}")
+            except Exception as fill_err:
+                png, html = _dump_debug(page, "login_form_not_found")
+                raise RuntimeError(
+                    f"Login form selectors did not match. URL: {page.url}. "
+                    f"Screenshot: {png}, HTML: {html}. Error: {fill_err}"
+                )
 
-        # Wait for redirect to callback URL
-        max_wait = 30
-        for _ in range(max_wait):
-            current_url = page.url
-            if CALLBACK_URL.split("//")[1] in current_url:
-                break
-            time.sleep(1)
-        else:
-            # Capture what we see for debugging
-            screenshot_path = ROOT / ".schwab_login_debug.png"
-            page.screenshot(path=str(screenshot_path))
+            # Wait for redirect or 2FA / consent page
+            page.wait_for_load_state("networkidle", timeout=30000)
+
+            # Check if we need to accept/authorize
+            try:
+                accept_btn = page.locator("text=Accept").first
+                if accept_btn.count() > 0 and accept_btn.is_visible(timeout=5000):
+                    print("  Auto-login: accepting authorization...")
+                    accept_btn.click()
+                    page.wait_for_load_state("networkidle", timeout=15000)
+            except Exception:
+                pass
+
+            # "Allow" / "Authorize" consent button
+            try:
+                allow_btn = page.locator("#acceptTerms, text=Allow, text=Authorize").first
+                if allow_btn.count() > 0 and allow_btn.is_visible(timeout=5000):
+                    print("  Auto-login: granting access...")
+                    allow_btn.click()
+                    page.wait_for_load_state("networkidle", timeout=15000)
+            except Exception:
+                pass
+
+            # Wait for redirect to callback URL
+            max_wait = 30
+            for _ in range(max_wait):
+                current_url = page.url
+                if CALLBACK_URL.split("//")[1] in current_url:
+                    break
+                time.sleep(1)
+            else:
+                png, html = _dump_debug(page, "no_redirect")
+                raise RuntimeError(
+                    f"Auto-login did not redirect to callback URL within {max_wait}s. "
+                    f"Current URL: {page.url}. Screenshot: {png}, HTML: {html}. "
+                    "This could be a CAPTCHA, 2FA prompt, or changed page."
+                )
+
+            redirect_url = page.url
+        except Exception:
+            # Capture state on any unexpected failure
+            try:
+                _dump_debug(page, "unexpected_failure")
+            except Exception:
+                pass
+            raise
+        finally:
             browser.close()
-            raise RuntimeError(
-                f"Auto-login did not redirect to callback URL within {max_wait}s. "
-                f"Current URL: {page.url}. "
-                f"Screenshot saved to {screenshot_path} for debugging. "
-                "This could be a CAPTCHA, 2FA prompt, or changed login page."
-            )
-
-        # Extract auth code from redirect URL
-        redirect_url = page.url
-        browser.close()
 
     parsed = urlparse(redirect_url)
     params = parse_qs(parsed.query)
