@@ -31,7 +31,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 ROOT = Path(__file__).parent.parent
 MEMORY = ROOT / "memory"
 PORTFOLIO_FILE = MEMORY / "portfolio.md"
-TOKEN_PATH = Path(os.environ.get("SCHWAB_TOKEN_PATH", str(ROOT / ".schwab_token.json")))
+TOKEN_PATH = Path(os.environ.get("SCHWAB_TOKEN_PATH", str(MEMORY / ".schwab_token.json")))
 
 SCHWAB_AUTH_URL = "https://api.schwabapi.com/v1/oauth/authorize"
 SCHWAB_TOKEN_URL = "https://api.schwabapi.com/v1/oauth/token"
