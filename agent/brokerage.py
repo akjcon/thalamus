@@ -194,13 +194,36 @@ def _auto_login_playwright() -> str:
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=headless)
-        context = browser.new_context()
+        # Pose as a real desktop Chrome so Schwab's bot detection doesn't refuse to render the
+        # Angular form for a fresh datacenter headless browser.
+        context = browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1440, "height": 900},
+            locale="en-US",
+        )
         page = context.new_page()
 
         try:
             print(f"  Auto-login: navigating to Schwab (headless={headless})...")
             page.goto(auth_url)
-            page.wait_for_load_state("networkidle")
+
+            # Wait for the actual login form to render (Angular SPA — networkidle is unreliable
+            # because Angular keeps polling). Use a generous timeout to cover slow first paint.
+            print("  Auto-login: waiting for login form...")
+            try:
+                page.wait_for_selector(
+                    ", ".join(username_selectors), state="visible", timeout=45000
+                )
+            except Exception as wait_err:
+                png, html = _dump_debug(page, "form_never_rendered")
+                raise RuntimeError(
+                    f"Login form never appeared. URL: {page.url}. "
+                    f"Screenshot: {png}, HTML: {html}. Likely bot detection or geo-block. "
+                    f"Error: {wait_err}"
+                )
 
             print("  Auto-login: entering credentials...")
             try:
