@@ -96,7 +96,7 @@ def build_classifier_context() -> str:
                 alert = json.loads(f.read_text())
                 for idea in alert.get("trade_ideas", []):
                     instrument = idea.get("instrument", "")
-                    tickers = re.findall(r'\(([A-Z]{1,5})\)', instrument)
+                    tickers = re.findall(r'\(([A-Z/]{1,10})\)', instrument)
                     recent_tickers.update(tickers)
             except Exception:
                 pass
