@@ -32,6 +32,7 @@ ROOT = Path(__file__).parent.parent
 MEMORY = ROOT / "memory"
 PORTFOLIO_FILE = MEMORY / "portfolio.md"
 TOKEN_PATH = Path(os.environ.get("SCHWAB_TOKEN_PATH", str(MEMORY / ".schwab_token.json")))
+STORAGE_STATE_PATH = Path(os.environ.get("SCHWAB_STORAGE_STATE_PATH", str(MEMORY / ".schwab_storage_state.json")))
 
 SCHWAB_AUTH_URL = "https://api.schwabapi.com/v1/oauth/authorize"
 SCHWAB_TOKEN_URL = "https://api.schwabapi.com/v1/oauth/token"
@@ -136,12 +137,17 @@ def _dump_debug(page, label: str) -> tuple[Path, Path]:
 
 
 def _fill_first_match(page, selectors: list[str], value: str, field_label: str) -> str:
-    """Try a list of selectors, fill the first one that matches. Returns the selector used."""
+    """Try a list of selectors, type into the first one that matches.
+    Uses press_sequentially (not fill) so Angular forms with autocomplete=off
+    pick up the per-keystroke input/keyup events. Blurs after typing so
+    client-side validation fires before submit."""
     for sel in selectors:
         try:
             loc = page.locator(sel).first
             if loc.count() > 0 and loc.is_visible(timeout=2000):
-                loc.fill(value)
+                loc.click()
+                loc.press_sequentially(value, delay=30)
+                loc.evaluate("el => el.blur()")
                 return sel
         except Exception:
             continue
@@ -167,6 +173,7 @@ def _auto_login_playwright() -> str:
     Returns the authorization code from the redirect URL.
     """
     from playwright.sync_api import sync_playwright
+    from playwright_stealth import Stealth
 
     app_key = os.environ.get("SCHWAB_APP_KEY")
     username = os.environ.get("SCHWAB_USERNAME")
@@ -192,11 +199,21 @@ def _auto_login_playwright() -> str:
         "button:has-text('Log In')", "button:has-text('Login')", "button:has-text('Sign In')",
     ]
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=headless)
+    # Stealth().use_sync wraps the playwright object so any context/page created
+    # auto-applies the evasion patches (navigator.webdriver, chrome.runtime, etc.)
+    with Stealth().use_sync(sync_playwright()) as p:
+        # Prefer real installed Chrome (channel="chrome") over Chromium —
+        # Akamai TLS-fingerprints Chromium binaries even with JS evasion.
+        # Falls back to Chromium if Chrome isn't installed.
+        try:
+            browser = p.chromium.launch(channel="chrome", headless=headless)
+            print("  Using installed Chrome (channel=chrome)")
+        except Exception:
+            browser = p.chromium.launch(headless=headless)
+            print("  Falling back to bundled Chromium")
         # Pose as a real desktop Chrome so Schwab's bot detection doesn't refuse to render the
         # Angular form for a fresh datacenter headless browser.
-        context = browser.new_context(
+        ctx_kwargs = dict(
             user_agent=(
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
                 "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
@@ -204,6 +221,11 @@ def _auto_login_playwright() -> str:
             viewport={"width": 1440, "height": 900},
             locale="en-US",
         )
+        # If we have a saved trust-this-device session, load it so Schwab skips 2FA.
+        if STORAGE_STATE_PATH.exists():
+            ctx_kwargs["storage_state"] = str(STORAGE_STATE_PATH)
+            print(f"  Loading saved Schwab session from {STORAGE_STATE_PATH.name}")
+        context = browser.new_context(**ctx_kwargs)
         page = context.new_page()
 
         try:
@@ -231,6 +253,8 @@ def _auto_login_playwright() -> str:
                 print(f"    matched username field: {used}")
                 used = _fill_first_match(page, password_selectors, password, "password")
                 print(f"    matched password field: {used}")
+                # Brief settle so Angular client-side validation enables the submit button
+                time.sleep(0.5)
                 used = _click_first_match(page, login_button_selectors, "login button")
                 print(f"    matched login button: {used}")
             except Exception as fill_err:
@@ -240,45 +264,52 @@ def _auto_login_playwright() -> str:
                     f"Screenshot: {png}, HTML: {html}. Error: {fill_err}"
                 )
 
-            # Wait for redirect or 2FA / consent page
-            page.wait_for_load_state("networkidle", timeout=30000)
+            # Wait for redirect to callback URL. Two scenarios:
+            #  - Headless + valid trust-device cookies → instant redirect (a few seconds)
+            #  - Headed + cookies expired → 2FA page; user completes it manually,
+            #    checks "Trust this device", clicks submit. Wait up to 5 minutes.
+            max_wait = 60 if headless else 300
+            print(f"  Waiting up to {max_wait}s for redirect to callback URL...")
+            if not headless:
+                print("  >>> If you see a 2FA prompt, complete it in the browser window")
+                print("  >>> and check 'Trust this device' before submitting.")
 
-            # Check if we need to accept/authorize
-            try:
-                accept_btn = page.locator("text=Accept").first
-                if accept_btn.count() > 0 and accept_btn.is_visible(timeout=5000):
-                    print("  Auto-login: accepting authorization...")
-                    accept_btn.click()
-                    page.wait_for_load_state("networkidle", timeout=15000)
-            except Exception:
-                pass
-
-            # "Allow" / "Authorize" consent button
-            try:
-                allow_btn = page.locator("#acceptTerms, text=Allow, text=Authorize").first
-                if allow_btn.count() > 0 and allow_btn.is_visible(timeout=5000):
-                    print("  Auto-login: granting access...")
-                    allow_btn.click()
-                    page.wait_for_load_state("networkidle", timeout=15000)
-            except Exception:
-                pass
-
-            # Wait for redirect to callback URL
-            max_wait = 30
+            redirect_url = None
             for _ in range(max_wait):
-                current_url = page.url
-                if CALLBACK_URL.split("//")[1] in current_url:
+                if CALLBACK_URL.split("//")[1] in page.url:
+                    redirect_url = page.url
                     break
+                # Also handle any consent/accept buttons that appear
+                try:
+                    for sel in ["text=Accept", "text=Allow", "text=Authorize", "#acceptTerms"]:
+                        btn = page.locator(sel).first
+                        if btn.count() > 0 and btn.is_visible():
+                            print(f"  Auto-login: clicking {sel}")
+                            btn.click()
+                            break
+                except Exception:
+                    pass
                 time.sleep(1)
-            else:
+
+            if not redirect_url:
                 png, html = _dump_debug(page, "no_redirect")
+                hint = (
+                    "Trust-device cookie likely expired. Re-run in headed mode: "
+                    "SCHWAB_HEADLESS=false python3 agent/brokerage.py --login"
+                ) if headless else (
+                    "Did you complete 2FA and check 'Trust this device'?"
+                )
                 raise RuntimeError(
                     f"Auto-login did not redirect to callback URL within {max_wait}s. "
-                    f"Current URL: {page.url}. Screenshot: {png}, HTML: {html}. "
-                    "This could be a CAPTCHA, 2FA prompt, or changed page."
+                    f"Current URL: {page.url}. Screenshot: {png}, HTML: {html}. {hint}"
                 )
 
-            redirect_url = page.url
+            # Save the trust-device cookies for next time (skips 2FA for ~30 days)
+            try:
+                context.storage_state(path=str(STORAGE_STATE_PATH))
+                print(f"  Saved Schwab session cookies to {STORAGE_STATE_PATH.name}")
+            except Exception as e:
+                print(f"  [!] Could not save storage_state: {e}")
         except Exception:
             # Capture state on any unexpected failure
             try:
@@ -300,45 +331,78 @@ def _auto_login_playwright() -> str:
     return code
 
 
+def _manual_login() -> str:
+    """Open headed Chrome to Schwab OAuth URL. User logs in manually
+    (handles 2FA themselves). Returns the auth code from the redirect URL."""
+    from playwright.sync_api import sync_playwright
+
+    app_key = os.environ.get("SCHWAB_APP_KEY")
+    if not app_key:
+        raise ValueError("SCHWAB_APP_KEY not set in .env")
+
+    auth_url = f"{SCHWAB_AUTH_URL}?client_id={app_key}&redirect_uri={CALLBACK_URL}"
+
+    print("\n" + "=" * 70)
+    print("Schwab login required.")
+    print("A browser window will open. Log in manually (handle 2FA), then")
+    print("approve the OAuth consent. Script auto-detects the redirect.")
+    print("=" * 70 + "\n")
+
+    with sync_playwright() as p:
+        try:
+            browser = p.chromium.launch(channel="chrome", headless=False)
+        except Exception:
+            browser = p.chromium.launch(headless=False)
+        context = browser.new_context(viewport={"width": 1280, "height": 900})
+        page = context.new_page()
+
+        page.goto(auth_url)
+        print(f"Waiting up to 5 minutes for redirect to {CALLBACK_URL}...\n")
+
+        max_wait = 300
+        for _ in range(max_wait):
+            # Check the URL is actually OUR callback (post-redirect), not the OAuth
+            # URL with redirectUri=... in its query params. Match by startswith.
+            if page.url.startswith(CALLBACK_URL):
+                redirect_url = page.url
+                browser.close()
+                parsed = urlparse(redirect_url)
+                params = parse_qs(parsed.query)
+                code = params.get("code", [None])[0]
+                if not code:
+                    raise RuntimeError(f"No auth code in callback URL: {redirect_url}")
+                print("Login successful, got authorization code")
+                return code
+            time.sleep(1)
+
+        browser.close()
+        raise RuntimeError(f"Login not completed within {max_wait}s")
+
+
 def ensure_valid_token() -> dict:
     """
-    Get a valid token, auto-refreshing or re-authenticating as needed.
-    This is the main entry point — call this before any API request.
+    Get a valid token, refreshing or re-authenticating as needed.
+    Refresh tokens last 7 days; access tokens 30 min (auto-refreshed each call).
     """
     token = _load_token()
 
     if token:
-        # Check if refresh token is about to expire (>6 days)
+        # If refresh token is close to expiry, force a fresh manual login
         if _token_needs_refresh(token):
-            print("  Refresh token expiring soon — re-authenticating...")
-            try:
-                code = _auto_login_playwright()
-                token = _exchange_code_for_token(code)
-                print("  Token refreshed via auto-login")
-                return token
-            except Exception as e:
-                print(f"  [!] Auto-login failed: {e}")
-                # Try using existing refresh token as fallback
-                pass
-
-        # Try refreshing the access token (it expires every 30 min)
+            print("  Refresh token expiring soon — manual re-login required")
+            code = _manual_login()
+            return _exchange_code_for_token(code)
+        # Otherwise refresh the access token (30-min lifespan)
         try:
-            token = _refresh_access_token(token)
-            return token
+            return _refresh_access_token(token)
         except Exception as e:
-            print(f"  Access token refresh failed: {e}")
-            # Try full re-auth
-            try:
-                code = _auto_login_playwright()
-                token = _exchange_code_for_token(code)
-                return token
-            except Exception as e2:
-                raise RuntimeError(f"All auth methods failed: {e2}")
+            print(f"  Access token refresh failed: {e} — falling back to manual login")
+            code = _manual_login()
+            return _exchange_code_for_token(code)
 
-    # No token at all — need to authenticate
-    code = _auto_login_playwright()
-    token = _exchange_code_for_token(code)
-    return token
+    # No token at all — manual login
+    code = _manual_login()
+    return _exchange_code_for_token(code)
 
 
 # ── API calls ─────────────────────────────────────────────────────────
@@ -649,10 +713,24 @@ def login():
             print("No authorization code found in the URL.")
 
 
+def cmd_show():
+    """Dump raw position + account data so we can see all available fields."""
+    accounts = get_account_hashes()
+    print(f"\nFound {len(accounts)} account(s)\n")
+    for acct in accounts:
+        account_hash = acct["hashValue"]
+        account_num = acct.get("accountNumber", "???")
+        print(f"=== Account ...{account_num[-4:]} (raw API response) ===")
+        data = _api_get(f"/trader/v1/accounts/{account_hash}?fields=positions")
+        print(json.dumps(data, indent=2, default=str))
+        print()
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage:")
         print("  python3 brokerage.py --login          # First-time authentication")
+        print("  python3 brokerage.py --show           # Print raw positions data (no write)")
         print("  python3 brokerage.py --sync           # Sync positions to portfolio.md")
         print("  python3 brokerage.py --quote CF        # Get a quote")
         print("  python3 brokerage.py --history CF 1m daily  # Price history")
@@ -662,6 +740,8 @@ if __name__ == "__main__":
 
     if cmd == "--login":
         login()
+    elif cmd == "--show":
+        cmd_show()
     elif cmd == "--sync":
         content = sync_portfolio()
         print("\n--- portfolio.md ---")

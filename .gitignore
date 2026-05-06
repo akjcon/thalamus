@@ -7,3 +7,6 @@ memory/replays/
 memory/last_scan.txt
 .schwab_token.json
 .schwab_login_debug.png
+memory/.schwab_token.json
+memory/.schwab_storage_state.json
+memory/schwab_debug/

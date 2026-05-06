@@ -29,28 +29,6 @@ import costs
 import yaml
 
 
-def try_sync_portfolio(log=None):
-    """Attempt to sync portfolio from Schwab. Silently skip if not configured."""
-    try:
-        from brokerage import sync_portfolio
-        content = sync_portfolio()
-        # Count positions from the returned markdown
-        pos_count = content.count("\n| ") - content.count("\n| Symbol")  # table rows minus headers
-        msg = f"Portfolio synced from Schwab ({max(pos_count, 0)} positions)"
-        print(f"  {msg}")
-        if log:
-            log.log(f"  {msg}")
-    except (ImportError, SystemExit):
-        msg = "Portfolio sync skipped (brokerage not configured)"
-        print(f"  {msg}")
-        if log:
-            log.log(f"  {msg}")
-    except Exception as e:
-        msg = f"[!] Portfolio sync failed: {e} — overlap filter will not work"
-        print(f"  {msg}")
-        if log:
-            log.error(f"Portfolio sync failed: {e} — overlap filter will not work")
-
 ROOT = Path(__file__).parent.parent
 WORLD_MODEL_DIR = ROOT / "memory" / "world_model"
 
@@ -487,9 +465,6 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     scanner_model = config["models"]["scanner"]
     analyst_model = config["models"]["analyst"]
     deep_analyst_model = config["models"].get("deep_analyst", analyst_model)
-
-    # Step 0: Sync portfolio from brokerage (if configured)
-    try_sync_portfolio(log)
 
     # Step 1: Pull headlines
     log.log("[1/6] Pulling RSS feeds...")
