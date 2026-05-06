@@ -31,6 +31,46 @@ rss_feeds:
   - name: "EIA Today in Energy"
     url: "https://www.eia.gov/rss/todayinenergy.xml"
 
+  # Shipping / freight — choke-point and route disruption signals
+  - name: "gCaptain"
+    url: "https://gcaptain.com/feed/"
+  - name: "Splash 247"
+    url: "https://splash247.com/feed/"
+  - name: "The Loadstar"
+    url: "https://theloadstar.com/feed/"
+  - name: "Hellenic Shipping News"
+    url: "https://www.hellenicshippingnews.com/feed/"
+  - name: "JOC.com"
+    url: "https://www.joc.com/rss.xml"
+  - name: "Marine Insight"
+    url: "https://www.marineinsight.com/feed/"
+
+  # Mining / metals — physical supply signals
+  - name: "Mining.com"
+    url: "https://www.mining.com/feed/"
+
+  # Non-Western news desks — different events surface here first
+  - name: "SCMP"
+    url: "https://www.scmp.com/rss/91/feed"
+  - name: "TASS English"
+    url: "https://tass.com/rss/v2.xml"
+
+  # Agriculture — crop and farm production reports
+  - name: "FarmProgress"
+    url: "https://www.farmprogress.com/rss.xml"
+
+  # Soft commodities — coffee, sugar, etc.
+  - name: "Comunicaffe"
+    url: "https://www.comunicaffe.com/feed/"
+  - name: "World Coffee Portal"
+    url: "https://www.worldcoffeeportal.com/rss"
+  - name: "Sugar Online"
+    url: "https://www.sugaronline.com/rss"
+
+  # Weather — Atlantic hurricane updates (sparse but high-signal in season)
+  - name: "NOAA NHC"
+    url: "https://www.nhc.noaa.gov/index-at.xml"
+
 # Discord channels
 discord_log_channel: "thal-logs"
 
