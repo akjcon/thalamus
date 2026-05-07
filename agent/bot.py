@@ -213,6 +213,7 @@ class CycleLog:
         print(f"[!] {msg}")
 
     def format_summary(self) -> str:
+        """Plain-text summary — used as a fallback when embeds aren't appropriate."""
         elapsed = time.monotonic() - self.start_time
         lines = [f"**Scan cycle complete** ({elapsed:.0f}s)"]
         lines.append(f"Headlines: {self.headline_count} new | {self.flagged_count} flagged | {self.novel_count} novel")
@@ -232,6 +233,44 @@ class CycleLog:
                 lines.append(f"- {e[:200]}")
 
         return "\n".join(lines)
+
+    def format_summary_embed(self) -> discord.Embed:
+        """Rich embed — gives each flagged item its own field with full reasoning.
+        Discord embed limits: 4096 desc, 25 fields, 1024 per field value, 6000 total."""
+        elapsed = time.monotonic() - self.start_time
+
+        color = 0x95A5A6  # gray default
+        if self.verdict.startswith("ALERT"):
+            color = 0xE74C3C  # red — actionable
+        elif self.errors:
+            color = 0xF39C12  # orange — degraded
+
+        desc_lines = [
+            f"Headlines: **{self.headline_count}** new | **{self.flagged_count}** flagged | **{self.novel_count}** novel",
+            f"Verdict: **{self.verdict}**",
+        ]
+        if self.errors:
+            desc_lines.append("")
+            desc_lines.append("**Errors:**")
+            for e in self.errors[:5]:
+                desc_lines.append(f"- {e[:300]}")
+
+        embed = discord.Embed(
+            title=f"Scan cycle complete ({elapsed:.0f}s)",
+            description="\n".join(desc_lines)[:4096],
+            color=color,
+            timestamp=datetime.now(timezone.utc),
+        )
+
+        for d in self.flagged_details[:25]:
+            urgency = d.get("urgency", "low").upper()
+            title = d.get("title", "(no title)")
+            field_name = f"[{urgency}] {title}"[:256]
+            what_is_new = d.get("what_is_new", d.get("reason", ""))
+            field_value = (what_is_new or "(no reasoning)")[:1024]
+            embed.add_field(name=field_name, value=field_value, inline=False)
+
+        return embed
 
 
 CHAT_TOOLS = [
@@ -666,15 +705,18 @@ def filter_portfolio_overlap(trade_ideas: list[dict]) -> list[dict]:
     return filtered
 
 
-async def send_to_log_channel(message: str):
-    """Send a message to the log channel, truncating if needed."""
+async def send_to_log_channel(content):
+    """Send to log channel — accepts either a string (clamped to Discord's 2000-char
+    text limit) or a discord.Embed (sent as-is, embeds have their own larger limits)."""
     if not log_channel:
         return
-    # Discord limit is 2000 chars
-    if len(message) > 1900:
-        message = message[:1900] + "\n..."
     try:
-        await log_channel.send(message)
+        if isinstance(content, discord.Embed):
+            await log_channel.send(embed=content)
+        else:
+            if len(content) > 1900:
+                content = content[:1900] + "\n..."
+            await log_channel.send(content)
     except Exception as e:
         print(f"[!] Failed to send to log channel: {e}")
 
@@ -721,7 +763,7 @@ async def scan_loop():
                 result, cycle_log = await asyncio.get_event_loop().run_in_executor(None, run_scan_cycle)
 
             # Always log to #thal-logs
-            await send_to_log_channel(cycle_log.format_summary())
+            await send_to_log_channel(cycle_log.format_summary_embed())
 
             # Only send to #alerts if genuinely new trade ideas
             if result and result.get("alert_worthy", False) and alert_channel:
@@ -806,7 +848,7 @@ async def on_message(message: discord.Message):
                 await message.reply("Starting scan cycle...")
                 try:
                     result, cycle_log = await asyncio.get_event_loop().run_in_executor(None, run_scan_cycle)
-                    await send_to_log_channel(cycle_log.format_summary())
+                    await send_to_log_channel(cycle_log.format_summary_embed())
                     await send_cost_summary()
                     if result and result.get("alert_worthy", False):
                         embed = build_alert_embed(result)
