@@ -23,6 +23,7 @@ from scanner import pull_feeds, classify_headlines
 from analyst import (
     load_world_model, load_portfolio, research_questions,
     deep_analysis, update_world_model, validate_prices,
+    red_team_validate, save_validation,
 )
 from notifier import save_alert
 import costs
@@ -139,6 +140,44 @@ def build_trade_detail_embed(idea: dict) -> discord.Embed:
     if counter:
         parts.append(f"\n**What could go wrong:**\n{counter}")
 
+    validation = idea.get("validation")
+    if validation:
+        verdict = validation.get("verdict", "")
+        verdict_conf = validation.get("verdict_confidence", "")
+        if verdict == "CONFIRM":
+            parts.append(f"\n**Red-team validation: CONFIRMED ({verdict_conf})**")
+        elif verdict == "REVISE":
+            parts.append(f"\n**Red-team validation: REVISE ({verdict_conf})**")
+        elif verdict == "ERROR":
+            parts.append(f"\n**Red-team validation: PARSE ERROR — review manually**")
+        else:
+            parts.append(f"\n**Red-team validation: {verdict}**")
+
+        check_lines = []
+        for label, key in [
+            ("Exposure", "exposure_check"),
+            ("Structure", "structure_check"),
+            ("Magnitude", "magnitude_check"),
+        ]:
+            val = (validation.get(key) or "").strip()
+            if val and val.lower() not in ("n/a", "(none)", "none"):
+                check_lines.append(f"- **{label}:** {val}")
+        if check_lines:
+            parts.append("\n".join(check_lines))
+
+        tighter = (validation.get("tighter_instrument") or "").strip()
+        if tighter and tighter.lower() not in ("none", "none found", "n/a"):
+            parts.append(f"\n**Tighter alternative considered:** {tighter}")
+
+        reasoning = (validation.get("final_reasoning") or "").strip()
+        if reasoning:
+            parts.append(f"\n{reasoning}")
+
+        if verdict == "REVISE":
+            revision = (validation.get("revision_suggestion") or "").strip()
+            if revision:
+                parts.append(f"\n**Suggested revision:** {revision}")
+
     embed = discord.Embed(
         title=f"{direction}  {instrument}",
         description=_trunc("\n".join(parts), 4096),
@@ -202,6 +241,10 @@ class CycleLog:
         self.flagged_details = []
         self.verdict = "quiet"
         self.errors = []
+        self.killed_ideas = []      # list[{instrument, reasoning, kill_reasons, tighter_instrument}]
+        self.confirmed_ideas = []   # list[str] — instruments that survived red-team
+        self.revised_ideas = []     # list[{instrument, reasoning, revision}]
+        self.validation_errors = [] # list[str] — instruments where validator parse failed
 
     def log(self, msg: str):
         self.entries.append(msg)
@@ -262,7 +305,41 @@ class CycleLog:
             timestamp=datetime.now(timezone.utc),
         )
 
-        for d in self.flagged_details[:25]:
+        # Red-team validation summary — show before raw headlines since it's
+        # the actionable signal (and field budget is 25 total per embed).
+        if self.confirmed_ideas:
+            embed.add_field(
+                name=f"Red-team CONFIRMED ({len(self.confirmed_ideas)})",
+                value=", ".join(self.confirmed_ideas)[:1024],
+                inline=False,
+            )
+        for r in self.revised_ideas[:3]:
+            value = f"{r.get('revision', '')[:500]}\n→ {r.get('reasoning', '')[:400]}"[:1024]
+            embed.add_field(
+                name=f"Red-team REVISED — {r.get('instrument', '?')}"[:256],
+                value=value or "(no detail)",
+                inline=False,
+            )
+        for k in self.killed_ideas[:5]:
+            value = k.get("reasoning", "")[:600]
+            tighter = k.get("tighter_instrument", "")
+            if tighter and tighter.lower() not in ("none", "none found", "n/a", ""):
+                value += f"\n→ Tighter: {tighter[:200]}"
+            embed.add_field(
+                name=f"Red-team KILLED — {k.get('instrument', '?')}"[:256],
+                value=(value or "(no reasoning)")[:1024],
+                inline=False,
+            )
+        if self.validation_errors:
+            embed.add_field(
+                name=f"Red-team PARSE ERROR ({len(self.validation_errors)})",
+                value=", ".join(self.validation_errors)[:1024],
+                inline=False,
+            )
+
+        # Flagged headlines fill any remaining field slots (max 25 fields/embed).
+        headline_budget = max(0, 25 - len(embed.fields))
+        for d in self.flagged_details[:headline_budget]:
             urgency = d.get("urgency", "low").upper()
             title = d.get("title", "(no title)")
             field_name = f"[{urgency}] {title}"[:256]
@@ -504,9 +581,10 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     scanner_model = config["models"]["scanner"]
     analyst_model = config["models"]["analyst"]
     deep_analyst_model = config["models"].get("deep_analyst", analyst_model)
+    validator_model = config["models"].get("validator", analyst_model)
 
     # Step 1: Pull headlines
-    log.log("[1/6] Pulling RSS feeds...")
+    log.log("[1/7] Pulling RSS feeds...")
     headlines = pull_feeds(config)
     log.headline_count = len(headlines)
     log.log(f"  Found {len(headlines)} new headlines")
@@ -517,7 +595,7 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
         return None, log
 
     # Step 2: Classify for novelty
-    log.log("[2/6] Classifying headlines for novelty...")
+    log.log("[2/7] Classifying headlines for novelty...")
     world_model = load_world_model()
     model_summary = world_model[:3000] if len(world_model) > 3000 else world_model
     flagged = classify_headlines(anthropic_client, headlines, model_summary, scanner_model)
@@ -544,7 +622,7 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     log.novel_count = len(analysis_items)
 
     # Step 3: Research
-    log.log("[3/6] Researching...")
+    log.log("[3/7] Researching...")
     all_questions = []
     for item in analysis_items:
         all_questions.extend(item.get("follow_up_questions", []))
@@ -557,7 +635,7 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     save_replay(timestamp, headlines, analysis_items, research)
 
     # Step 4: Deep analysis
-    log.log("[4/6] Analyzing...")
+    log.log("[4/7] Analyzing...")
     portfolio = load_portfolio()
     result = deep_analysis(
         anthropic_client, analysis_items, world_model, portfolio, research, deep_analyst_model
@@ -569,7 +647,7 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
         return None, log
 
     # Step 5: Update world model (always, even if no trade ideas)
-    log.log("[5/6] Updating world model...")
+    log.log("[5/7] Updating world model...")
     model_updates = result.get("world_model_updates", "")
     if model_updates:
         update_world_model(anthropic_client, world_model, model_updates, analyst_model)
@@ -577,12 +655,12 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     # Step 6: Price validation (only if there are trade ideas)
     trade_ideas = result.get("trade_ideas", [])
     if trade_ideas and result.get("alert_worthy", False):
-        log.log("[6/6] Checking prices to validate ideas...")
+        log.log("[6/7] Checking prices to validate ideas...")
         result["trade_ideas"] = validate_prices(
             anthropic_client, trade_ideas, analyst_model
         )
     else:
-        log.log("[6/6] No actionable ideas this cycle — world model updated quietly.")
+        log.log("[6/7] No actionable ideas this cycle — world model updated quietly.")
 
     # Filter out low-confidence ideas — only medium and high survive
     if result.get("trade_ideas"):
@@ -606,6 +684,68 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
             log.log("  All ideas filtered (repeats or portfolio overlap) — downgrading to quiet cycle.")
             result["alert_worthy"] = False
 
+    # Step 7: Red-team validation — last gate before alert.
+    # For each surviving idea, run an adversarial deep-dive that verifies the
+    # specific instrument actually captures the macro thesis. KILL'd ideas
+    # don't reach #alerts but are logged to #thal-logs with reasoning.
+    if result.get("trade_ideas") and result.get("alert_worthy"):
+        log.log("[7/7] Red-team validating surviving ideas...")
+        survivors = []
+        for idea in result["trade_ideas"]:
+            instrument = idea.get("instrument", "?")
+            try:
+                validation = red_team_validate(
+                    anthropic_client, idea, world_model, portfolio, validator_model
+                )
+            except Exception as e:
+                log.error(f"Red-team crashed for {instrument}: {e}")
+                idea["validation"] = {
+                    "verdict": "ERROR",
+                    "final_reasoning": f"Validator crashed: {e}",
+                }
+                log.validation_errors.append(instrument)
+                survivors.append(idea)
+                continue
+
+            try:
+                save_validation(timestamp, idea, validation)
+            except Exception as e:
+                log.error(f"Could not persist validation for {instrument}: {e}")
+
+            verdict = (validation.get("verdict") or "ERROR").upper()
+            reasoning = (validation.get("final_reasoning") or "")[:300]
+            log.log(f"  [{verdict}] {instrument} — {reasoning}")
+
+            if verdict == "KILL":
+                log.killed_ideas.append({
+                    "instrument": instrument,
+                    "reasoning": validation.get("final_reasoning", ""),
+                    "kill_reasons": validation.get("kill_reasons", []),
+                    "tighter_instrument": validation.get("tighter_instrument", ""),
+                })
+                continue
+
+            if verdict == "REVISE":
+                log.revised_ideas.append({
+                    "instrument": instrument,
+                    "reasoning": validation.get("final_reasoning", ""),
+                    "revision": validation.get("revision_suggestion", ""),
+                })
+            elif verdict == "ERROR":
+                log.validation_errors.append(instrument)
+            else:
+                log.confirmed_ideas.append(instrument)
+
+            idea["validation"] = validation
+            survivors.append(idea)
+
+        result["trade_ideas"] = survivors
+        if not survivors:
+            log.log("  All ideas killed by red-team — downgrading to quiet cycle.")
+            result["alert_worthy"] = False
+    else:
+        log.log("[7/7] No ideas to red-team — skipping.")
+
     if result.get("alert_worthy"):
         save_alert(result)
         ideas = result.get("trade_ideas", [])
@@ -614,6 +754,8 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
             found = re.findall(r'\(([A-Z/]{1,10})\)', idea.get("instrument", ""))
             tickers.extend(found)
         log.verdict = f"ALERT — {', '.join(tickers)}" if tickers else "ALERT"
+    elif log.killed_ideas:
+        log.verdict = f"quiet — red-team killed {len(log.killed_ideas)} idea(s)"
     else:
         log.verdict = "quiet — world model updated, no new trades"
 
@@ -827,6 +969,57 @@ async def on_ready():
         client.loop.create_task(scan_loop())
 
 
+async def _send_long_message(channel, content: str, max_chunks: int = 10):
+    """Send content split into ~1900-char chunks (Discord's 2000-char limit per message)."""
+    if not content.strip():
+        await channel.send("(empty)")
+        return
+    chunk_size = 1900
+    chunks = [content[i:i + chunk_size] for i in range(0, len(content), chunk_size)]
+    for chunk in chunks[:max_chunks]:
+        await channel.send(chunk)
+    if len(chunks) > max_chunks:
+        extra = len(chunks) - max_chunks
+        await channel.send(f"...truncated ({extra} more chunk(s); ssh into Railway for full file)")
+
+
+async def handle_world_model_command(message: discord.Message, arg: str):
+    """Surface the on-disk world model from #alerts.
+    !world_model            → _index.md
+    !world_model list       → list all files
+    !world_model <name>     → dump that file (chunked, max ~10 messages)"""
+    if not WORLD_MODEL_DIR.exists():
+        await message.reply("World model directory not found.")
+        return
+
+    if not arg or arg.lower() == "index":
+        index_path = WORLD_MODEL_DIR / "_index.md"
+        if not index_path.exists():
+            await message.reply("No _index.md yet.")
+            return
+        await _send_long_message(message.channel, index_path.read_text())
+        return
+
+    if arg.lower() == "list":
+        files = sorted(f.name for f in WORLD_MODEL_DIR.iterdir() if f.suffix == ".md")
+        if not files:
+            await message.reply("World model is empty.")
+            return
+        await message.reply("**Files:**\n" + "\n".join(f"- {f}" for f in files))
+        return
+
+    filename = arg if arg.endswith(".md") else f"{arg}.md"
+    filepath = (WORLD_MODEL_DIR / filename).resolve()
+    if not filepath.is_relative_to(WORLD_MODEL_DIR.resolve()):
+        await message.reply(f"Invalid filename: {filename}")
+        return
+    if not filepath.exists():
+        await message.reply(f"File not found: {filename}. Try `!world_model list`.")
+        return
+    await message.reply(f"**{filename}**")
+    await _send_long_message(message.channel, filepath.read_text())
+
+
 @client.event
 async def on_message(message: discord.Message):
     # Ignore own messages
@@ -839,8 +1032,17 @@ async def on_message(message: discord.Message):
 
     # Only respond in the alerts channel
     if alert_channel and message.channel.id == alert_channel.id:
+        content_stripped = message.content.strip()
+
+        # World model browse command
+        if content_stripped.lower().startswith("!world_model"):
+            parts = content_stripped.split(None, 1)
+            arg = parts[1].strip() if len(parts) > 1 else ""
+            await handle_world_model_command(message, arg)
+            return
+
         # Manual scan trigger
-        if message.content.strip().lower() == "!scan":
+        if content_stripped.lower() == "!scan":
             if _scan_lock.locked():
                 await message.reply("A scan is already running.")
                 return
