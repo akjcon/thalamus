@@ -6,6 +6,7 @@ structured analysis with trade implications.
 
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from costs import track as track_cost
@@ -624,6 +625,200 @@ non-obvious trade, say so — don't pad with consensus ideas.""",
             "raw_response": response.content[0].text[:2000],
             "alert_worthy": False,
         }
+
+
+def _extract_final_text(response_content) -> str:
+    """Text blocks after the last non-text block. With server-side web_search,
+    the model emits search calls interleaved with text; the final answer lives
+    after the last tool/search block."""
+    last_non_text_idx = -1
+    for i, block in enumerate(response_content):
+        if not hasattr(block, "text"):
+            last_non_text_idx = i
+    if last_non_text_idx >= 0:
+        return "\n".join(
+            b.text for b in response_content[last_non_text_idx + 1:] if hasattr(b, "text")
+        )
+    return "\n".join(b.text for b in response_content if hasattr(b, "text"))
+
+
+def _parse_json_object(text: str) -> dict | None:
+    """Pull the first complete JSON object out of a string. Tolerates markdown
+    fences and surrounding prose. Returns None if no object parses."""
+    text = text.strip()
+    if text.startswith("```"):
+        parts = text.split("```")
+        if len(parts) >= 3:
+            inner = parts[1]
+            if inner.startswith("json"):
+                inner = inner[4:]
+            text = inner.strip()
+    first = text.find("{")
+    last = text.rfind("}")
+    if first < 0 or last <= first:
+        return None
+    try:
+        return json.loads(text[first:last + 1])
+    except json.JSONDecodeError:
+        return None
+
+
+def red_team_validate(client, idea: dict, world_model: str, portfolio: str, model: str) -> dict:
+    """
+    Adversarial validation of a single trade idea. Default verdict is KILL —
+    only CONFIRM when web_search evidence forces it.
+
+    Investigates with primary-source research: revenue exposure, contract/
+    hedging structure, magnitude vs. recent guidance, tighter-instrument
+    alternatives, priced-in status. Returns CONFIRM/KILL/REVISE with reasoning.
+
+    On JSON parse failure, returns verdict="ERROR" so the caller can pass the
+    idea through with a warning rather than silently suppress.
+    """
+    instrument = idea.get("instrument", "")
+    direction = idea.get("direction", "").upper()
+    thesis = idea.get("thesis", "")
+    chain = idea.get("chain", [])
+    counter = idea.get("counter_thesis", "")
+    assumptions = idea.get("key_assumptions", [])
+    time_horizon = idea.get("time_horizon", "")
+    confidence = idea.get("confidence", "")
+    invalidation = idea.get("invalidation_signal", "")
+
+    chain_text = "\n".join(f"  {i+1}. {step}" for i, step in enumerate(chain)) or "  (none)"
+    assumptions_text = "\n".join(f"  - {a}" for a in assumptions) or "  (none)"
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    system_prompt = """You are a SKEPTICAL EQUITY ANALYST tasked with KILLING a trade idea before it gets sent to a user. A geopolitical analyst has proposed the trade. Your job is to find reasons it WILL NOT WORK on the specific instrument proposed.
+
+KEY INSIGHT: The geopolitical thesis is usually right at the INDUSTRY level. The failure mode is usually that the specific company proposed does not actually capture the upside — because its revenue mix, contract structure, hedging, or magnitude of impact insulates it from the catalyst.
+
+YOUR DEFAULT VERDICT IS KILL. Only CONFIRM when positive evidence shows the specific instrument will materially benefit from the thesis within the proposed time horizon.
+
+## What to investigate
+
+Use web_search aggressively — pull as many threads as you need. There is no cap on how deep you go. Verify with PRIMARY SOURCES (10-K, 10-Q, earnings calls, company press releases, government data) — not market commentary blogs.
+
+1. **Revenue exposure.** What percentage of the company's revenue actually correlates with the thesis catalyst? Has the company divested, spun off, or restructured the relevant business in the last 18 months? If the thesis depends on a business line, verify it still exists and is material to current revenue mix.
+
+2. **Contract / inventory / hedging structure.** Will the catalyst flow through to earnings within the proposed time horizon?
+   - Shipping: long-term charters vs. spot exposure. A fleet on multi-year charters at fixed rates does NOT capture a spot scarcity premium for years.
+   - Producers: forward hedging programs that lock in old prices.
+   - Chemicals/refining: lag between input-cost change and earnings impact.
+   - Traders/distributors: pass-through margins vs. absolute price exposure.
+
+3. **Magnitude check.** Compare the thesis-implied move to recent guidance and realized prices.
+   - Most recent earnings call: has management raised guidance? By how much?
+   - A 5-15% guidance raise on a thesis that requires 30-50% repricing is a FAIL.
+   - If the thesis claims "structural shift" but guidance, realized prices, or volumes are unchanged → KILL.
+
+4. **Tighter instrument check.** Is there a US-tradeable alternative that captures the SAME thesis with less dilution?
+   - The user trades through a standard US brokerage (Schwab). Alternatives must be US-listed stocks/ETFs/ADRs or major US futures (CME/NYMEX/CBOT/ICE US).
+   - If a tighter alternative exists, the proposed instrument loses → KILL or REVISE.
+
+5. **Already priced in.** Has the stock already moved on this thesis? Check 1m/3m/6m price action. Is sell-side already publishing on this exact thesis?
+
+## Output format
+
+After investigation, output ONLY this JSON object (no preamble, no postamble, no markdown fences):
+
+{
+  "verdict": "CONFIRM" | "KILL" | "REVISE",
+  "verdict_confidence": "low" | "medium" | "high",
+  "exposure_check": "what % of revenue / operations actually ties to the thesis, with citation",
+  "structure_check": "contract / hedging / inventory structure — will it flow through in the time horizon? with citation",
+  "magnitude_check": "compare thesis-implied magnitude to recent guidance / realized prices, with citation",
+  "tighter_instrument": "ticker + one-line why, or 'none found'",
+  "key_findings": ["specific fact with source URL", "specific fact with source URL"],
+  "kill_reasons": ["reason 1 (empty list if verdict is CONFIRM)"],
+  "final_reasoning": "one paragraph explaining the verdict",
+  "revision_suggestion": "if REVISE, what specifically to change; otherwise empty string"
+}
+
+VERDICT RULES:
+- CONFIRM: All five investigation areas pass with positive evidence. No tighter instrument exists. Thesis is not already priced in.
+- KILL: Any one of revenue exposure / contract structure / magnitude fails materially, OR a tighter instrument exists, OR thesis is already priced in.
+- REVISE: The macro thesis is right but the specific instrument, direction, or time horizon needs adjustment (e.g., "right thesis, wrong ticker — use X instead")."""
+
+    user_prompt = f"""## Trade Idea to Validate (today is {today})
+
+**Direction:** {direction}
+**Instrument:** {instrument}
+**Time horizon:** {time_horizon}
+**Confidence claimed by analyst:** {confidence}
+
+**Thesis:**
+{thesis}
+
+**Causal chain:**
+{chain_text}
+
+**Counter-thesis (analyst's own):**
+{counter}
+
+**Key assumptions:**
+{assumptions_text}
+
+**Invalidation signal:**
+{invalidation}
+
+## Current World Model (what we already think about the macro environment)
+{world_model}
+
+## Current Portfolio
+{portfolio}
+
+---
+
+Investigate using web_search. Verify with primary sources. Pull as many threads as you need — go deep. Then output the JSON verdict described in the system prompt."""
+
+    response = client.messages.create(
+        model=model,
+        max_tokens=8192,
+        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 30}],
+        system=system_prompt,
+        messages=[{"role": "user", "content": user_prompt}],
+    )
+
+    label_instrument = instrument.split("(")[0].strip()[:20] or "unknown"
+    track_cost(f"red_team[{label_instrument}]", response, model)
+
+    raw_text = _extract_final_text(response.content)
+    parsed = _parse_json_object(raw_text)
+
+    if parsed is None:
+        return {
+            "verdict": "ERROR",
+            "verdict_confidence": "low",
+            "final_reasoning": "Validator output did not contain parseable JSON — surfacing for human review.",
+            "key_findings": [],
+            "kill_reasons": [],
+            "tighter_instrument": "n/a",
+            "exposure_check": "n/a",
+            "structure_check": "n/a",
+            "magnitude_check": "n/a",
+            "revision_suggestion": "",
+            "raw_response": raw_text[:2000],
+            "parse_error": True,
+        }
+
+    return parsed
+
+
+def save_validation(timestamp: str, idea: dict, validation: dict) -> Path:
+    """Persist a red-team validation result for audit / over-filter spot-checks."""
+    val_dir = MEMORY / "validations"
+    val_dir.mkdir(parents=True, exist_ok=True)
+    instrument = idea.get("instrument", "unknown")
+    safe = re.sub(r"[^A-Za-z0-9_-]", "_", instrument)[:40] or "unknown"
+    filepath = val_dir / f"{timestamp}_{safe}.json"
+    payload = {
+        "timestamp": timestamp,
+        "idea": idea,
+        "validation": validation,
+    }
+    filepath.write_text(json.dumps(payload, indent=2))
+    return filepath
 
 
 def update_world_model(client, current_model: str, updates: str, model: str):

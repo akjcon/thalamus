@@ -17,6 +17,7 @@ from scanner import pull_feeds, classify_headlines, format_headlines_for_llm
 from analyst import (
     load_world_model, load_portfolio, research_questions,
     deep_analysis, update_world_model,
+    red_team_validate, save_validation,
 )
 from notifier import save_alert, send_discord_alert
 
@@ -38,9 +39,10 @@ def run_cycle():
     client = Anthropic()  # Uses ANTHROPIC_API_KEY env var
     scanner_model = config["models"]["scanner"]
     analyst_model = config["models"]["analyst"]
+    validator_model = config["models"].get("validator", analyst_model)
 
     # Step 1: Pull new headlines
-    print("\n[1/5] Pulling RSS feeds...")
+    print("\n[1/6] Pulling RSS feeds...")
     headlines = pull_feeds(config)
     print(f"  Found {len(headlines)} new headlines")
 
@@ -49,7 +51,7 @@ def run_cycle():
         return
 
     # Step 2: Classify with Haiku
-    print("\n[2/5] Classifying headlines with Haiku...")
+    print("\n[2/6] Classifying headlines with Haiku...")
     world_model = load_world_model()
 
     # Give Haiku a compressed summary, not the full model
@@ -74,7 +76,7 @@ def run_cycle():
     print(f"\n  Sending {len(analysis_items)} items to deep analysis (of {len(flagged)} flagged)")
 
     # Step 3: Research follow-up questions
-    print("\n[3/5] Researching follow-up questions...")
+    print("\n[3/6] Researching follow-up questions...")
     all_questions = []
     for item in analysis_items:
         all_questions.extend(item.get("follow_up_questions", []))
@@ -85,7 +87,7 @@ def run_cycle():
         research = research_questions(client, all_questions[:5], analyst_model)  # Cap at 5
 
     # Step 4: Deep analysis
-    print("\n[4/5] Running deep analysis with Sonnet...")
+    print("\n[4/6] Running deep analysis with Sonnet...")
     portfolio = load_portfolio()
     result = deep_analysis(client, analysis_items, world_model, portfolio, research, analyst_model)
 
@@ -94,10 +96,47 @@ def run_cycle():
         return
 
     # Step 5: Update world model and alert if needed
-    print("\n[5/5] Updating world model...")
+    print("\n[5/6] Updating world model...")
     model_updates = result.get("world_model_updates", "")
     if model_updates:
         update_world_model(client, world_model, model_updates, analyst_model)
+
+    # Step 6: Red-team validation of surviving trade ideas.
+    print("\n[6/6] Red-team validating ideas...")
+    if result.get("trade_ideas") and result.get("alert_worthy", False):
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        survivors = []
+        for idea in result["trade_ideas"]:
+            instrument = idea.get("instrument", "?")
+            try:
+                validation = red_team_validate(
+                    client, idea, world_model, portfolio, validator_model
+                )
+            except Exception as e:
+                print(f"  [!] Validator crashed for {instrument}: {e}")
+                idea["validation"] = {
+                    "verdict": "ERROR",
+                    "final_reasoning": f"Validator crashed: {e}",
+                }
+                survivors.append(idea)
+                continue
+            try:
+                save_validation(timestamp, idea, validation)
+            except Exception as e:
+                print(f"  [!] Could not persist validation for {instrument}: {e}")
+            verdict = (validation.get("verdict") or "ERROR").upper()
+            reasoning = (validation.get("final_reasoning") or "")[:300]
+            print(f"  [{verdict}] {instrument} — {reasoning}")
+            if verdict == "KILL":
+                continue
+            idea["validation"] = validation
+            survivors.append(idea)
+        result["trade_ideas"] = survivors
+        if not survivors:
+            print("  All ideas killed by red-team — downgrading to quiet cycle.")
+            result["alert_worthy"] = False
+    else:
+        print("  No ideas to validate.")
 
     # Save alert
     alert_path = save_alert(result)
