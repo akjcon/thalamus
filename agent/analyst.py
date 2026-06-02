@@ -34,6 +34,55 @@ def load_world_model() -> str:
     return "\n\n---\n\n".join(parts) if parts else "(World model is empty — first run.)"
 
 
+def regenerate_index() -> None:
+    """Deterministically (re)generate _index.md from the world model files.
+
+    The index is a GENERATED artifact — the analyst no longer hand-maintains it,
+    so it can never drift from the files it points to. Each entry shows the
+    file's title, a short status/as-of descriptor, and when it was last updated
+    (a freshness signal the analyst can use to spot stale topics).
+    """
+    if not WORLD_MODEL_DIR.exists():
+        return
+
+    files = [
+        f for f in WORLD_MODEL_DIR.iterdir()
+        if f.suffix == ".md" and f.name != "_index.md"
+    ]
+    # Most recently updated first — surfaces what's live and flags what's gone stale.
+    files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+
+    lines = [
+        "# World Model Index",
+        "",
+        "_Auto-generated after each update — do not edit by hand; manual edits are overwritten._",
+        "",
+        f"{len(files)} topic files, most recently updated first.",
+        "",
+    ]
+    for f in files:
+        text = f.read_text()
+        title = f.stem
+        status = ""
+        for line in text.splitlines():
+            s = line.strip()
+            if s.startswith("# "):
+                title = s[2:].strip()
+                break
+        for line in text.splitlines():
+            low = line.strip().lower()
+            if low.startswith("**status:") or low.startswith("**as of:"):
+                status = re.sub(r"\*+", "", line.strip()).strip()
+                break
+        updated = datetime.fromtimestamp(
+            f.stat().st_mtime, tz=timezone.utc
+        ).strftime("%Y-%m-%d")
+        desc = f" — {status[:160]}" if status else ""
+        lines.append(f"- **[{f.name}]({f.name})** (updated {updated}) — {title}{desc}")
+
+    (WORLD_MODEL_DIR / "_index.md").write_text("\n".join(lines) + "\n")
+
+
 def load_portfolio() -> str:
     """Read current portfolio."""
     portfolio_file = MEMORY / "portfolio.md"
@@ -332,6 +381,7 @@ def deep_analysis(client, flagged_items: list[dict], world_model: str,
     with trade implications.
     """
     recent_alerts = load_recent_alerts(n=10)
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     items_text = "\n\n".join(
         f"### {item['title']}\n"
@@ -342,7 +392,9 @@ def deep_analysis(client, flagged_items: list[dict], world_model: str,
         for item in flagged_items
     )
 
-    prompt = f"""## Current World Model
+    prompt = f"""Today is {today}.
+
+## Current World Model
 {world_model}
 
 ## Current Portfolio
@@ -372,6 +424,15 @@ Analyze these events for second and third-order effects. Think step by step:
 9. **"What would change my mind?"** — Name one specific, observable thing that would falsify this thesis in the next 2 weeks. Not a vague risk — a concrete signal you could check.
 10. **Confidence** — given the counter-thesis AND the assumption audit, how confident are you? (low/medium/high)
 11. **Portfolio impact** — how does this affect existing positions, if any?
+12. **Reconcile with your world model** — For each event, state how it relates to what you
+    already believe: does it CONFIRM, CONTRADICT, or EXTEND an existing thesis? If it
+    CONTRADICTS, name the file and the stale claim so it gets fixed (e.g. "qatar_crisis.md
+    still says LNG restarts in 3-6 weeks; this implies Q1 2027"). Which OTHER topics in your
+    world model does this connect to? An event in one domain that shifts your thesis in
+    another (Iran → fertilizer → corn; shipping → consumer goods) is exactly the cross-topic
+    edge — say so explicitly. If a dated prediction's deadline has already passed (today is
+    {today}) without the predicted event, mark it WRONG/PARTIAL and de-escalate rather than
+    silently re-dating it forward.
 
 ## CRITICAL RULES FOR TRADE IDEAS
 
@@ -577,7 +638,7 @@ Then produce your output as JSON with this structure:
             ]
         }}
     ],
-    "world_model_updates": "Markdown text describing what should be updated in the world model",
+    "world_model_updates": "Markdown describing what to update — for each fact note CONFIRM/CONTRADICT/EXTEND, name any file with a contradicting value that must be fixed, and flag any expired prediction to de-escalate. Do not just append news.",
     "new_questions": ["questions to investigate in future cycles"],
     "alert_worthy": true/false
 }}
@@ -834,10 +895,10 @@ def update_world_model(client, current_model: str, updates: str, model: str):
         model=model,
         max_tokens=32768,
         timeout=600.0,
-        system="""You maintain a world model — a set of markdown files that represent
-your current understanding of the geopolitical landscape. You are free to organize
-these files however you want. Create new files, update existing ones, or restructure
-as needed.
+        system="""You maintain a world model — a set of markdown files representing your
+current understanding of the geopolitical landscape. Your job each cycle is to RECONCILE
+new information into this model, not to pile it on top. A world model is a living
+understanding, not a news log.
 
 Output a JSON array of file operations:
 [
@@ -845,23 +906,42 @@ Output a JSON array of file operations:
     {"action": "delete", "filename": "outdated.md"}
 ]
 
-IMPORTANT RULES:
-- ONLY include files that ACTUALLY CHANGED. Do NOT rewrite files that have no updates.
-  If a file's content would be identical to what's already there, DO NOT include it.
-- Only update _index.md if you added or removed files, or if section descriptions changed.
-- Keep files concise — bullet points, not paragraphs. Capture key facts and dynamics.
-- Filenames should be descriptive and use snake_case.
-- One topic per file.
-- Keep your total output SHORT. Fewer file operations = better. If the update only affects
-  2 files, only output 2 operations. Do not rewrite the entire world model.
-- HARD CAP: Maximum 5 file operations per cycle. If more than 5 files need updating,
-  pick the 5 most important changes and skip the rest.
+## RECONCILE — DECIDE, DON'T APPEND
+For each piece of new information, decide which it is and act accordingly:
+- CONFIRM — it matches what a file already says. Update that file IN PLACE (refresh the
+  "as of" date, tighten wording). Do NOT spawn a new file or restate it elsewhere.
+- CONTRADICT — it conflicts with what a file already says. REPLACE the stale claim and say
+  so, e.g. "Prior estimate (August 2026) superseded — now Q1 2027." Never leave two files
+  asserting different values for the same fact.
+- EXTEND — it adds something genuinely new to an existing topic. Revise that file in place.
+
+## A FACT LIVES IN EXACTLY ONE FILE
+If a date, number, or status is relevant to several files, keep it in the single most
+relevant owner file and REFERENCE that file elsewhere (e.g. "see oil_gas_market.md") —
+never copy the value into multiple files, because copies drift and contradict.
+
+## DE-ESCALATE WHEN REALITY DISAGREES
+If a dated prediction's deadline has passed without the predicted event, mark it WRONG or
+PARTIAL and DOWNGRADE the alarm — do NOT silently re-date it forward. A prediction restated
+every cycle as "still 4-8 weeks away" is a failure mode. You are explicitly permitted and
+expected to lower confidence and de-escalate when a prior call didn't pan out.
+
+## OTHER RULES
+- ONLY include files that ACTUALLY CHANGED. If a file's content would be identical, omit it.
+- Prefer revising an existing file over creating a new one. Before creating a new file,
+  confirm none of the existing files already covers this theme — if one does, update it.
+- Do NOT write _index.md — it is generated automatically from the files. Any _index.md
+  operation you emit will be ignored.
+- Use the "delete" action to retire files that are fully superseded or no longer worth tracking.
+- Keep files concise — bullet points, not paragraphs. Filenames are descriptive snake_case.
+- Keep total output SHORT. Fewer operations = better. Do not rewrite the whole world model.
+- HARD CAP: Maximum 5 file operations per cycle. If more than 5 need updating, pick the 5
+  most important (fixing a contradiction counts) and skip the rest.
 - Maximum 800 words per file. Be ruthlessly concise — key facts and dynamics only.
-- Each world model file should end with a `## Watch For` section — 2-3 open questions
-  or specific signals to monitor in future cycles. These feed back as context for the
-  next analysis, creating a self-questioning loop. Examples: "Watch for: whether Hormuz
-  insurance premiums spike above X", "Watch for: Q2 earnings guidance from fertilizer
-  producers mentioning input cost pass-through." If nothing is worth watching, the topic
+- Each file should end with a `## Watch For` section — 2-3 open questions or specific signals
+  to monitor next cycle. These feed back as context, creating a self-questioning loop.
+  Examples: "Watch for: whether Hormuz insurance premiums spike above X", "Watch for: Q2
+  fertilizer guidance on input-cost pass-through." If nothing is worth watching, the topic
   may not be worth a file.
 Respond with ONLY the JSON array.""",
         messages=[{
@@ -902,9 +982,16 @@ Apply these updates to the world model. Create, modify, or reorganize files as n
         if not filepath.is_relative_to(WORLD_MODEL_DIR.resolve()):
             print(f"  [!] Path traversal blocked in world model update: {op['filename']}")
             continue
+        # The index is a generated artifact — ignore any model op that touches it.
+        if filepath.name == "_index.md":
+            print(f"  [*] Ignored model op on generated _index.md")
+            continue
         if op["action"] == "write":
             filepath.write_text(op["content"])
             print(f"  [*] Updated world model: {op['filename']}")
         elif op["action"] == "delete" and filepath.exists():
             filepath.unlink()
             print(f"  [*] Removed from world model: {op['filename']}")
+
+    # Rebuild the index from whatever files now exist so it can never drift.
+    regenerate_index()
