@@ -644,6 +644,20 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
     if "error" in result:
         log.error(f"Analysis error: {result['error']}")
         log.verdict = "error in analysis"
+        # Persist the failure so a run of parse errors is distinguishable on disk
+        # from genuine quiet cycles (quiet = replay saved, no error file).
+        try:
+            err_dir = ROOT / "memory" / "errors"
+            err_dir.mkdir(parents=True, exist_ok=True)
+            (err_dir / f"{timestamp}.json").write_text(json.dumps({
+                "timestamp": timestamp,
+                "error": result.get("error"),
+                "raw_response": result.get("raw_response", ""),
+                "flagged": [i.get("title", "") for i in analysis_items],
+            }, indent=2))
+            log.log(f"  Persisted analysis error to memory/errors/{timestamp}.json")
+        except Exception as e:
+            log.error(f"Could not persist analysis error: {e}")
         return None, log
 
     # Step 5: Update world model (always, even if no trade ideas)
