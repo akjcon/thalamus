@@ -964,16 +964,35 @@ Apply these updates to the world model. Create, modify, or reorganize files as n
         return
 
     try:
-        text = response.content[0].text.strip()
-        if text.startswith("```"):
-            text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        operations = json.loads(text)
+        text = response.content[0].text
+        # Extract the outermost JSON array, tolerating code fences OR a prose
+        # preamble (Sonnet sometimes prepends "Looking at the updates..." despite
+        # the "ONLY the JSON array" instruction). A stray sentence must NOT silently
+        # drop the entire world-model update — that's a known staleness cause.
+        start = text.find("[")
+        end = text.rfind("]")
+        if start == -1 or end <= start:
+            raise json.JSONDecodeError("no JSON array found in response", text, 0)
+        operations = json.loads(text[start:end + 1])
     except (json.JSONDecodeError, IndexError) as e:
         print(f"  [!] Failed to parse world model updates: {e}")
         raw = response.content[0].text if response.content else "(empty)"
         print(f"  [!] Response starts with: {raw[:500]}")
         print(f"  [!] Response ends with: {raw[-500:]}")
         print(f"  [!] Stop reason: {response.stop_reason}")
+        # Persist so a silent update failure is distinguishable from a quiet cycle.
+        try:
+            err_dir = MEMORY / "errors"
+            err_dir.mkdir(parents=True, exist_ok=True)
+            ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            (err_dir / f"world_model_update_{ts}.json").write_text(json.dumps({
+                "stage": "world_model_update",
+                "error": str(e),
+                "stop_reason": response.stop_reason,
+                "raw_response": raw[:4000],
+            }, indent=2))
+        except Exception:
+            pass
         return
 
     for op in operations:

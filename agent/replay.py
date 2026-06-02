@@ -17,7 +17,7 @@ from anthropic import Anthropic
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from analyst import load_world_model, load_portfolio, deep_analysis, validate_prices
+from analyst import load_world_model, load_portfolio, deep_analysis, validate_prices, update_world_model
 
 ROOT = Path(__file__).parent.parent
 REPLAY_DIR = ROOT / "memory" / "replays"
@@ -45,7 +45,7 @@ def list_replays():
         print()
 
 
-def replay(replay_id: str | None = None):
+def replay(replay_id: str | None = None, apply_updates: bool = False):
     if not REPLAY_DIR.exists():
         print("No replays saved yet. Run a scan cycle first.")
         return
@@ -84,6 +84,17 @@ def replay(replay_id: str | None = None):
     if "error" in result:
         print(f"Analysis error: {result['error']}")
         return
+
+    # Apply world-model updates (opt-in) — replay is read-only by default, so this
+    # is the explicit way to actually persist a cycle's reconciliation to disk.
+    if apply_updates:
+        upd = result.get("world_model_updates", "")
+        if upd:
+            print("\nApplying world model updates (--apply)...")
+            update_world_model(client, world_model, upd, "claude-sonnet-4-6")
+            print("World model updates applied.")
+        else:
+            print("\n(--apply) No world_model_updates produced this run.")
 
     # Price validation (uses Schwab API, falls back to web_search)
     ideas = result.get("trade_ideas", [])
@@ -144,10 +155,12 @@ def replay(replay_id: str | None = None):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "--list":
-            list_replays()
-        else:
-            replay(sys.argv[1])
+    args = sys.argv[1:]
+    apply_updates = "--apply" in args
+    args = [a for a in args if a != "--apply"]
+    if args and args[0] == "--list":
+        list_replays()
+    elif args:
+        replay(args[0], apply_updates=apply_updates)
     else:
-        replay()
+        replay(apply_updates=apply_updates)
