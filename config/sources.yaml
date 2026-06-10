@@ -67,6 +67,17 @@ rss_feeds:
   - name: "Sugar Online"
     url: "https://www.sugaronline.com/rss"
 
+  # Agriculture & animal health — biological supply-shock leading indicators
+  # (animal/crop disease, USDA actions; the screwworm-class slow-fuse signals)
+  - name: "Morning Ag Clips"
+    url: "https://www.morningagclips.com/feed/"
+  - name: "CIDRAP Avian Flu"
+    url: "https://www.cidrap.umn.edu/news/49/rss"
+  - name: "Brownfield Ag News"
+    url: "http://feeds.feedblitz.com/feedburner/brownfieldagnews"
+  - name: "USDA NASS Reports"
+    url: "https://www.nass.usda.gov/rss/reports.xml"
+
   # Weather — Atlantic hurricane updates (sparse but high-signal in season)
   - name: "NOAA NHC"
     url: "https://www.nhc.noaa.gov/index-at.xml"

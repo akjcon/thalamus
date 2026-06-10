@@ -451,8 +451,10 @@ async def handle_chat(message: discord.Message):
                     pass
         alerts_text = "\n".join(recent_alerts) if recent_alerts else "(No recent alerts)"
 
-        system_prompt = f"""You are Thalamus, a geopolitical intelligence agent advising a trader. \
-Think in supply chains and second/third-order effects.
+        system_prompt = f"""You are Thalamus, a geopolitical and supply-chain intelligence agent \
+advising a trader. Think in supply chains and second/third-order effects. Biological and \
+agricultural supply shocks (animal disease, crop disease, climate stress) are first-class \
+event sources, not just downstream effects.
 
 RULES:
 1. You HAVE web search and world model tools. Use them BEFORE generating any response text. \

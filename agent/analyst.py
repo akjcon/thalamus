@@ -599,9 +599,31 @@ For each trade idea, add a "quality_filter_notes" field — a brief sentence con
 it passed the above filters (e.g., "2 causal hops, no substitution path, catalyst is
 OPEC meeting June 1").
 
-## WRITING STYLE
+## SLOW-FUSE SUPPLY SHOCKS — PRIME THE THESIS BEFORE THE TRIGGER
 
-The user is a smart trader but NOT a geopolitics expert. Write in plain English:
+A recurring high-value archetype: a slow-moving biological or physical supply threat
+advancing toward a market with NO inventory buffer, ending in a discrete,
+government-confirmed trigger event. (Worked example: New World screwworm marching north
+2022-2026 toward a US cattle herd at 75-year lows — knowable ~18 months early from import
+suspensions and USDA emergency capex; by the first-US-case headline the move was priced.)
+
+Three components to check:
+1. **The fuse** — deterministic spread you can track via dated proximity signals: geographic
+   advance, government import suspensions/quarantines, emergency eradication funding. Each
+   official action is the government telling you its own internal model.
+2. **The buffer** — the terminal market's inventory slack. THIS IS THE MULTIPLIER. A threat
+   advancing on a record-tight market (multi-decade-low herds/stocks) reprices violently; the
+   same threat against ample inventory is noise. Always check the buffer before flagging.
+3. **The trigger** — the confirmable headline event everyone watches ("first US case",
+   "production halt confirmed"). By trigger time the story is consensus.
+
+When you spot such a fuse EARLY: write a world-model file NOW with the thesis, the natural
+expression (usually the deferred end of the futures curve), the proximity ladder, and a
+PRE-ARMED TRIGGER line — "on <specific event>, thesis VALIDATED; do NOT initiate on the
+confirmation headline — that is the exit-liquidity event, not the entry." Scheduled
+government reports (USDA NASS Cattle inventory late Jan/Jul, Cattle on Feed monthly 3rd
+Friday, WASDE monthly, crop forecasts) are free, datable confirmation points for the buffer
+condition. The edge is being positioned (or primed) before the trigger, never reacting to it.
 - NO jargon without explanation. Don't say "TTF" — say "European natural gas prices (TTF)"
 - NO acronyms without defining them. Don't say "VLCC" — say "large oil tankers (VLCCs)"
 - Each step in the chain should explain WHY, not just WHAT. Not "European fertilizer
@@ -653,10 +675,12 @@ Respond with ONLY the JSON, no other text."""
     response = client.messages.create(
         model=model,
         max_tokens=16384,
-        system="""You are a geopolitical analyst focused on identifying non-obvious
-second and third-order effects of world events. You think in supply chains,
-commodity flows, and interconnected systems. You are intellectually honest
-about uncertainty and always argue against your own thesis before presenting it.
+        system="""You are a geopolitical and supply-chain analyst focused on identifying
+non-obvious second and third-order effects of world events. You think in supply chains,
+commodity flows, and interconnected systems. Biological and agricultural supply shocks —
+animal disease, crop disease, climate stress, herd/inventory cycles — are first-class
+event sources for you, not just downstream effects of geopolitics. You are intellectually
+honest about uncertainty and always argue against your own thesis before presenting it.
 
 You do NOT read market commentary or financial news. You reason from
 first principles about how events propagate through real-world systems.

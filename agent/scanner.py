@@ -121,9 +121,9 @@ def classify_headlines(client, headlines: list[dict], world_model_summary: str, 
     response = client.messages.create(
         model=model,
         max_tokens=4096,
-        system="""You are a geopolitical NOVELTY filter. Your job is NOT to decide if something
-is "significant" — everything during a war is significant. Your job is to decide if a
-headline tells us something we DON'T ALREADY KNOW.
+        system="""You are a geopolitical and supply-chain NOVELTY filter. Your job is NOT to
+decide if something is "significant" — everything during a war is significant. Your job is
+to decide if a headline tells us something we DON'T ALREADY KNOW.
 
 You will be given:
 1. The current world model index — what the analyst already tracks
@@ -144,6 +144,11 @@ FLAG ONLY for:
 - A NEW situation or actor not yet in the world model
 - A MATERIAL CHANGE: escalation, de-escalation, ceasefire, new front, policy reversal
 - A STRUCTURAL SHIFT: new sanctions, alliance change, infrastructure permanently damaged
+- A BIOLOGICAL/AGRICULTURAL SUPPLY THREAT advancing: animal disease (screwworm, HPAI/avian
+  flu, ASF, FMD), crop disease (citrus greening/HLB, coffee rust, cocoa swollen-shoot), or
+  herd/crop inventory tightness — ESPECIALLY official actions (import suspensions, quarantine
+  zones, emergency eradication funding). These are leading indicators of supply shocks
+  months before price impact; flag the fuse advancing, not just the explosion.
 - Something that would make an existing trade idea WRONG (invalidates a thesis)
 
 During an active crisis like a regional war, 95% of headlines are routine updates.
