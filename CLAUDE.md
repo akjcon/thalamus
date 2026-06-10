@@ -27,8 +27,10 @@ memory/         Persistent state — world_model/, alerts/, replays/, portfolio.
 | Task | Model | Why |
 |------|-------|-----|
 | Headline classification | `claude-haiku-4-5-20251001` | Binary decision, cheap |
-| Deep analysis + world model updates | `claude-sonnet-4-6` | Complex reasoning |
+| Deep analysis (2nd/3rd-order reasoning) | `claude-opus-4-8` | Hardest reasoning; approved Opus exception (`deep_analyst` key) |
+| World model updates | `claude-sonnet-4-6` | Mechanical reconcile/file-ops |
 | Research (web search) | `claude-sonnet-4-6` | Needs tool use |
+| Red-team validation | `claude-sonnet-4-6` | Skeptical due diligence (`max_uses: 30`, index-only macro context) |
 
 ## Trading Philosophy (from agent_prompt.md)
 
@@ -86,7 +88,8 @@ python3 agent/replay.py 20260303_055901
 
 - **Every API call costs real money.** Before adding or modifying an API call, check: what model, what max_tokens, how often does this run? A 32K max_tokens call on Sonnet 4 times/day is ~$120/month by itself.
 - **web_search is expensive.** Server-managed web search injects large result content into context. Always set `max_uses` (3 is a good default). In multi-turn tool loops, each turn re-sends all previous search results, so limit `max_turns` too.
-- **Never use Opus in automated pipelines** without explicit approval. Opus output tokens are 5x Sonnet. Reserve it for one-off deep analysis, not recurring cycles.
+- **Opus in automated pipelines requires explicit approval.** As of 2026-06, Opus 4.8 is ~1.67× Sonnet 4.6 ($5/$25 vs $3/$15 per Mtok), not 5× — the gap has narrowed, but it still adds up across recurring cycles. Approved exception: `deep_analysis` runs on `claude-opus-4-8` (the core reasoning step) via the `deep_analyst` config key. Everything else (research, world-model update, price check, red-team) stays on Sonnet. Do not move other roles to Opus without sign-off.
+- **Red-team validator** keeps `max_uses: 30` by design (verdict integrity > token cost) but takes only the world-model **index** as macro context (not the full corpus) — it gathers instrument specifics via web_search.
 - **Cost tracking exists** — `agent/costs.py` tracks every API call. Check #thal-costs after deploys to verify costs match expectations. If a cycle costs more than ~$1.50, investigate.
 - **Budget target: ~$1/day ($30/month).** 1 scan cycle every 48h at ~$0.70-1.00 + chat usage.
 

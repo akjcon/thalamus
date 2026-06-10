@@ -15,7 +15,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 from scanner import pull_feeds, classify_headlines, format_headlines_for_llm
 from analyst import (
-    load_world_model, load_portfolio, research_questions,
+    load_world_model, load_index, load_portfolio, research_questions,
     deep_analysis, update_world_model,
     red_team_validate, save_validation,
 )
@@ -39,6 +39,7 @@ def run_cycle():
     client = Anthropic()  # Uses ANTHROPIC_API_KEY env var
     scanner_model = config["models"]["scanner"]
     analyst_model = config["models"]["analyst"]
+    deep_analyst_model = config["models"].get("deep_analyst", analyst_model)
     validator_model = config["models"].get("validator", analyst_model)
 
     # Step 1: Pull new headlines
@@ -89,7 +90,7 @@ def run_cycle():
     # Step 4: Deep analysis
     print("\n[4/6] Running deep analysis with Sonnet...")
     portfolio = load_portfolio()
-    result = deep_analysis(client, analysis_items, world_model, portfolio, research, analyst_model)
+    result = deep_analysis(client, analysis_items, world_model, portfolio, research, deep_analyst_model)
 
     if "error" in result:
         print(f"  [!] Analysis error: {result['error']}")
@@ -110,7 +111,7 @@ def run_cycle():
             instrument = idea.get("instrument", "?")
             try:
                 validation = red_team_validate(
-                    client, idea, world_model, portfolio, validator_model
+                    client, idea, load_index(), portfolio, validator_model
                 )
             except Exception as e:
                 print(f"  [!] Validator crashed for {instrument}: {e}")

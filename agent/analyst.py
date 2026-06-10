@@ -34,6 +34,18 @@ def load_world_model() -> str:
     return "\n\n---\n\n".join(parts) if parts else "(World model is empty — first run.)"
 
 
+def load_index() -> str:
+    """Return just the generated _index.md (the macro map), not the full corpus.
+
+    Used as lightweight macro context for the red-team validator, which does
+    instrument-specific due diligence and does not need all per-topic files.
+    """
+    index_file = WORLD_MODEL_DIR / "_index.md"
+    if index_file.exists():
+        return index_file.read_text()
+    return "(no world model index yet)"
+
+
 def regenerate_index() -> None:
     """Deterministically (re)generate _index.md from the world model files.
 
@@ -847,7 +859,7 @@ VERDICT RULES:
 **Invalidation signal:**
 {invalidation}
 
-## Current World Model (what we already think about the macro environment)
+## World Model Index (macro map; the full per-topic files are NOT included here — rely on web_search for instrument specifics)
 {world_model}
 
 ## Current Portfolio

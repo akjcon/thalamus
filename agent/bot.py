@@ -21,7 +21,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 from scanner import pull_feeds, classify_headlines
 from analyst import (
-    load_world_model, load_portfolio, research_questions,
+    load_world_model, load_index, load_portfolio, research_questions,
     deep_analysis, update_world_model, validate_prices,
     red_team_validate, save_validation,
 )
@@ -711,7 +711,7 @@ def run_scan_cycle() -> tuple[dict | None, CycleLog]:
             instrument = idea.get("instrument", "?")
             try:
                 validation = red_team_validate(
-                    anthropic_client, idea, world_model, portfolio, validator_model
+                    anthropic_client, idea, load_index(), portfolio, validator_model
                 )
             except Exception as e:
                 log.error(f"Red-team crashed for {instrument}: {e}")

@@ -88,5 +88,6 @@ discord_log_channel: "thal-logs"
 # Model configuration
 models:
   scanner: "claude-haiku-4-5-20251001"  # Fast, cheap headline classification
-  analyst: "claude-sonnet-4-6"           # Research, world model, price checks
+  analyst: "claude-sonnet-4-6"           # Research, world model update, price checks
+  deep_analyst: "claude-opus-4-8"        # Core 2nd/3rd-order reasoning (deep_analysis only)
   validator: "claude-sonnet-4-6"         # Red-team validation of surviving trade ideas
