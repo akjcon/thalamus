@@ -82,6 +82,17 @@ rss_feeds:
   - name: "NOAA NHC"
     url: "https://www.nhc.noaa.gov/index-at.xml"
 
+# WAHIS — WOAH global animal-disease notifications (immediate + follow-up).
+# Cloudflare-walled SPA, fetched via headless browser (agent/wahis.py).
+# The authoritative global early-warning net for biological supply shocks
+# (HPAI, ASF, FMD, screwworm, PPR) — global, not US/Mexico-centric like the feeds.
+wahis:
+  enabled: true
+  report_types: ["IN", "FUR"]   # IN = new immediate notification, FUR = follow-up report
+  max_events: 25                # cap headlines per cycle (after event-collapse)
+  recency_days: 21              # ignore reports older than this
+  page_size: 120                # reports pulled before collapse/recency filtering
+
 # Discord channels
 discord_log_channel: "thal-logs"
 

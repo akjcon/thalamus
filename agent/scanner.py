@@ -10,9 +10,14 @@ import hashlib
 import json
 import re
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from costs import track as track_cost
+
+# Drop dedup entries older than this so seen_headlines.json can't grow unbounded.
+# Far longer than any feed's retention, so still-live items won't re-flag; this
+# just sheds dead weight (WAHIS reportIds are one-and-done and never re-hit).
+SEEN_TTL_DAYS = 120
 
 ROOT = Path(__file__).parent.parent
 MEMORY = ROOT / "memory"
@@ -32,8 +37,22 @@ def load_seen():
     return {}
 
 
+def _prune_seen(seen: dict) -> dict:
+    """Drop seen-entries older than SEEN_TTL_DAYS. Values are ISO timestamps;
+    unparseable ones are kept rather than risk losing dedup memory."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=SEEN_TTL_DAYS)
+    pruned = {}
+    for h, ts in seen.items():
+        try:
+            if datetime.fromisoformat(ts) >= cutoff:
+                pruned[h] = ts
+        except Exception:
+            pruned[h] = ts
+    return pruned
+
+
 def save_seen(seen: dict):
-    SEEN_FILE.write_text(json.dumps(seen, indent=2))
+    SEEN_FILE.write_text(json.dumps(_prune_seen(seen), indent=2))
 
 
 def hash_headline(title: str, link: str) -> str:
@@ -64,6 +83,19 @@ def pull_feeds(sources: dict) -> list[dict]:
                     })
         except Exception as e:
             print(f"  [!] Failed to fetch {feed_config['name']}: {e}")
+
+    # WAHIS — global animal-disease immediate notifications + follow-ups. Not RSS:
+    # a Cloudflare-walled SPA fetched via headless browser (see agent/wahis.py).
+    # Shares the same seen-dedup; any failure degrades gracefully to RSS-only.
+    try:
+        import wahis
+        for ev in wahis.fetch_wahis_events(sources):
+            h = hash_headline(ev["title"], ev["link"])
+            if h not in seen:
+                seen[h] = datetime.now(timezone.utc).isoformat()
+                new_headlines.append(ev)
+    except Exception as e:
+        print(f"  [!] WAHIS source failed (continuing with RSS only): {e}")
 
     save_seen(seen)
     return new_headlines

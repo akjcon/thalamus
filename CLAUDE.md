@@ -7,14 +7,15 @@ Thalamus is a scan → classify → analyze → alert pipeline that monitors geo
 ## Project Structure
 
 ```
-agent/          Core modules (bot, scanner, analyst, brokerage, replay, notifier)
+agent/          Core modules (bot, scanner, analyst, brokerage, replay, notifier, wahis)
 config/         sources.yaml (RSS feeds + model config), agent_prompt.md (system prompt)
 memory/         Persistent state — world_model/, alerts/, replays/, portfolio.md, seen_headlines.json
 ```
 
 ## Key Architecture
 
-- **Scanner** (`scanner.py`): Pulls RSS feeds, deduplicates via SHA256 hash, classifies with **Haiku** (cheap/fast)
+- **Scanner** (`scanner.py`): Pulls RSS feeds + WAHIS events, deduplicates via SHA256 hash, classifies with **Haiku** (cheap/fast). Prunes `seen_headlines.json` to 120 days so it can't grow unbounded.
+- **WAHIS** (`wahis.py`): Global animal-disease early-warning net from WOAH's WAHIS. The site is a **Cloudflare-walled Angular SPA with no RSS** — plain HTTP/TLS-impersonation all 403; the old `/pi/` path is dead. We drive a **stealth headless browser** (bundled Chromium, confirmed to clear Cloudflare's managed challenge on Railway's engine) to POST `/api/v1/pi/event/filtered-list` from inside the cleared page and parse immediate-notifications + follow-ups into scanner headlines. Any failure returns `[]` → cycle degrades to RSS-only. Config in `sources.yaml` (`wahis:` block). **Datacenter-IP caveat:** Cloudflare is harsher on datacenter IPs; if Railway gets blocked, the logs say which engine launched and "gave up after retries" — escalation is proxy/residential routing.
 - **Analyst** (`analyst.py`): Deep analysis with **Sonnet** + web_search. Produces trade ideas + world model updates
 - **Bot** (`bot.py`): Discord bot entry point. Runs scan loop at fixed UTC times, handles chat in #alerts channel
 - **Costs** (`costs.py`): Per-call API cost tracking. Posts cycle summaries to #thal-costs
