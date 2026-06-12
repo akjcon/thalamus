@@ -7,6 +7,7 @@ MODEL_PRICING = {
     "claude-haiku-4-5-20251001": {"input": 0.80, "output": 4.00},
     "claude-sonnet-4-6":         {"input": 3.00, "output": 15.00},
     "claude-opus-4-6":           {"input": 15.00, "output": 75.00},
+    "claude-opus-4-8":           {"input": 5.00, "output": 25.00},  # deep_analysis (1.67x Sonnet)
 }
 
 _cost_log: list[dict] = []
