@@ -74,6 +74,27 @@ def _confidence_color(confidence: str) -> int:
     return {"high": 0x2ECC71, "medium": 0xF39C12, "low": 0x95A5A6}.get(key, 0x95A5A6)
 
 
+# Red-team verdict → scannable marker for the #alerts summary line. A REVISE
+# used to render identically to a CONFIRMED idea (verdict was only visible behind
+# the Details button, at the very bottom) — these surface it inline instead.
+_VERDICT_MARKER = {
+    "CONFIRM": "✅ CONFIRMED",
+    "REVISE": "⚠️ REVISE",
+    "ERROR": "⚠️ CHECK",
+}
+
+
+def _verdict_of(idea: dict) -> str:
+    """Upper-cased red-team verdict for an idea, or '' if unvalidated."""
+    return ((idea.get("validation") or {}).get("verdict") or "").upper()
+
+
+def _verdict_rank(idea: dict) -> int:
+    """Sort key for display: CONFIRMED ideas first, everything else after, so a
+    clean idea is never buried under a REVISE'd one."""
+    return 0 if _verdict_of(idea) == "CONFIRM" else 1
+
+
 def build_alert_embed(analysis: dict) -> discord.Embed:
     """Build the entire alert as one compact, scannable embed."""
 
@@ -84,8 +105,10 @@ def build_alert_embed(analysis: dict) -> discord.Embed:
         events = analysis.get("events_analyzed", [])
         situation = ". ".join(events[:3])
 
-    # Trade ideas — one line each
-    ideas = analysis.get("trade_ideas", [])
+    # Trade ideas — one line each, CONFIRMED first, each carrying its red-team
+    # verdict inline so a REVISE can't masquerade as a clean buy.
+    ideas = sorted(analysis.get("trade_ideas", []), key=_verdict_rank)
+    flagged = False
     trade_lines = []
     for i, idea in enumerate(ideas):
         direction = idea.get("direction", "").upper()
@@ -96,62 +119,65 @@ def build_alert_embed(analysis: dict) -> discord.Embed:
             thesis = idea.get("thesis", "")
             one_liner = thesis.split(".")[0] + "." if "." in thesis else thesis[:80]
         horizon = idea.get("time_horizon", "")
-        # Keep it short
-        if horizon:
-            trade_lines.append(f"**{i+1}. {direction} {instrument}**\n> {one_liner} *({horizon})*")
-        else:
-            trade_lines.append(f"**{i+1}. {direction} {instrument}**\n> {one_liner}")
+
+        verdict = _verdict_of(idea)
+        if verdict and verdict != "CONFIRM":
+            flagged = True
+        head = f"**{i+1}. {direction} {instrument}**"
+        marker = _VERDICT_MARKER.get(verdict, "")
+        if marker:
+            head += f"  ·  {marker}"
+        line = head + f"\n> {one_liner}" + (f" *({horizon})*" if horizon else "")
+        # Surface the red-team's fix right under a REVISE so it can't be missed.
+        if verdict == "REVISE":
+            rev = ((idea.get("validation") or {}).get("revision_suggestion") or "").strip()
+            if rev:
+                rev = rev.split(". ")[0].rstrip(".") + "."
+                line += f"\n> ⚠️ *Red-team: {_trunc(rev, 220)}*"
+        trade_lines.append(line)
 
     desc = f"{situation}\n\n" + "\n\n".join(trade_lines)
 
     embed = discord.Embed(
         title="THALAMUS ALERT",
         description=_trunc(desc, 4096),
-        color=0xE74C3C,
+        # Amber when any idea came back REVISE/ERROR from the red team; the
+        # default alert red when everything was CONFIRMED.
+        color=0xF39C12 if flagged else 0xE74C3C,
         timestamp=datetime.now(timezone.utc),
     )
     return embed
 
 
 def build_trade_detail_embed(idea: dict) -> discord.Embed:
-    """Build a full detail embed for when user clicks 'Details'."""
+    """Build a full detail embed for when user clicks 'Details'. Leads with the
+    red-team verdict — the most decision-relevant part — which previously sat at
+    the very bottom under thesis/chain/counter."""
     direction = idea.get("direction", "").upper()
     instrument = idea.get("instrument", "")
     confidence = idea.get("confidence", "?")
     horizon = idea.get("time_horizon", "?")
 
-    # Chain as the main content — vertical numbered steps
-    chain = idea.get("chain", [])
-    chain_lines = []
-    for i, step in enumerate(chain):
-        if i < len(chain) - 1:
-            chain_lines.append(f"{i+1}. {step}")
-            chain_lines.append(f"   ↓")
-        else:
-            chain_lines.append(f"**{i+1}. {step}**")
-
-    # Thesis paragraph, then chain, then counter
     parts = []
-    parts.append(idea.get("thesis", ""))
-    if chain_lines:
-        parts.append(f"\n**How it plays out:**\n" + "\n".join(chain_lines))
 
-    counter = idea.get("counter_thesis", "")
-    if counter:
-        parts.append(f"\n**What could go wrong:**\n{counter}")
-
-    validation = idea.get("validation")
+    # 1) Red-team verdict FIRST — lead with the conclusion, not bury it.
+    validation = idea.get("validation") or {}
+    verdict = validation.get("verdict", "")
     if validation:
-        verdict = validation.get("verdict", "")
         verdict_conf = validation.get("verdict_confidence", "")
         if verdict == "CONFIRM":
-            parts.append(f"\n**Red-team validation: CONFIRMED ({verdict_conf})**")
+            parts.append(f"**✅ Red-team validation: CONFIRMED ({verdict_conf})**")
         elif verdict == "REVISE":
-            parts.append(f"\n**Red-team validation: REVISE ({verdict_conf})**")
+            parts.append(f"**⚠️ Red-team validation: REVISE ({verdict_conf})**")
         elif verdict == "ERROR":
-            parts.append(f"\n**Red-team validation: PARSE ERROR — review manually**")
+            parts.append("**⚠️ Red-team validation: PARSE ERROR — review manually**")
         else:
-            parts.append(f"\n**Red-team validation: {verdict}**")
+            parts.append(f"**Red-team validation: {verdict}**")
+
+        if verdict == "REVISE":
+            revision = (validation.get("revision_suggestion") or "").strip()
+            if revision:
+                parts.append(f"**Suggested revision:** {revision}")
 
         check_lines = []
         for label, key in [
@@ -167,21 +193,37 @@ def build_trade_detail_embed(idea: dict) -> discord.Embed:
 
         tighter = (validation.get("tighter_instrument") or "").strip()
         if tighter and tighter.lower() not in ("none", "none found", "n/a"):
-            parts.append(f"\n**Tighter alternative considered:** {tighter}")
+            parts.append(f"**Tighter alternative considered:** {tighter}")
 
         reasoning = (validation.get("final_reasoning") or "").strip()
         if reasoning:
-            parts.append(f"\n{reasoning}")
+            parts.append(reasoning)
 
-        if verdict == "REVISE":
-            revision = (validation.get("revision_suggestion") or "").strip()
-            if revision:
-                parts.append(f"\n**Suggested revision:** {revision}")
+        parts.append("———")  # divider before the original thesis
+
+    # 2) The original thesis, then how it plays out, then the counter-thesis.
+    parts.append(idea.get("thesis", ""))
+
+    chain = idea.get("chain", [])
+    chain_lines = []
+    for i, step in enumerate(chain):
+        if i < len(chain) - 1:
+            chain_lines.append(f"{i+1}. {step}")
+            chain_lines.append("   ↓")
+        else:
+            chain_lines.append(f"**{i+1}. {step}**")
+    if chain_lines:
+        parts.append("**How it plays out:**\n" + "\n".join(chain_lines))
+
+    counter = idea.get("counter_thesis", "")
+    if counter:
+        parts.append(f"**What could go wrong:**\n{counter}")
 
     embed = discord.Embed(
         title=f"{direction}  {instrument}",
-        description=_trunc("\n".join(parts), 4096),
-        color=_confidence_color(confidence),
+        description=_trunc("\n\n".join(p for p in parts if p), 4096),
+        # Match the #alerts amber when the red team flagged this idea.
+        color=0xF39C12 if verdict in ("REVISE", "ERROR") else _confidence_color(confidence),
     )
     embed.set_footer(text=f"{confidence} confidence  |  {horizon}")
     return embed
@@ -210,7 +252,7 @@ class TradeDetailButton(ui.Button):
 class AlertView(ui.View):
     def __init__(self, analysis: dict):
         super().__init__(timeout=None)  # Buttons don't expire
-        ideas = analysis.get("trade_ideas", [])
+        ideas = sorted(analysis.get("trade_ideas", []), key=_verdict_rank)
         for i, idea in enumerate(ideas[:5]):
             self.add_item(TradeDetailButton(idea, i))
 
