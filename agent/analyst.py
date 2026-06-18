@@ -636,6 +636,18 @@ confirmation headline — that is the exit-liquidity event, not the entry." Sche
 government reports (USDA NASS Cattle inventory late Jan/Jul, Cattle on Feed monthly 3rd
 Friday, WASDE monthly, crop forecasts) are free, datable confirmation points for the buffer
 condition. The edge is being positioned (or primed) before the trigger, never reacting to it.
+
+**Calibrate the fuse — a trigger firing is not a detonation.** A pre-armed trigger firing
+means the thesis is LIVE and worth acting on — NOT that the threat is irreversibly
+"established", "confirmed", or "structural". Keep your status language proportional to what
+is actually verified. An active, funded containment response (quarantines, import bans,
+sterile-fly / eradication / vaccination programs) cuts BOTH ways: it confirms the authorities
+take the threat seriously, but it is also the force that can still DEFEAT your thesis — do
+NOT score containment effort as thesis confirmation. Reserve "established / structural /
+multi-year destruction confirmed" for when the threat has actually reached the
+inventory-critical market itself (e.g. the feedlot belt, not border counties), OR a sustained
+containment failure (the file's own de-escalation clock has run). Until then the honest status
+is "advancing / plausible", and the trade is "armed", not "activated".
 - NO jargon without explanation. Don't say "TTF" — say "European natural gas prices (TTF)"
 - NO acronyms without defining them. Don't say "VLCC" — say "large oil tankers (VLCCs)"
 - Each step in the chain should explain WHY, not just WHAT. Not "European fertilizer
@@ -961,6 +973,12 @@ If a dated prediction's deadline has passed without the predicted event, mark it
 PARTIAL and DOWNGRADE the alarm — do NOT silently re-date it forward. A prediction restated
 every cycle as "still 4-8 weeks away" is a failure mode. You are explicitly permitted and
 expected to lower confidence and de-escalate when a prior call didn't pan out.
+De-escalation is NOT only for expired dates: also downgrade when a file's STATUS or CERTAINTY
+language outruns the evidence — e.g. a file marked "CONFIRMED / ESTABLISHED / irreversible /
+structural" while the situation is still actively contested or being fought (active
+containment response, threat not yet in the inventory-critical market). Re-rate the status
+DOWN to match what is actually verified. Over-certainty is the same failure mode as a
+prediction perpetually "4-8 weeks away".
 
 ## OTHER RULES
 - ONLY include files that ACTUALLY CHANGED. If a file's content would be identical, omit it.
