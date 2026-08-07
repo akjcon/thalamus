@@ -75,6 +75,10 @@
 ### U.S. Operations — New / Monitoring
 - [ecuador_us_operations.md](ecuador_us_operations.md) — 🟠 **UPGRADED: Joint operations launched March 3; Los Lobos cartel primary target; cartel retaliation risk upgraded to low-medium; Atlantic narco-submarine route confirmed structural**
 
+### Domestic U.S. — Resource & Infrastructure
+- [colorado_river_powell.md](colorado_river_powell.md) — 🟠 SITUATION MONITOR, **NOT a trade thesis**: Powell 22–23% capacity, 31–34 ft above min power pool; headline "dead pool → buy power" trade is DOA (non-tradeable muni/co-op/tribal customers, ~1% of regional supply, forecast monthly since 2021 = zero temporal edge). Real channels: **river-outlet-works throughput (7.41 vs 8.23 MAF obligation below 3,430 ft) colliding with the Law of the River**; **Oct 1 2026 post-2026 guidelines ROD without 7-state consensus** = the only dated catalyst; **senior water rights (IID) appreciate, CAP is junior and cut first** — inverse of the headline. Premise correction: reprieve to March 2027 was bought by cutting releases, i.e. risk pushed to Mead
+- [screwworm_cattle.md](screwworm_cattle.md) — 🟠 SITUATION MONITOR: NWS in US cattle; **headline long-cattle trade is CONSENSUS/DEAD (red-team killed June 10)**; file tracks ESTABLISHMENT vs CONTAINMENT and pre-arms second-order plays. The worked SLOW-FUSE archetype
+
 ### Key Research Questions — HIGH PRIORITY UNKNOWNS
 1. **DRC cobalt export ban (June 2025):** Fully lifted? Modified? Sustained? — Price doubled $10→$25/lb; EV battery cost structure implications; monitor LME cobalt price and DRC Ministry of Mines statements
 2. **Who can authorize Hezbollah stand-down** in absence of Khamenei-equivalent authority?
