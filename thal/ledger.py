@@ -17,8 +17,11 @@ HORIZONS: list[tuple[str, int | None]] = [("1w", 5), ("4w", 20), ("12w", 60), ("
 MARKET = "SPY"
 
 
+FUTURES_VENUES = (".NYM", ".CMX", ".CBT", ".CME", ".NYB")    # Yahoo suffixes of specific contract months, e.g. CLF27.NYM
+
+
 def asset_class(symbol: str) -> str:
-    return "future" if symbol.endswith("=F") else "equity"
+    return "future" if symbol.upper().endswith(("=F",) + FUTURES_VENUES) else "equity"
 
 
 def add_bet(conn: sqlite3.Connection, *, symbol: str, side: str, source: str = "v2", kind: str = "paper",

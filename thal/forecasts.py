@@ -1,15 +1,13 @@
 """Forecasts: dated yes/no predictions that resolve in days, so the system learns fast.
 
-Two kinds, scored the same way (Brier score against a baseline):
-  price   "SYMBOL closes above/below LEVEL on DATE". Baseline: a no-view random walk using the
-          symbol's own recent volatility. Resolved from price bars.
-  market  a Kalshi prediction-market contract. Baseline: the market's own price when the forecast
-          was made. Resolved from the exchange's published result. Read-only; nothing is traded.
+"SYMBOL closes above/below LEVEL on DATE", on an instrument the system can trade. Scored by Brier
+score against a no-view random walk using the symbol's own recent volatility, and resolved from
+price bars. (A few early forecasts were on Kalshi prediction-market contracts; the system no longer
+makes those, and the ones already recorded are still settled from the exchange's published result.)
 Beating the baseline means the forecaster knew something the baseline did not. Matching it means nothing.
 """
 from __future__ import annotations
 
-import calendar
 import json
 import math
 import sqlite3
@@ -23,7 +21,6 @@ DAY = 86400.0
 KALSHI = "https://api.elections.kalshi.com/trade-api/v2"
 UA = "Mozilla/5.0 (compatible; thalamus-research/0.1; automated market-data reader)"
 MAX_DAYS = 45
-SKIP_CATEGORIES = ("Sports",)       # tens of thousands of game parlays; not what this system reads about
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS forecasts (
@@ -41,16 +38,11 @@ CREATE TABLE IF NOT EXISTS forecasts (
     fuse_id INTEGER,
     resolved_at REAL, outcome INTEGER   -- 1 yes, 0 no
 );
-CREATE TABLE IF NOT EXISTS markets (
-    ticker TEXT PRIMARY KEY, event_ticker TEXT, category TEXT, title TEXT NOT NULL, rules TEXT NOT NULL DEFAULT '',
-    close_at REAL, yes_bid REAL, yes_ask REAL, last REAL, volume REAL, status TEXT, result TEXT, updated_at REAL NOT NULL
-);
-CREATE VIRTUAL TABLE IF NOT EXISTS markets_fts USING fts5(ticker UNINDEXED, title, rules);
 """
 
 
 def ensure(conn: sqlite3.Connection) -> None:
-    conn.executescript(SCHEMA)
+    conn.executescript(SCHEMA + "DROP TABLE IF EXISTS markets_fts; DROP TABLE IF EXISTS markets;")   # the old Kalshi catalogue
 
 
 def _phi(x: float) -> float:
@@ -107,105 +99,6 @@ def _json(url: str) -> dict:
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.load(r)
-
-
-def _f(v) -> float | None:
-    try:
-        return float(v) if v not in (None, "") else None
-    except (TypeError, ValueError):
-        return None
-
-
-def _ts(s: str | None) -> float | None:
-    try:
-        return float(calendar.timegm(time.strptime(s[:19], "%Y-%m-%dT%H:%M:%S"))) if s else None
-    except (ValueError, TypeError):
-        return None
-
-
-KEEP_DAYS = 180      # the exchange lists ~80,000 contracts; only ones the analyst could be offered are stored
-
-
-def refresh_markets(conn: sqlite3.Connection, get=_json, now: float | None = None, max_pages: int = 400) -> int:
-    """Pull open Kalshi markets that have a usable price and close within KEEP_DAYS into the local table.
-    Returns how many are stored from this pull. Markets with an open forecast are always kept."""
-    ensure(conn)
-    now = now or time.time()
-    cursor, rows = "", []
-    for _ in range(max_pages):
-        d = get(f"{KALSHI}/events?status=open&with_nested_markets=true&limit=200" + (f"&cursor={cursor}" if cursor else ""))
-        for ev in d.get("events", []):
-            if ev.get("category") in SKIP_CATEGORIES:
-                continue
-            for m in ev.get("markets") or []:
-                close = _ts(m.get("close_time"))
-                quote = {"yes_bid": _f(m.get("yes_bid_dollars")), "yes_ask": _f(m.get("yes_ask_dollars")),
-                         "last": _f(m.get("last_price_dollars"))}
-                if close is None or not now < close <= now + KEEP_DAYS * DAY or market_price(quote) is None:
-                    continue
-                title = " — ".join(x for x in (ev.get("title"), m.get("yes_sub_title") or m.get("title")) if x)
-                rows.append((m["ticker"], ev.get("event_ticker"), ev.get("category"), title[:300], (m.get("rules_primary") or "")[:600],
-                             close, quote["yes_bid"], quote["yes_ask"], quote["last"], _f(m.get("volume_fp")),
-                             m.get("status"), m.get("result") or "", now))
-        cursor = d.get("cursor") or ""
-        if not cursor:
-            break
-    with conn:
-        conn.execute("DELETE FROM markets WHERE ticker NOT IN (SELECT ref FROM forecasts WHERE kind = 'market' AND outcome IS NULL)")
-        conn.executemany("INSERT OR REPLACE INTO markets VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
-        conn.execute("DELETE FROM markets_fts")
-        conn.execute("INSERT INTO markets_fts(ticker, title, rules) SELECT ticker, title, rules FROM markets")
-    return len(rows)
-
-
-def market_price(m) -> float | None:
-    """The market's probability of YES: the bid/ask midpoint when both sides quote, else the last trade."""
-    bid, ask = m["yes_bid"], m["yes_ask"]
-    if bid is not None and ask is not None and 0 < bid <= ask < 1 and ask - bid <= 0.2:
-        return (bid + ask) / 2
-    return m["last"] if m["last"] is not None and 0 < m["last"] < 1 else None
-
-
-def search_markets(conn: sqlite3.Connection, query: str, limit: int = 10, now: float | None = None,
-                   max_days: int = 60) -> list[dict]:
-    """Quoted markets matching the query that close within max_days (the point is feedback in days, not years).
-    Markets matching every word come first; if none do, markets matching any word."""
-    ensure(conn)
-    now = now or time.time()
-    any_q = db.fts_query(query)
-    if not any_q:
-        return []
-    sql = ("SELECT m.* FROM markets_fts f JOIN markets m ON m.ticker = f.ticker WHERE markets_fts MATCH ?"
-           " AND m.close_at > ? AND m.close_at <= ? ORDER BY bm25(markets_fts), m.close_at LIMIT ?")
-    window = (now, now + max(1, int(max_days)) * DAY, limit * 4)
-    rows = conn.execute(sql, (any_q.replace(" OR ", " AND "), *window)).fetchall()
-    if not rows:
-        rows = conn.execute(sql, (any_q, *window)).fetchall()
-    out = [{"ticker": r["ticker"], "title": r["title"], "category": r["category"], "price": market_price(r),
-            "closes": time.strftime("%Y-%m-%d", time.gmtime(r["close_at"])), "volume": r["volume"], "rules": r["rules"][:300]}
-           for r in rows if market_price(r) is not None]
-    return out[:limit]
-
-
-def add_market(conn: sqlite3.Connection, ticker: str, prob: float, rationale: str = "", tags: list[str] | None = None,
-               fuse_id: int | None = None, now: float | None = None) -> dict:
-    ensure(conn)
-    now = now or time.time()
-    prob = _check_prob(prob)
-    m = conn.execute("SELECT * FROM markets WHERE ticker = ?", (ticker.strip(),)).fetchone()
-    if m is None:
-        raise ValueError(f"no market {ticker!r}; use find_markets first")
-    base = market_price(m)
-    if base is None or not m["close_at"] or m["close_at"] <= now:
-        raise ValueError("that market has no usable quote or has already closed")
-    if conn.execute("SELECT 1 FROM forecasts WHERE kind = 'market' AND ref = ? AND outcome IS NULL", (m["ticker"],)).fetchone():
-        raise ValueError("there is already an open forecast on that market")
-    with conn:
-        cur = conn.execute("INSERT INTO forecasts(created_at, kind, ref, question, due_at, prob, baseline, rationale, tags, fuse_id)"
-                           " VALUES (?,?,?,?,?,?,?,?,?,?)",
-                           (now, "market", m["ticker"], m["title"], m["close_at"], prob, base, rationale.strip()[:800],
-                            db.jl([t.strip().lower()[:30] for t in (tags or []) if t.strip()][:4]), fuse_id))
-    return {"id": cur.lastrowid, "question": m["title"], "prob": prob, "baseline": round(base, 3)}
 
 
 def resolve(conn: sqlite3.Connection, provider: PriceProvider, get=_json, now: float | None = None) -> int:

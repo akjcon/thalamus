@@ -109,3 +109,8 @@ def test_scoreboard_counts_repeats_once_and_groups(conn):
     assert {r["group"] for r in tagged} == {"sugar", "(untagged)"}
     assert "vs SPY" in ledger.format_scoreboard(tagged)
     with pytest.raises(ValueError): ledger.scoreboard(conn, by="thesis; DROP TABLE bets")
+
+
+def test_futures_are_recognised_by_symbol():
+    assert [ledger.asset_class(x) for x in ("CL=F", "CLF27.NYM", "zch27.cbt", "GCG27.CMX", "XOM", "BRK.B")] == \
+        ["future", "future", "future", "future", "equity", "equity"]
