@@ -1,19 +1,10 @@
 #!/bin/bash
-# On first deploy (or if volume is empty), seed the world model
-# from the baked-in copy. After that, the volume persists across deploys.
-
+# All state (database, wiki, kill switch) lives on the Railway volume when one is mounted at /data.
 if [ -d "/data" ]; then
-    # Railway volume is mounted at /data
-    # Symlink memory -> /data/memory so all code paths work unchanged
-    if [ ! -d "/data/memory" ]; then
-        echo "First deploy: copying seed data to volume..."
-        cp -r /app/memory /data/memory
-    fi
-    rm -rf /app/memory
-    ln -sf /data/memory /app/memory
-    echo "Using persistent volume at /data/memory"
+    export THAL_DATA_DIR=/data/thal
+    mkdir -p "$THAL_DATA_DIR"
+    echo "State on persistent volume at $THAL_DATA_DIR"
 else
-    echo "No volume mounted — using local memory/ (data will not persist across deploys)"
+    echo "No volume mounted: state stays in the container and is lost on redeploy"
 fi
-
 exec "$@"

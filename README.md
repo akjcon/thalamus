@@ -1,36 +1,31 @@
 # thalamus
 
-An agent that reads the news all day and looks for non-obvious things that might move markets. It runs on its own, builds up a picture of what's going on in the world, and posts trade ideas to a Discord channel when it finds something worth a look.
+An agent that reads a lot of news, remembers what matters, and tries to connect new developments to things it learned weeks or months earlier. It records every idea as a bet and scores the bets against real prices, so it can find out which kinds of connection are worth anything.
 
-I mostly built this to learn how to design a real agent. Markets are a good forcing function because you find out pretty fast when the agent is wrong.
-
-<p align="center">
-  <img src="docs/alert.png" width="680" alt="A Thalamus alert in Discord">
-</p>
-
-## What it does
-
-- Pulls from 24+ news and data feeds on a schedule, including a global animal-disease feed for supply-shock signals
-- Keeps a running "world model" of what's happening, and updates it each scan so it builds on what it already knows
-- Runs a deeper analysis pass with Claude to connect things across feeds and come up with theses
-- Red-teams its own ideas before it alerts. A separate pass tries to poke holes in each thesis, and that verdict shows up in the alert so a weak idea doesn't read like a clean buy
-- Filters out low-confidence ideas, dedupes theses it has already flagged, and skips anything I can't actually trade
-- Posts to Discord. I can also kick off a manual scan or browse the world model with commands
+It trades on paper only. Treat everything it outputs as an experiment, not financial advice.
 
 ## How it works
 
-It's a Python service that runs in Docker on a schedule. Each cycle it ingests the feeds, reconciles them into the world model, runs the analysis on Opus, red-teams the output, applies the filters, and posts whatever survives.
+- **Intake.** Pulls feeds, fetches the full article behind each item, and has a small model turn each one into a structured event record. The client identifies itself and takes a site's refusal as final.
+- **Memory.** An append-only event log; fuses (open hypotheses, each with the evidence that would confirm or kill it); a wiki of linked pages with one writer per page; and a small dashboard that every session starts from.
+- **Analyst.** One session a day with tools: it reads the new events, searches memory and the web, checks prices, updates fuses, and proposes bets.
+- **Ledger.** Every bet is scored at 1, 4 and 12 weeks against the S&P 500 and a sector benchmark. Shadow bets are scored without placing an order.
+- **Limits.** Orders pass through hard limits enforced in plain code. Paper mode is the default and there is a kill switch.
+- **Scout.** A weekly session that searches for new sources, puts them on trial, and retires ones that never lead anywhere. Sources are scored by what their items led to.
+- **Dream.** A nightly job that folds notes into wiki pages and, weekly, rewrites a short lessons page from the scored record.
 
-A few things I cared about getting right:
+## Running it
 
-- It self-corrects over time. I tuned the certainty so it backs off old assumptions when fresh information shows up.
-- It tracks cost per call, so I always know what a scan run actually costs me.
-- It checks ideas against my current portfolio so it doesn't tell me to buy more of what I already hold.
+```bash
+python -m venv .venv && .venv/bin/pip install -r requirements.txt pytest
+cp .env.example .env            # add ANTHROPIC_API_KEY
+.venv/bin/python -m pytest tests
+.venv/bin/python -m thal run    # one pass: intake, analyst, settle, mark
+.venv/bin/python -m thal status
+```
+
+`python -m thal serve` runs forever on the built-in schedule; that is what the deployment runs.
 
 ## Stack
 
-Python, Claude (Opus 4.8), Docker. Pulls from a set of RSS feeds plus a few scraped sources.
-
-## Status
-
-Runs on its own on a schedule. This is a personal project I built to learn agent design, so treat anything it outputs as an experiment, not financial advice.
+Python, SQLite, Claude (Haiku 5.5 for extraction, Opus 5.5 for note folding and scouting, Fable 5.2 for the analyst and reflection).

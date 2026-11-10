@@ -5,6 +5,7 @@ scout   search for new sources, trial them, retire ones that never pay
 dream   offline memory maintenance: housekeeping, fold notes into wiki pages, rewrite lessons
 status  print the dashboard, paper portfolio and spend
 score   re-mark the ledger and print the scoreboard
+serve   run forever on the built-in schedule (what the deployment runs)
 """
 from __future__ import annotations
 
@@ -46,6 +47,10 @@ def status(conn, llm, wiki, broker) -> str:
 
 def main(argv: list[str]) -> int:
     cmd = argv[1] if len(argv) > 1 else "status"
+    if cmd == "serve":
+        from . import serve
+        serve.main()
+        return 0
     conn, wiki = db.connect(), Wiki()
     llm, provider = LLM(conn), YahooProvider(conn)
     broker = get_broker(conn, provider, risk.load())

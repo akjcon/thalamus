@@ -51,8 +51,9 @@ def _rev(text: str) -> str:
 
 
 class Wiki:
-    def __init__(self, root: str | Path = DEFAULT_DIR):
-        self.root = Path(root)
+    def __init__(self, root: str | Path | None = None):
+        from .paths import wiki_dir
+        self.root = Path(root) if root is not None else wiki_dir()
         self.root.mkdir(parents=True, exist_ok=True)
 
     def _path(self, slug: str) -> Path:

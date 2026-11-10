@@ -157,7 +157,9 @@ CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL);
 """
 
 
-def connect(path: str | Path = DEFAULT_DB) -> sqlite3.Connection:
+def connect(path: str | Path | None = None) -> sqlite3.Connection:
+    from .paths import db_path
+    path = db_path() if path is None else path
     if str(path) != ":memory:":
         Path(path).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(path), timeout=30)

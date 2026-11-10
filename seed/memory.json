@@ -1,0 +1,376 @@
+{
+ "fuses": [
+  {
+   "title": "Diesel crack is the next Hormuz premium to deflate; US refiners are max-exposed",
+   "thesis": "US refiners spent 2026 running >95% utilization and cutting gasoline yield to maximize distillate/jet (EIA), so their earnings are now concentrated in the diesel crack (~$90/bbl HO-WTI on 2026-11-06 vs ~$26 gasoline crack, computed from futures). Global refinery runs were still ~3 mb/d below pre-war in Q3 (fell 4.8, recovered 1.8), which is the mirror image of the crude surplus. As Gulf refineries resume exports (QatarEnergy first spot diesel cargo in 8 months, loading 22-29 Nov - web, unconfirmed second source) and a US-Russia diesel arrangement is discussed, the diesel crack should compress faster than crude falls, and refiners (VLO, MPC, PSX, PBF, DINO; up 150%+ YTD) should lag XLE even after their 20% drop. No bet: house record says outright shorts lose; this is a reason NOT to buy the refiner dip and a setup to revisit as a relative trade.",
+   "watch": [
+    "CONFIRM: more Gulf distillate/jet spot cargoes (Ruwais, Al Zour, Jubail, Ras Laffan) offered or loaded",
+    "CONFIRM: HO-WTI crack below $70/bbl while WTI is flat or down",
+    "CONFIRM: EIA weekly shows US distillate yield or utilization rolling over; Kpler/EIA global refinery inputs recover the remaining ~3 mb/d",
+    "CONFIRM: Russian diesel export flows to the West resume under the reported Trump-Putin deal",
+    "KILL: new strike damage to a Gulf export refinery or to Russian refining that re-widens the diesel crack above $100/bbl",
+    "KILL: refiners outperform XLE over the next 4 weeks while cracks narrow (would mean it was already priced)"
+   ],
+   "expires_days": 90
+  },
+  {
+   "title": "Suez return releases container capacity after the Lunar New Year pull-forward",
+   "thesis": "Gemini (Maersk/Hapag-Lloyd) is moving its India-North Europe ME1/IOS loop back to Suez despite a Houthi licensing regime and resurgent Somali piracy; Bab el-Mandeb transits are already ~27/day vs 34 pre-war (web, 2026-11-09). Cape diversion has absorbed several percent of global container capacity since 2024. Near term the tape is tight (transpacific spot near 2026 highs, early Feb-6 Lunar New Year pulling bookings into December, LA/LB watchmen strike deadline Nov 20), which hides the release. The checkable claim: once main Asia-Europe loops follow and the LNY rush passes, spot rates fall hard in Q1 2027 and liner equities (ZIM; Matson less directly) lag transports. No bet now: shorts have lost in the record and the December squeeze runs the other way first.",
+   "watch": [
+    "CONFIRM: a mainline Asia-North Europe or Asia-Med loop (Gemini, Ocean Alliance, MSC, Premier) announced via Suez",
+    "CONFIRM: SCFI/WCI Asia-Europe spot falls more than seasonal after Feb 6 2027",
+    "CONFIRM: carriers announce blank sailings or idle capacity for Q1 2027",
+    "KILL: Houthi licensing system leads to a detained or attacked liner vessel and Gemini reverses the routing",
+    "KILL: war-risk premiums for Red Sea transits rise again or piracy forces naval-escort-only transits",
+    "CHECK: outcome of ILWU Local 26 (watchmen, ~2% of LA/LB workers) talks by Nov 20 - risk is other locals honoring pickets"
+   ],
+   "expires_days": 90
+  },
+  {
+   "title": "CBP foreign importer-of-record rule (Jan 5 2027) funnels entries to CTPAT-validated brokers",
+   "thesis": "CBP interim final rule (FR 2026-22735, published 2026-11-06, effective 2027-01-05; checked against Federal Register and law-firm summaries) bars a foreign importer of record from making entry unless it is CTPAT-validated or uses a CTPAT-validated licensed broker, and makes brokers verify US-IOR status. Per CBP data cited by counsel: only ~21% of active brokers (643 of ~3,100) are validated, 0.4% of foreign IORs are validated, ~68% already use a validated broker, so ~32% of foreign IORs must switch broker in under two months; only Canadian IORs can even apply for validation. Expected effects: (1) brokerage share consolidates toward large validated brokers (Expeditors, C.H. Robinson, UPS, FedEx, DHL, K+N); (2) a scramble/pull-forward of DDP shipments before Jan 5 and entry delays after, concentrated in China-origin DDP e-commerce; (3) more broker liability. Size relative to any listed company's earnings is UNKNOWN - that is what this fuse is waiting on before any bet.",
+   "watch": [
+    "CONFIRM: EXPD / CHRW / UPS / FDX management cite new brokerage clients or pricing from the rule",
+    "CONFIRM: reports of foreign sellers unable to find a validated broker, or January entry backlogs for DDP cargo",
+    "CONFIRM: December transpacific bookings attributed to pre-Jan-5 front-loading",
+    "SIZE: any estimate of the share of US entries (by count or value) filed by foreign IORs",
+    "KILL: CBP delays the effective date or widens CTPAT eligibility after the comment period",
+    "KILL: brokers say the rule is immaterial to volumes on Q4 calls"
+   ],
+   "expires_days": 90
+  }
+ ],
+ "notes": [
+  {
+   "page": "strait-of-hormuz",
+   "title": "strait-of-hormuz",
+   "kind": "chokepoint",
+   "note": "Structure learned in the 2026 closure (war began 2026-02-28). The three export legs adapt at different speeds: (1) CRUDE adapts within months via dark (AIS-off) transits, larger per-vessel loads, offshore transfers in the Gulf of Oman, the Saudi East-West pipeline to the Red Sea and negotiated lanes (e.g. Iraq-US lane near Oman); by Oct 2026 Middle East crude exports were back near pre-war and the world was in surplus. (2) REFINED PRODUCTS lag crude by months (global refinery runs still ~3 mb/d under pre-war in Q3; first Qatari spot diesel cargo only in Nov). (3) LNG does not adapt: no bypass, carriers do not run dark, Ras Laffan is the single site, force majeure persists. Measurement trap: AIS-visible transit counts (about 4/day vs 85 pre-war) and barrel estimates including dark ships (roughly 13-14 mb/d, ~80% of pre-war) describe the same period, so never infer barrels from vessel counts. Diplomacy base rate: June 2026 MOU collapsed, Sept Salalah signing was postponed, late-Sept Iranian reopening offer went unanswered; Pakistan and Qatar can broker but not enforce. Price behaviour: by late 2026 European gas carried far more war premium than Brent, so peace headlines hit gas-linked equities harder than oil equities."
+  },
+  {
+   "page": "lng",
+   "title": "lng",
+   "kind": "commodity",
+   "note": "Qatar (nearly a fifth of world LNG) ships only through Hormuz from one complex, Ras Laffan; damage to trains 4 and 6 in 2026 was reported as removing about 17% of its exports for years, independent of any ceasefire. Henry Hub decoupled from TTF/JKM during the 2026 shock (HH near $3 with record Permian-led output while TTF was above EUR 85), because US export capacity, not gas supply, is the binding limit; so the windfall accrues to liquefaction owners and holders of open cargoes, not to US gas producers. EU storage level versus seasonal norm at the start of withdrawals is the slow variable to track: a deficit carries into the following summer's refill demand. Cheniere is roughly 90%+ contracted, so its upside from spreads comes through marketing volumes and guidance raises, yet the stock traded with a higher beta to war headlines than XLE in both directions in Oct-Nov 2026. Venture Global is the more spot-exposed US name. Fertilizer producer CF is also a TTF-minus-Henry-Hub play but sits in materials and was not sold with energy in the Nov 2026 unwind."
+  },
+  {
+   "page": "us-refiners",
+   "title": "us-refiners",
+   "kind": "theme",
+   "note": "In 2026 US refiners ran above 95% utilization May-Sept and cut gasoline yield to maximize distillate and jet, so earnings concentrated in the diesel crack rather than the 3-2-1. A crude surplus and a product shortage can coexist when the lost capacity is refining (the crude glut is the mirror of missing runs), which is why refiner equities rose far more than crude. Their two threats are not cheaper crude but returning distillate supply: Gulf export refineries resuming shipments, and Russian diesel being let back in. In the Nov 2026 unwind refiner share moves matched the fall in the computed 3-2-1 crack almost one for one, so a refiner 'dip' was priced, not dislocated. Quick check: crack per barrel = futures price per gallon x 42 minus WTI."
+  },
+  {
+   "page": "coal",
+   "title": "coal",
+   "kind": "commodity",
+   "note": "A global gas shock lifts seaborne thermal coal (Newcastle) but not US domestic thermal demand, because Henry Hub stays cheap: in Q3 2026 Peabody cut Powder River Basin volume guidance on low US gas prices even with Newcastle up about 40% on the year. Peabody is not a clean Newcastle proxy: its results swing on the Centurion met-coal longwall in Queensland (faulting, repeated guidance cuts, full rates pushed toward a Q3-2027 longwall move). Freight cross-check: panamax rates (the coal and grain size) were at multi-month lows in Nov 2026 while 'rising coal demand' stories circulated, with only capesizes firm on iron ore and bauxite; test any coal-demand narrative against panamax rates before acting."
+  },
+  {
+   "page": "tyson-foods",
+   "title": "tyson-foods",
+   "kind": "company",
+   "note": "Beef packer margin is the spread between boxed-beef value and cattle cost; falling cattle futures are NOT bullish for Tyson if product values fall faster, which is what the company reported when it cut its fiscal 2026 beef outlook to an adjusted loss of roughly $625-775M. Tyson is shrinking its beef network to three central-US plants, so a 'restored second shift' at Amarillo is consolidation of volume from closed capacity, not a demand signal. Chicken carries the company's profit. Related cattle-supply variables: New World screwworm status in Texas/New Mexico and whether Mexican feeder-cattle crossings are open."
+  },
+  {
+   "page": "lessons",
+   "title": "lessons",
+   "kind": "rule",
+   "note": "Process rules from the 2026-11-09 session (first session with fuses and tags; untested, treat as provisional). (1) Read the company's own filing before betting on an event that sounds bullish: the Tyson 'second shift restored' event looked like a margin recovery until the 8-K showed a widening beef loss; the web check killed the bet. (2) When a whole sector sells off on one headline, compare each name's move to its own driver (e.g. computed crack spread for refiners, TTF for LNG names) before calling it a dislocation; refiners were fairly marked, so no bet. (3) Prefer bets framed against the sector ETF with a stated reason the name should diverge from it; record that reason in tags (thesis type, chokepoint/commodity, catalyst, horizon) so the scoreboard can finally separate kinds of thesis. (4) The feed contains stale or misdated items (a hurricane 'forecast' for a past date, 2022-2024 farm items); check the date before using an event. (5) Web search budget is small per session (about a dozen queries); spend it on killing the best candidate thesis, not on surveying."
+  },
+  {
+   "page": "us-customs-brokerage",
+   "title": "us-customs-brokerage",
+   "kind": "theme",
+   "note": "CBP's foreign importer-of-record rule (Federal Register doc 2026-22735, effective 2027-01-05, implementing Executive Order 14411) splits importers into US and foreign IORs. A foreign IOR may make entry only if it is CTPAT-validated or uses a CTPAT-validated licensed broker; brokers must verify US-IOR status and face penalty exposure. Only about 21% of active brokers (643 of ~3,100) are validated, and only Canadian foreign importers are eligible to apply, so the rule shifts DDP and non-resident-importer business toward the large validated brokers and forwarders. It is not a blanket ban on informal entries. Unknown and worth finding: what share of US entries foreign IORs file, hence whether this matters to any listed broker's earnings. Also: ILWU Local 26 at LA/Long Beach is the watchmen's local (about 2% of port workers); its strike threat matters only if other locals honor pickets."
+  }
+ ],
+ "pages": {
+  "lessons": {
+   "title": "Lessons from the record",
+   "kind": "rule",
+   "body": "- No proven edge yet. Across 65 ideas (one source, one rising-market stretch), the beat-SPY rate is 49% at 1w, 43% at 4w and 32% at 12w (n=65/63/60), and mean excess goes +1.2%, -0.1%, -4.8%. Everything below is provisional.\n- Stop making 12-week long calls that only say the stock will rise. Longs made +4.8% at 12w with a 53% win rate (n=49), but beat SPY only 24% of the time (about 12 of 49) and lagged it by 6.7%. SPY itself rose roughly 11% over those windows (implied from the gap).\n- Any edge is short-dated and unproven. Longs beat SPY by +1.7% at 1w (53% beat, n=53) and +1.2% at 4w (48% beat, n=52). Those beat rates are coin flips, so set horizons of 1-4 weeks and re-justify anything held longer.\n- Judge by median and beat rate, not mean. At 4w the mean is +2.1% but the median is -0.6% with a 48% win rate (n=63); at 12w the mean is +2.7% and the median -0.1% (n=60). A few big winners carry the book and the typical idea earns nothing.\n- Stop outright shorts in a rising tape. Shorts lost at every horizon: -0.5% at 1w, -5.4% at 4w (3 of 11 won), -6.8% at 12w (4 of 11 won), -4.4% now (n=11-12). The sample is small but every reading points the same way.\n- Pairing shorts against the index is not shown to work either. Assuming the vs-SPY column is sign-adjusted, shorts trailed SPY by 6.5% at 4w (2 of 11 beat) and then led by 3.7% at 12w (7 of 11). That suggests the names were right but months early; n=11 is too small to conclude.\n- Futures have nothing supporting them. They returned -1.4% at 4w (n=7) and -3.4% at 12w (n=4, 0 of 4 beat SPY), and stand at -2.4% now with 2 of 7 beating. The sample is too small to conclude and SPY is a poor yardstick for them, so keep them rare and small until it is several times larger.\n- Sector choice looks like the drag, tentatively. At 12w ideas beat their sector by 3.6% while losing to SPY by 4.8% (n=60), which implies the sectors picked lagged the index. The sector edge is gone on the latest mark (-0.7%, n=65), so before any long, check that its sector is itself keeping up with SPY.\n- Kills and revises are too few for a rule (kills n=6, 5 at 4w, 3 at 12w; revise n=1). Killed names moved +2.4% at 1w and +6.6% at 4w (4 of 5 up) but are -0.7% now. If that is scored in the original idea's direction, kills were early rather than wrong.\n- Tag every new idea with thesis type, catalyst and intended horizon. All 65 are untagged and all come from v1, so this review could not say which kinds of thesis work; that is the biggest gap in the record.\n- No fuse record (fired, died or expired) was supplied to this review, so there are no lessons on triggers yet and none should be assumed."
+  }
+ },
+ "sources": [
+  {
+   "name": "AP Top News",
+   "url": "https://rsshub.app/apnews/topics/apf-topnews",
+   "status": "retired",
+   "added_by": "seed",
+   "why": "scout: 0 items ever pulled, so the feed is dead or blocked. General wire headlines would duplicate everything else anyway, so it isn't worth repairing."
+  },
+  {
+   "name": "Al Jazeera",
+   "url": "https://www.aljazeera.com/xml/rss/all.xml",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "Argus Media News",
+   "url": "https://www.argusmedia.com/pages/NewsRSS.aspx",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "A price-reporting agency's own news feed, about 100 items a day across oil products. This is where Gulf diesel/jet spot cargo offers and loadings (Ruwais, Al Zour, Jubail) and crack-spread moves are reported before the wires. That is fuse #2's first CONFIRM, which no current source covers."
+  },
+  {
+   "name": "BBC World",
+   "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "Brownfield Ag News",
+   "url": "http://feeds.feedblitz.com/feedburner/brownfieldagnews",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "CBP Trade Newsroom",
+   "url": "https://www.cbp.gov/rss/trade",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "CBP's own trade announcements (it carried the foreign-IOR announcement). This is where guidance, FAQs, CTPAT capacity statements or enforcement changes for fuse #4 would appear first. Expect noise from seizure releases; on trial to see if the signal is worth it."
+  },
+  {
+   "name": "CIDRAP Avian Flu",
+   "url": "https://www.cidrap.umn.edu/news/49/rss",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "Comunicaffe",
+   "url": "https://www.comunicaffe.com/feed/",
+   "status": "retired",
+   "added_by": "seed",
+   "why": "scout: 0 items ever pulled, so the feed is dead. World Coffee Portal remains for coffee coverage and has produced nothing either, so there is no reason to fix this one."
+  },
+  {
+   "name": "Daily News Egypt",
+   "url": "https://dailynewsegypt.com/feed/",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "Egyptian outlet that routinely carries Suez Canal Authority transit figures, rebate offers and carrier-return statements, often before international wires. The SCA itself has no feed. Covers fuse #3's Suez-return CONFIRM."
+  },
+  {
+   "name": "Defense One",
+   "url": "https://www.defenseone.com/rss/",
+   "status": "retired",
+   "added_by": "seed",
+   "why": "scout: 0 items ever pulled; the configured URL is broken. A working URL exists (defenseone.com/rss/all/), but it's US defense-budget politics that overlaps War on the Rocks and serves no open fuse, so it isn't worth re-adding."
+  },
+  {
+   "name": "Diaz Trade Law",
+   "url": "https://diaztradelaw.com/feed/",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "Customs-law practitioners writing for importers. They are already covering the CTPAT foreign-IOR rule and are the likeliest early reporters of foreign sellers unable to find a validated broker (fuse #4 CONFIRM). This broker/importer-side view is missing from current sources."
+  },
+  {
+   "name": "EIA Today in Energy",
+   "url": "https://www.eia.gov/rss/todayinenergy.xml",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "FarmProgress",
+   "url": "https://www.farmprogress.com/rss.xml",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "Federal Register - CBP",
+   "url": "https://www.federalregister.gov/api/v1/documents.rss?conditions[agencies][]=u-s-customs-and-border-protection",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "Primary source for fuse #4: CBP's formal notices and rules, including the 'Heightened Requirements for Foreign Importers of Record' rule itself, plus any delay, amendment or broker-fee notice before Jan 5 2027. No current source reads regulators' formal publications."
+  },
+  {
+   "name": "Foreign Policy",
+   "url": "https://foreignpolicy.com/feed/",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "Freightos FBX Updates",
+   "url": "https://www.freightos.com/feed/",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "Weekly updates from the FBX index publisher. They cover Asia-Europe spot rates (fuse #3) and transpacific rates and volumes into December (fuse #4's December transpacific CONFIRM). Recent posts already track the Red Sea return and LA/LB strike risk."
+  },
+  {
+   "name": "Hellenic Shipping News",
+   "url": "https://www.hellenicshippingnews.com/feed/",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "JOC.com",
+   "url": "https://www.joc.com/rss.xml",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "Kpler Blog",
+   "url": "https://www.kpler.com/blog/rss.xml",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "Ship-tracking analytics on cargo flows, including middle-distillate trade and diesel scenarios. It gives measured Gulf export volumes and arbitrage flows for fuse #2 rather than anecdote, and also covers dry bulk, LNG and metals flows."
+  },
+  {
+   "name": "Marine Insight",
+   "url": "https://www.marineinsight.com/feed/",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "Mining.com",
+   "url": "https://www.mining.com/feed/",
+   "status": "retired",
+   "added_by": "seed",
+   "why": "scout: 0 items ever pulled; the feed is dead (mining.com/feed/ also fails the test). No open fuse is in metals."
+  },
+  {
+   "name": "Morning Ag Clips",
+   "url": "https://www.morningagclips.com/feed/",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "NOAA NHC",
+   "url": "https://www.nhc.noaa.gov/index-at.xml",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "Reuters World",
+   "url": "https://www.reutersagency.com/feed/?best-topics=world",
+   "status": "retired",
+   "added_by": "seed",
+   "why": "scout: 0 items ever pulled; Reuters discontinued its public RSS feeds. Wire coverage is what the system is trying to beat, not read."
+  },
+  {
+   "name": "SCMP",
+   "url": "https://www.scmp.com/rss/91/feed",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "SEC EDGAR - CH Robinson 8-K",
+   "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=CHRW&type=8-K&dateb=&owner=include&count=40&output=atom",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "Primary filings for CHRW, the second broker named in fuse #4's CONFIRM. Its 8-K earnings releases would show brokerage/customs revenue effects of the Jan 5 2027 rule before press coverage."
+  },
+  {
+   "name": "SEC EDGAR - Expeditors 8-K",
+   "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=EXPD&type=&dateb=&owner=include&count=40&output=atom",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "Company filings for the largest pure-play customs broker named in fuse #4. Earnings 8-Ks and 10-Q commentary are where management would first cite new brokerage clients or pricing from the foreign-IOR rule. No company filings are read today."
+  },
+  {
+   "name": "Sea-Intelligence",
+   "url": "https://sea-intelligence.com/press-room?format=feed&type=rss",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "Primary liner analytics: capacity deployment, blank sailings, schedule reliability, network changes. These are fuse #3's 'carriers announce blank sailings/idling' and Suez-loop signals, from the analyst that trade press usually quotes days later."
+  },
+  {
+   "name": "Shipping Italy",
+   "url": "https://www.shippingitaly.it/feed/",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "Italian-language shipping/port press. The Med (Gioia Tauro, Genoa, Trieste) is the first place Asia-Med Suez reroutings show up in port calls and volumes (fuse #3). This is the system's first non-English trade source."
+  },
+  {
+   "name": "Splash 247",
+   "url": "https://splash247.com/feed/",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "State Department",
+   "url": "https://www.state.gov/rss-feed/press-releases/feed/",
+   "status": "retired",
+   "added_by": "seed",
+   "why": "scout: 0 items ever pulled, so the feed is dead. No open fuse depends on State; sanctions and trade actions that matter reach the Federal Register (CBP now added)."
+  },
+  {
+   "name": "Sugar Online",
+   "url": "https://www.sugaronline.com/rss",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "TASS English",
+   "url": "https://tass.com/rss/v2.xml",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "The Diplomat",
+   "url": "https://thediplomat.com/feed/",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "The Loadstar",
+   "url": "https://theloadstar.com/feed/",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "USDA NASS Reports",
+   "url": "https://www.nass.usda.gov/rss/reports.xml",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "War on the Rocks",
+   "url": "https://warontherocks.com/feed/",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "World Coffee Portal",
+   "url": "https://www.worldcoffeeportal.com/rss",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  },
+  {
+   "name": "Xeneta News",
+   "url": "https://www.xeneta.com/news/rss.xml",
+   "status": "trial",
+   "added_by": "scout",
+   "why": "Rate-benchmark provider with weekly Asia-Europe/Med spot-rate updates (and a current 'spot rates to fall 30% in 2027 on Red Sea return' call). This gives direct data for fuse #3's 'spot falls more than seasonal after Feb 6' CONFIRM. Current sources only relay rates second-hand."
+  },
+  {
+   "name": "gCaptain",
+   "url": "https://gcaptain.com/feed/",
+   "status": "active",
+   "added_by": "seed",
+   "why": ""
+  }
+ ]
+}

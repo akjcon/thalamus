@@ -27,7 +27,7 @@ class Limits:
     allowed_asset_classes: tuple[str, ...] = ("equity",)
     allow_short: bool = False
     blocked_symbols: tuple[str, ...] = ()
-    kill_switch: str = str(ROOT / "data" / "KILL")   # if this file exists, nothing trades
+    kill_switch: str = ""                    # path; default is KILL in the data directory. If the file exists, nothing trades
 
     def __post_init__(self):
         if self.mode not in ("paper", "live"):
@@ -97,7 +97,8 @@ class Decision:
 def check(order: OrderRequest, portfolio: Portfolio, limits: Limits, orders_today: int = 0,
           env: dict | None = None) -> Decision:
     env = os.environ if env is None else env
-    if Path(limits.kill_switch).exists():
+    from .paths import kill_switch as default_kill
+    if Path(limits.kill_switch or default_kill()).exists():
         return Decision(False, ("kill switch is on",))
     reasons: list[str] = []
     if limits.mode == "live" and env.get("THAL_LIVE") != "yes":

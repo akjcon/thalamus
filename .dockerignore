@@ -1,7 +1,8 @@
-.env
 .git
-.schwab_token.json
-.schwab_login_debug.png
+.venv
+data
+wiki
 __pycache__
-*.pyc
-.claude
+.pytest_cache
+.env
+tests
