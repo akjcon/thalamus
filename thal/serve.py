@@ -17,7 +17,7 @@ import time
 import traceback
 import urllib.request
 
-from . import agent, db, dream, extract, ingest, ledger, memory, risk, sources
+from . import agent, db, dream, extract, forecasts, ingest, ledger, memory, risk, sources
 from . import fetch as fetch_mod
 from .broker import get_broker
 from .llm import LLM, BudgetExceeded, load_env
@@ -60,6 +60,10 @@ def intake(conn, llm, now) -> dict:
     rep = {"new_items": sum(v for v in ingest.ingest(conn, now=now).values() if isinstance(v, int))}
     rep["fulltext"] = fetch_mod.fetch_pending(conn)
     rep["extract"] = extract.extract_pending(conn, llm, now=now)
+    try:
+        rep["markets"] = forecasts.refresh_markets(conn, now=now)
+    except Exception as e:                  # the exchange being unreachable never stops intake
+        rep["markets"] = f"error: {type(e).__name__}"
     return rep
 
 
@@ -72,12 +76,14 @@ def run_job(job: str, conn, llm, wiki, provider, broker, now: float) -> str:
         i = intake(conn, llm, now)
         a = agent.run_session(conn, llm, wiki, provider, broker, now)
         filled, marks = broker.settle(now), ledger.mark_all(conn, provider, now)
+        settled = forecasts.resolve(conn, provider, now=now)
         pf = broker.portfolio(now)
         head = f"Analyst: read {i['new_items']} new items. "
         if a is None:
             return head + "No new events to consider."
         bets = ", ".join(f"{b['side']} {b['symbol']}" + (" (shadow)" if b["conviction"] == 0 else "") for b in a["bets"]) or "none"
-        return (head + f"{a['events']} events, {a['fuses_opened']} fuses opened, {a['evidence']} evidence attached, bets: {bets}. "
+        return (head + f"{a['events']} events, {a['fuses_opened']} fuses opened, {a['evidence']} evidence attached, {a['forecasts']} forecasts made "
+                f"({settled} settled), bets: {bets}. "
                 f"Paper equity ${pf.equity:,.0f}. Spent today ${llm.spent_today(now):.2f}."
                 + ("" if a["finished"] else " (Session hit its turn limit; events will be re-read.)")
                 + (f"\n\n{a['summary'][:1500]}" if a["summary"] else ""))
@@ -85,9 +91,13 @@ def run_job(job: str, conn, llm, wiki, provider, broker, now: float) -> str:
         sunday = time.gmtime(now).tm_wday == 6
         d = dream.dream(conn, llm, wiki, provider, broker, do_reflect=sunday, now=now)
         h = d["health"]
-        return (f"Dream: folded {len(d['fold']['folded'])} pages, {d['housekeeping']['fuses_expired']} fuses expired, "
-                f"{d['housekeeping']['orders_filled']} orders filled. Wiki: {h['pages']} pages, {h['notes_waiting']} notes waiting"
-                + (", lessons rewritten." if d["reflected"] else "."))
+        s = d["session"]
+        return (f"Dream: wrote {len(s['pages_written'])} pages, merged {s['merged']} duplicate events, "
+                f"{d['housekeeping']['fuses_expired']} fuses expired, {d['housekeeping']['forecasts_resolved']} forecasts settled. "
+                f"Wiki: {h['pages']} pages, {h['notes_waiting']} notes waiting"
+                + (", lessons rewritten." if d["reflected"] else ".")
+                + ("" if s["finished"] else " (Session hit its turn limit.)")
+                + (f"\n\n{s['summary'][:1200]}" if s["summary"] else ""))
     if job == "scout":
         s = sources.scout(conn, llm, wiki, now)
         return f"Scout: added {len(s['added'])} sources ({', '.join(s['added']) or 'none'}), retired {len(s['retired'])}."

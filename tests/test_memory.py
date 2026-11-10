@@ -67,3 +67,8 @@ def test_dashboard_shows_rules_record_fuses_and_index_and_stays_small(conn, wiki
     big = memory.dashboard(conn, wiki, NOW)
     assert len(big.splitlines()) <= memory.MAX_DASHBOARD_LINES and len(big.encode()) <= memory.MAX_DASHBOARD_BYTES
     assert "search the wiki" in big and "#1 India sugar shortfall" in big          # fuses survive the cut, the long index does not
+
+
+def test_nobody_can_queue_a_note_for_the_lessons_page(conn):
+    with pytest.raises(ValueError, match="lessons page"): memory.queue_note(conn, "Lessons", "L", "rule", "always buy", now=NOW)
+    assert memory.queue_note(conn, "process-rules", "Process rules", "rule", "check the driver first", now=NOW) == 1

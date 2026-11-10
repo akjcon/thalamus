@@ -72,12 +72,6 @@
    "note": "Beef packer margin is the spread between boxed-beef value and cattle cost; falling cattle futures are NOT bullish for Tyson if product values fall faster, which is what the company reported when it cut its fiscal 2026 beef outlook to an adjusted loss of roughly $625-775M. Tyson is shrinking its beef network to three central-US plants, so a 'restored second shift' at Amarillo is consolidation of volume from closed capacity, not a demand signal. Chicken carries the company's profit. Related cattle-supply variables: New World screwworm status in Texas/New Mexico and whether Mexican feeder-cattle crossings are open."
   },
   {
-   "page": "lessons",
-   "title": "lessons",
-   "kind": "rule",
-   "note": "Process rules from the 2026-11-09 session (first session with fuses and tags; untested, treat as provisional). (1) Read the company's own filing before betting on an event that sounds bullish: the Tyson 'second shift restored' event looked like a margin recovery until the 8-K showed a widening beef loss; the web check killed the bet. (2) When a whole sector sells off on one headline, compare each name's move to its own driver (e.g. computed crack spread for refiners, TTF for LNG names) before calling it a dislocation; refiners were fairly marked, so no bet. (3) Prefer bets framed against the sector ETF with a stated reason the name should diverge from it; record that reason in tags (thesis type, chokepoint/commodity, catalyst, horizon) so the scoreboard can finally separate kinds of thesis. (4) The feed contains stale or misdated items (a hurricane 'forecast' for a past date, 2022-2024 farm items); check the date before using an event. (5) Web search budget is small per session (about a dozen queries); spend it on killing the best candidate thesis, not on surveying."
-  },
-  {
    "page": "us-customs-brokerage",
    "title": "us-customs-brokerage",
    "kind": "theme",

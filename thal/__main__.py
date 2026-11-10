@@ -14,7 +14,7 @@ import sys
 import time
 
 from . import fetch as fetch_mod
-from . import agent, db, dream, extract, ingest, ledger, memory, risk, sources
+from . import agent, db, dream, extract, forecasts, ingest, ledger, memory, risk, sources
 from .broker import get_broker
 from .llm import LLM, BudgetExceeded
 from .prices import YahooProvider
@@ -31,6 +31,7 @@ def run(conn, llm, wiki, provider, broker, now=None, fetch=None, feeds=None, fet
         rep["analyst"] = agent.run_session(conn, llm, wiki, provider, broker, now)
     except BudgetExceeded as e:
         rep["stopped"] = str(e)
+    rep["forecasts_resolved"] = forecasts.resolve(conn, provider, now=now)
     rep["orders_filled"] = broker.settle(now)
     rep["marks"] = ledger.mark_all(conn, provider, now)
     rep["spent_today"] = round(llm.spent_today(now), 3)

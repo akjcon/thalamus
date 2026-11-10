@@ -11,7 +11,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-from . import db, ledger
+from . import db, forecasts, ledger
 from .wiki import KINDS, Wiki, slugify
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -96,6 +96,8 @@ def queue_note(conn: sqlite3.Connection, slug: str, title: str, kind: str, note:
         kind = "theme"
     if not note.strip():
         raise ValueError("empty note")
+    if slugify(slug) == "lessons":      # that page has one writer: the weekly reflection
+        raise ValueError("the lessons page is rewritten from the scored record; put process notes on another page")
     with conn:
         cur = conn.execute("INSERT INTO page_notes(at, slug, title, kind, note, events) VALUES (?,?,?,?,?,?)",
                            (now or time.time(), slugify(slug), " ".join(title.split())[:120] or slug, kind,
@@ -112,6 +114,7 @@ def dashboard(conn: sqlite3.Connection, wiki: Wiki, now: float | None = None) ->
     parts += [f"- {r['group']} at {r['horizon']}: n={r['n']}, mean {r['mean'] * 100:+.1f}%, "
               + (f"vs S&P {r['vs_spy'] * 100:+.1f}%" if r["vs_spy"] is not None else "no benchmark")
               for r in board] or ["- no scored bets yet"]
+    parts += ["", "## Forecast record (Brier score vs the no-view baseline; lower is better)", forecasts.scores_text(conn)]
     lesson = wiki.read("lessons")
     if lesson:
         parts += ["", "## Lessons (maintained by the dream step)", lesson.body[:1500]]

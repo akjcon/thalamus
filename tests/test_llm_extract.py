@@ -32,7 +32,7 @@ def test_cost_is_logged_per_call_and_uses_the_price_table(conn):
 def test_budget_blocks_the_next_call_before_it_spends(conn):
     client = FakeClient(BatchOut(events=[]), BatchOut(events=[]), usage=(0, 5_000_000, 0))   # one $100 call blows any sane daily budget
     llm = LLM(conn, client)
-    llm.parse("fold", "s", "u", BatchOut, NOW)
+    llm.parse("dream", "s", "u", BatchOut, NOW)
     with pytest.raises(BudgetExceeded): llm.parse("extract", "s", "u", BatchOut, NOW)
     assert len(client.calls) == 1
 

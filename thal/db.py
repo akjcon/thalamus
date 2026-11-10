@@ -172,6 +172,10 @@ def connect(path: str | Path | None = None) -> sqlite3.Connection:
     for col in ("fulltext TEXT", "fetch_status TEXT"):          # added after the first databases were created
         if col.split()[0] not in have:
             conn.execute(f"ALTER TABLE items ADD COLUMN {col}")
+    have = {r["name"] for r in conn.execute("PRAGMA table_info(events)")}
+    for col in ("dup_of INTEGER", "sources INTEGER NOT NULL DEFAULT 1"):   # the same story from several feeds is merged into one
+        if col.split()[0] not in have:
+            conn.execute(f"ALTER TABLE events ADD COLUMN {col}")
     return conn
 
 
