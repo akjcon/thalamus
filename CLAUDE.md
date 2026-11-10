@@ -27,4 +27,4 @@ tests/     offline tests; models, feeds, prices and the network are all faked
 
 ## Deployment
 
-Railway builds the Dockerfile and auto-deploys on push to `main`. State lives on the volume at `/data/thal` (database, wiki, kill switch). Variables: `ANTHROPIC_API_KEY`, `DISCORD_BOT_TOKEN`, optional `THAL_CONTACT_EMAIL`. After a push, look for "Thalamus v2 online" in #thal-logs. To stop all trading, create the file `/data/thal/KILL`.
+Railway builds the Dockerfile and auto-deploys on push to `main`. Service settings (build, restart policy, volume mount) are declared in `.railway/railway.py`; preview a change with `railway config plan` and never apply a plan that detaches the volume. State lives on the volume at `/data/thal` (database, wiki, kill switch). Variables: `ANTHROPIC_API_KEY`, `DISCORD_BOT_TOKEN`, optional `THAL_CONTACT_EMAIL`. After a push, look for "Thalamus v2 online" in #thal-logs. To stop all trading, create the file `/data/thal/KILL`.
