@@ -146,9 +146,13 @@ def test_forecast_tools_report_the_baseline_and_are_capped(world, monkeypatch):
     out = s.forecast_price("CANE", "above", 60, 5, 0.7, "squeeze", ["weather"])
     assert out.startswith("forecast #1: CANE closes above 60 on") and "Yours 70%, baseline" in out
     assert s.call("forecast_price", {"symbol": "SGG", "direction": "above", "level": 40, "days": 5, "probability": 0.6, "rationale": "x"})[1]   # dead ticker
-    assert s.call("find_markets", {"query": "fed"})[1]                      # prediction markets are gone
-    assert not {"find_markets", "forecast_market"} & {t["name"] for t in agent.TOOLS}
-    assert "CANE closes below" in s.forecast_price("CANE", "below", 10, 5, 0.1, "second")
+    assert s.find_markets("fed rate cut").startswith("no open markets match")
+    fc.ensure(conn)
+    conn.execute("INSERT INTO markets VALUES ('KXFED-CUT','KXFED','Economics','Fed cuts in December','Resolves Yes if the Fed cuts.',?,0.6,0.64,0.61,100,'active','',?)", (NOW + 30 * DAY, NOW))
+    conn.execute("INSERT INTO markets_fts(ticker, title, rules) VALUES ('KXFED-CUT','Fed cuts in December','Resolves Yes if the Fed cuts.')"); conn.commit()
+    assert "KXFED-CUT: Fed cuts in December | market 62% | closes" in s.find_markets("Fed December cut")
+    assert "Yours 80%, market 62%" in s.forecast_market("KXFED-CUT", 0.8, "labour data")
+    assert s.call("forecast_market", {"ticker": "KXFED-CUT", "probability": 0.7, "rationale": "again"})[1]
     assert s.counts["forecasts"] == 2
     monkeypatch.setattr("thal.agent.MAX_FORECASTS", 2)
     assert "already made 2 forecasts" in s.call("forecast_price", {"symbol": "CANE", "direction": "below", "level": 10, "days": 5, "probability": 0.1, "rationale": "x"})[0]

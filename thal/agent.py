@@ -50,17 +50,18 @@ the kind of connection it is.
 
 - Forecasts: dated yes/no predictions that resolve in days and are scored against a no-view baseline. They are the \
 fastest feedback the system gets, so make several each session wherever your view differs from the baseline: a price \
-level by a date on an instrument from the universe below. Whenever you record a bet, also record a forecast on the \
-same instrument due within about a week, so the view is tested long before the bet's horizon. The tool tells you \
-the baseline; a forecast that merely repeats it teaches nothing, and one that is confidently wrong is penalised.
+level by a date on a stock, ETF or future, or a prediction-market contract. Whenever you record a bet, also record \
+a forecast on the same instrument due within about a week, so the view is tested long before the bet's horizon. \
+The tool tells you the baseline; a forecast that merely repeats it teaches nothing, and one that is confidently \
+wrong is penalised.
 
-The universe for bets and forecasts is what the account can trade at Interactive Brokers: US-listed stocks and \
-ETFs, and futures (the account has futures approval). Nothing else: no prediction markets, no instruments you \
-cannot name a symbol for. Futures use Yahoo symbols: the continuous front month (CL=F, HO=F, NG=F, ZC=F, GC=F, \
-ES=F) or a specific contract month (CLF27.NYM, ZCH27.CBT, GCG27.CMX). The continuous series jumps when the front \
-month rolls, so when a bet's horizon runs past the front month's expiry, name the specific contract you would \
-hold. A futures bet is often the cleanest expression of a commodity view; prefer it to a company that only \
-loosely tracks the commodity.
+The universe is what the account can trade at Interactive Brokers: US-listed stocks and ETFs, futures (the account \
+has futures approval), and prediction-market contracts, which Interactive Brokers carries from Kalshi. Bets are on \
+stocks, ETFs and futures; prediction-market contracts are forecasts. Futures use Yahoo symbols: the continuous \
+front month (CL=F, HO=F, NG=F, ZC=F, GC=F, ES=F) or a specific contract month (CLF27.NYM, ZCH27.CBT, GCG27.CMX). \
+The continuous series jumps when the front month rolls, so when a bet's horizon runs past the front month's \
+expiry, name the specific contract you would hold. A futures bet is often the cleanest expression of a commodity \
+view; prefer it to a company that only loosely tracks the commodity.
 
 It is normal for a session to end with few bets and fuses. When you are done, finish with a short plain summary of \
 what you concluded and why.
@@ -94,6 +95,10 @@ TOOLS = [
      "input_schema": {"type": "object", "properties": {"page": {"type": "string"}, "kind": {"type": "string", "enum": ["commodity", "chokepoint", "company", "country", "theme", "rule"]}, "note": {"type": "string"}}, "required": ["page", "kind", "note"]}},
     {"name": "forecast_price", "description": "Record a forecast that a stock, ETF or future will close above or below a level a number of days from now, with your probability. Returns the no-view baseline probability it will be scored against. Resolved automatically from prices.",
      "input_schema": {"type": "object", "properties": {"symbol": {"type": "string"}, "direction": {"type": "string", "enum": ["above", "below"]}, "level": {"type": "number"}, "days": {"type": "integer"}, "probability": {"type": "number"}, "rationale": {"type": "string"}, "tags": {"type": "array", "items": {"type": "string"}}}, "required": ["symbol", "direction", "level", "days", "probability", "rationale"]}},
+    {"name": "find_markets", "description": "Search open prediction-market contracts (Kalshi) on economics, politics, world events, climate and more. Returns each contract's ticker, current market probability, closing date and resolution rule.",
+     "input_schema": {"type": "object", "properties": {"query": {"type": "string"}, "max_days": {"type": "integer", "description": "only contracts closing within this many days (default 60)"}}, "required": ["query"]}},
+    {"name": "forecast_market", "description": "Record your probability that a prediction-market contract resolves Yes. It is scored against the market's own price at this moment. No money is traded.",
+     "input_schema": {"type": "object", "properties": {"ticker": {"type": "string"}, "probability": {"type": "number"}, "rationale": {"type": "string"}, "tags": {"type": "array", "items": {"type": "string"}}}, "required": ["ticker", "probability", "rationale"]}},
     {"name": "propose_bet", "description": "Propose a bet. It is checked (the stock, ETF or future must really trade), recorded in the scored ledger, and sent to the paper broker within the risk limits. Benchmark is the sector ETF it must beat to count as skill.",
      "input_schema": {"type": "object", "properties": {"symbol": {"type": "string"}, "side": {"type": "string", "enum": ["LONG", "SHORT"]}, "thesis": {"type": "string"}, "invalidation": {"type": "string"}, "horizon_days": {"type": "integer"}, "benchmark": {"type": "string"}, "conviction": {"type": "integer"}, "tags": {"type": "array", "items": {"type": "string"}}, "fuse_id": {"type": "integer"}}, "required": ["symbol", "side", "thesis", "invalidation", "horizon_days", "conviction"]}},
 ]
@@ -201,6 +206,17 @@ class Session:
         r = forecasts.add_price(self.conn, self.provider, symbol, direction, level, days, probability, rationale, tags, now=self.now)
         self.counts["forecasts"] = self.counts.get("forecasts", 0) + 1
         return f"forecast #{r['id']}: {r['question']}. Yours {r['prob']:.0%}, baseline {r['baseline']:.0%}."
+
+    def find_markets(self, query: str, max_days: int = 60) -> str:
+        hits = forecasts.search_markets(self.conn, query, 10, self.now, max_days)
+        return "\n".join(f"{h['ticker']}: {h['title']} | market {h['price']:.0%} | closes {h['closes']} | {h['rules'][:160]}"
+                         for h in hits) or "no open markets match; try fewer or different words, or a longer max_days"
+
+    def forecast_market(self, ticker: str, probability: float, rationale: str = "", tags: list | None = None) -> str:
+        self._forecast_room()
+        r = forecasts.add_market(self.conn, ticker, probability, rationale, tags, now=self.now)
+        self.counts["forecasts"] = self.counts.get("forecasts", 0) + 1
+        return f"forecast #{r['id']}: {r['question']}. Yours {r['prob']:.0%}, market {r['baseline']:.0%}."
 
     def propose_bet(self, **kw) -> str:
         shadow = int(kw.get("conviction", 0) or 0) <= 0

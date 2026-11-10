@@ -63,16 +63,49 @@ def test_due_date_without_a_session_uses_the_last_close_before_it(conn):
     assert conn.execute("SELECT outcome FROM forecasts").fetchone()[0] == 0  # last close (bar 70, even) is 99
 
 
+EVENTS = {"events": [
+    {"event_ticker": "KXFED-26DEC", "category": "Economics", "title": "Fed decision in December",
+     "markets": [{"ticker": "KXFED-26DEC-CUT25", "yes_sub_title": "Cut 25bps", "rules_primary": "Resolves Yes if the Fed cuts by 25bps.",
+                  "close_time": "2026-12-16T19:00:00Z", "yes_bid_dollars": "0.6000", "yes_ask_dollars": "0.6400", "last_price_dollars": "0.6100", "volume_fp": "5000", "status": "active", "result": ""},
+                 {"ticker": "KXFED-26DEC-HOLD", "yes_sub_title": "Hold", "rules_primary": "Resolves Yes if no change.",
+                  "close_time": "2026-12-16T19:00:00Z", "yes_bid_dollars": None, "yes_ask_dollars": None, "last_price_dollars": None, "status": "active", "result": ""},
+                 {"ticker": "KXFED-28DEC-CUT25", "yes_sub_title": "Cut 25bps in 2028", "rules_primary": "Far away.",
+                  "close_time": "2028-12-16T19:00:00Z", "yes_bid_dollars": "0.3000", "yes_ask_dollars": "0.3400", "status": "active", "result": ""}]},
+    {"event_ticker": "KXNFL-1", "category": "Sports", "title": "Game", "markets": [{"ticker": "KXNFL-1-A", "close_time": "2026-12-01T00:00:00Z", "yes_bid_dollars": "0.5", "yes_ask_dollars": "0.52"}]}],
+    "cursor": ""}
 M_NOW = 1794300000.0      # 2026-11-10
 
 
-def test_old_market_forecasts_still_settle_and_the_catalogue_is_dropped(conn):
-    conn.executescript("CREATE TABLE markets (ticker TEXT); CREATE VIRTUAL TABLE markets_fts USING fts5(title);")
-    fc.ensure(conn)
-    assert not conn.execute("SELECT 1 FROM sqlite_master WHERE name LIKE 'markets%'").fetchall()
-    conn.execute("INSERT INTO forecasts(created_at, kind, ref, question, due_at, prob, baseline) VALUES (?,?,?,?,?,?,?)",
-                 (M_NOW, "market", "KXFED-26DEC-CUT25", "Fed decision in December — Cut 25bps", M_NOW + 36 * DAY, 0.8, 0.62))
-    conn.commit()
+def test_markets_refresh_search_and_skip_sports_and_unquoted(conn):
+    calls = []
+    assert fc.refresh_markets(conn, get=lambda u: calls.append(u) or EVENTS, now=M_NOW) == 1    # unquoted, far-dated and sports are not stored
+    assert [r[0] for r in conn.execute("SELECT ticker FROM markets")] == ["KXFED-26DEC-CUT25"]
+    assert "with_nested_markets=true" in calls[0] and len(calls) == 1
+    hits = fc.search_markets(conn, "Fed rate cut December", now=M_NOW)
+    assert [h["ticker"] for h in hits] == ["KXFED-26DEC-CUT25"] and hits[0]["price"] == pytest.approx(0.62) and hits[0]["closes"] == "2026-12-16"
+    assert fc.search_markets(conn, "NFL game", now=M_NOW) == [] and fc.search_markets(conn, "!!", now=M_NOW) == []
+    assert fc.search_markets(conn, "Fed", now=M_NOW + 60 * DAY) == []       # closed markets are not offered
+    assert fc.search_markets(conn, "Fed", now=M_NOW, max_days=7) == []      # ...nor ones that close beyond the window
+    assert [h["ticker"] for h in fc.search_markets(conn, "Fed zebra", now=M_NOW)] == ["KXFED-26DEC-CUT25"]   # no all-word match: any-word fallback
+
+
+def test_market_price_ignores_wide_or_one_sided_quotes():
+    assert fc.market_price({"yes_bid": 0.6, "yes_ask": 0.64, "last": 0.2}) == pytest.approx(0.62)
+    assert fc.market_price({"yes_bid": 0.1, "yes_ask": 0.9, "last": 0.4}) == 0.4            # too wide: fall back to last trade
+    assert fc.market_price({"yes_bid": None, "yes_ask": 0.9, "last": None}) is None
+    assert fc.market_price({"yes_bid": 0.0, "yes_ask": 1.0, "last": 1.0}) is None
+
+
+def test_market_forecast_uses_the_market_price_as_baseline_and_resolves_from_the_exchange(conn):
+    fc.refresh_markets(conn, get=lambda u: EVENTS, now=M_NOW)
+    r = fc.add_market(conn, "KXFED-26DEC-CUT25", 0.8, "labour data", ["macro"], now=M_NOW)
+    assert r["baseline"] == 0.62 and r["question"] == "Fed decision in December — Cut 25bps"
+    with pytest.raises(ValueError, match="already an open forecast"): fc.add_market(conn, "KXFED-26DEC-CUT25", 0.7, now=M_NOW)
+    with pytest.raises(ValueError, match="find_markets"): fc.add_market(conn, "KXFED-26DEC-HOLD", 0.3, now=M_NOW)      # unquoted: never stored
+    with pytest.raises(ValueError, match="no usable quote"): fc.add_market(conn, "KXFED-26DEC-CUT25", 0.3, now=M_NOW + 60 * DAY)
+    with pytest.raises(ValueError, match="find_markets"): fc.add_market(conn, "NOPE", 0.3, now=M_NOW)
+    fc.refresh_markets(conn, get=lambda u: {"events": [], "cursor": ""}, now=M_NOW + DAY)
+    assert conn.execute("SELECT COUNT(*) FROM markets").fetchone()[0] == 1                  # a market with an open forecast is kept
     due = conn.execute("SELECT due_at FROM forecasts").fetchone()[0]
     result = {"market": {"result": ""}}
     assert fc.resolve(conn, FakeProvider(), get=lambda u: result, now=due + 60) == 0        # closed but not settled yet

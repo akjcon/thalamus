@@ -60,7 +60,10 @@ def intake(conn, llm, now) -> dict:
     rep = {"new_items": sum(v for v in ingest.ingest(conn, now=now).values() if isinstance(v, int))}
     rep["fulltext"] = fetch_mod.fetch_pending(conn)
     rep["extract"] = extract.extract_pending(conn, llm, now=now)
-    forecasts.ensure(conn)
+    try:
+        rep["markets"] = forecasts.refresh_markets(conn, now=now)
+    except Exception as e:                  # the exchange being unreachable never stops intake
+        rep["markets"] = f"error: {type(e).__name__}"
     try:
         db.compact(conn)
     except Exception as e:                  # a busy database is retried at the next intake
