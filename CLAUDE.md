@@ -9,6 +9,7 @@ thal/      db, prices, ledger, risk, broker        the measured, code-enforced c
            ingest, fetch, extract                  intake: feeds -> full text -> event records
            memory, wiki, dream                     fuses, notes, dashboard, pages, offline upkeep
            agent, sources                          the analyst session and the source scout
+           report, backfill                        weekly scorecard; loader for the old bot's saved headlines
            serve, __main__                         scheduler and command line
 config/    models.yaml (roles, prices, daily budget), risk.yaml (hard limits), house_rules.md, sources.yaml (starter feeds)
 seed/      memory a brand-new deployment starts from

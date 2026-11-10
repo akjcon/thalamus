@@ -49,8 +49,10 @@ are free and are how the system learns, so record one for every specific, falsif
 the kind of connection it is.
 
 - Forecasts: dated yes/no predictions that resolve in days and are scored against a no-view baseline. They are the \
-fastest feedback the system gets, so make several each session wherever your view differs from the baseline: a price \
-level by a date on a stock, ETF or future, or a prediction-market contract. Whenever you record a bet, also record \
+fastest feedback the system gets, and the record needs volume and breadth to mean anything: aim for ten to fifteen \
+each session, most of them due within a week, spread across unrelated topics rather than many versions of one view \
+(five forecasts on oil are one opinion counted five times). Each is a price level by a date on a stock, ETF or \
+future, or a prediction-market contract. Do not pad: a forecast on something you have no view on is noise. Whenever you record a bet, also record \
 a forecast on the same instrument due within about a week, so the view is tested long before the bet's horizon. \
 The tool tells you the baseline; a forecast that merely repeats it teaches nothing, and one that is confidently \
 wrong is penalised.

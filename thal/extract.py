@@ -78,8 +78,10 @@ def render(items: list[sqlite3.Row]) -> str:
                      for i, r in enumerate(items))
 
 
-def extract_batch(conn: sqlite3.Connection, llm: LLM, items: list[sqlite3.Row], now: float | None = None) -> int:
-    """Extract one batch; marks every item in it as processed. Returns events stored."""
+def extract_batch(conn: sqlite3.Connection, llm: LLM, items: list[sqlite3.Row], now: float | None = None,
+                  connected: int = 0) -> int:
+    """Extract one batch; marks every item in it as processed. Returns events stored.
+    connected=1 stores the events as already seen by the analyst (used for backfilled history)."""
     now = now or time.time()
     out: BatchOut = llm.parse("extract", SYSTEM, render(items), BatchOut, now)
     kept: dict[int, EventOut] = {}
@@ -92,10 +94,11 @@ def extract_batch(conn: sqlite3.Connection, llm: LLM, items: list[sqlite3.Row], 
             if e:
                 conn.execute(
                     "INSERT INTO events(item_id, at, event_type, summary, entities, commodities, places, magnitude,"
-                    " novelty, reliability, model) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                    " novelty, reliability, model, connected) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                     (r["id"], r["published_at"] or r["fetched_at"], e.event_type, " ".join(e.summary.split())[:600],
                      db.jl(_names(e.entities)), db.jl(_names(e.commodities)), db.jl(_names(e.places)),
-                     _clamp(e.magnitude), _clamp(e.novelty), _clamp(e.reliability), llm.cfg["roles"]["extract"]["model"]))
+                     _clamp(e.magnitude), _clamp(e.novelty), _clamp(e.reliability), llm.cfg["roles"]["extract"]["model"],
+                     int(connected)))
             conn.execute("UPDATE items SET extracted = ? WHERE id = ?", (1 if e else 2, r["id"]))
     return len(kept)
 

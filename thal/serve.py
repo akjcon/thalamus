@@ -5,6 +5,7 @@ Jobs and when they run (UTC):
   analyst   daily at 12:00       intake, then one analyst session, then settle and mark
   dream     daily at 03:00       housekeeping and note folding; lessons are rewritten on Sundays
   scout     Sundays at 05:00     look for new sources, retire dead weight
+  report    Sundays at 13:00     the weekly scorecard: forecasts vs baseline, bets vs sector
 Last-run times live in the database, so a restart neither repeats nor skips a job.
 Each job posts a short summary to Discord when a bot token is configured.
 """
@@ -17,7 +18,7 @@ import time
 import traceback
 import urllib.request
 
-from . import agent, db, dream, extract, forecasts, ingest, ledger, memory, risk, sources
+from . import agent, db, dream, extract, forecasts, ingest, ledger, memory, report, risk, sources
 from . import fetch as fetch_mod
 from .broker import get_broker
 from .llm import LLM, BudgetExceeded, load_env
@@ -53,6 +54,8 @@ def due(conn: sqlite3.Connection, now: float) -> list[str]:
         out.append("analyst")
     elif now - max(last_run(conn, "intake"), last_run(conn, "analyst")) >= 4 * HOUR:
         out.append("intake")
+    if t.tm_wday == 6 and t.tm_hour >= 13 and not ran_today("report"):
+        out.append("report")
     return out
 
 
@@ -105,6 +108,9 @@ def run_job(job: str, conn, llm, wiki, provider, broker, now: float) -> str:
     if job == "scout":
         s = sources.scout(conn, llm, wiki, now)
         return f"Scout: added {len(s['added'])} sources ({', '.join(s['added']) or 'none'}), retired {len(s['retired'])}."
+    if job == "report":
+        broker.settle(now); ledger.mark_all(conn, provider, now); forecasts.resolve(conn, provider, now=now)
+        return report.scorecard(conn, now)
     raise ValueError(f"unknown job {job!r}")
 
 

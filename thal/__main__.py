@@ -1,10 +1,12 @@
-"""Command line: python -m thal <run|scout|dream|status|score>
+"""Command line: python -m thal <run|scout|dream|status|score|report|backfill|serve>
 
 run     ingest feeds, extract events, run the analyst session, settle and mark
 scout   search for new sources, trial them, retire ones that never pay
 dream   offline memory maintenance: housekeeping, fold notes into wiki pages, rewrite lessons
 status  print the dashboard, paper portfolio and spend
 score   re-mark the ledger and print the scoreboard
+report  print the weekly scorecard (forecasts vs baseline, bets vs sector)
+backfill FOLDER [I N]  load the old bot's saved headline scans as history and extract events (shard I of N)
 serve   run forever on the built-in schedule (what the deployment runs)
 """
 from __future__ import annotations
@@ -14,7 +16,7 @@ import sys
 import time
 
 from . import fetch as fetch_mod
-from . import agent, db, dream, extract, forecasts, ingest, ledger, memory, risk, sources
+from . import agent, backfill, db, dream, extract, forecasts, ingest, ledger, memory, report, risk, sources
 from .broker import get_broker
 from .llm import LLM, BudgetExceeded
 from .prices import YahooProvider
@@ -66,6 +68,19 @@ def main(argv: list[str]) -> int:
         ledger.mark_all(conn, provider)
         for by in ("source", "kind", "side"):
             print(f"\nby {by}\n" + ledger.format_scoreboard(ledger.scoreboard(conn, by=by)))
+    elif cmd == "report":
+        ledger.mark_all(conn, provider); forecasts.resolve(conn, provider)
+        print(report.scorecard(conn))
+    elif cmd == "backfill":
+        if len(argv) < 3:
+            print(__doc__)
+            return 2
+        shard = (int(argv[3]), int(argv[4])) if len(argv) > 4 else (0, 1)
+        if shard[0] == 0:
+            print(json.dumps(backfill.load(conn, argv[2])), flush=True)
+        say = lambda d, n: print(f"{d['items']}/{n} items, {d['events']} events, ${llm.spent_today():.2f} spent today", flush=True)
+        print(json.dumps(backfill.extract_backfill(conn, llm, shard=shard, progress=say)), flush=True)
+        print(f"{backfill.pending(conn)} backfilled items still waiting", flush=True)
     elif cmd == "status":
         print(status(conn, llm, wiki, broker))
     else:
