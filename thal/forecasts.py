@@ -123,8 +123,12 @@ def _ts(s: str | None) -> float | None:
         return None
 
 
+KEEP_DAYS = 180      # the exchange lists ~80,000 contracts; only ones the analyst could be offered are stored
+
+
 def refresh_markets(conn: sqlite3.Connection, get=_json, now: float | None = None, max_pages: int = 400) -> int:
-    """Pull open Kalshi events with their markets into the local table. Returns how many markets are stored."""
+    """Pull open Kalshi markets that have a usable price and close within KEEP_DAYS into the local table.
+    Returns how many are stored from this pull. Markets with an open forecast are always kept."""
     ensure(conn)
     now = now or time.time()
     cursor, rows = "", []
@@ -134,10 +138,15 @@ def refresh_markets(conn: sqlite3.Connection, get=_json, now: float | None = Non
             if ev.get("category") in SKIP_CATEGORIES:
                 continue
             for m in ev.get("markets") or []:
+                close = _ts(m.get("close_time"))
+                quote = {"yes_bid": _f(m.get("yes_bid_dollars")), "yes_ask": _f(m.get("yes_ask_dollars")),
+                         "last": _f(m.get("last_price_dollars"))}
+                if close is None or not now < close <= now + KEEP_DAYS * DAY or market_price(quote) is None:
+                    continue
                 title = " — ".join(x for x in (ev.get("title"), m.get("yes_sub_title") or m.get("title")) if x)
-                rows.append((m["ticker"], ev.get("event_ticker"), ev.get("category"), title[:300], (m.get("rules_primary") or "")[:1500],
-                             _ts(m.get("close_time")), _f(m.get("yes_bid_dollars")), _f(m.get("yes_ask_dollars")),
-                             _f(m.get("last_price_dollars")), _f(m.get("volume_fp")), m.get("status"), m.get("result") or "", now))
+                rows.append((m["ticker"], ev.get("event_ticker"), ev.get("category"), title[:300], (m.get("rules_primary") or "")[:600],
+                             close, quote["yes_bid"], quote["yes_ask"], quote["last"], _f(m.get("volume_fp")),
+                             m.get("status"), m.get("result") or "", now))
         cursor = d.get("cursor") or ""
         if not cursor:
             break

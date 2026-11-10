@@ -64,6 +64,10 @@ def intake(conn, llm, now) -> dict:
         rep["markets"] = forecasts.refresh_markets(conn, now=now)
     except Exception as e:                  # the exchange being unreachable never stops intake
         rep["markets"] = f"error: {type(e).__name__}"
+    try:
+        db.compact(conn)
+    except Exception as e:                  # a busy database is retried at the next intake
+        rep["compact"] = f"error: {type(e).__name__}"
     return rep
 
 

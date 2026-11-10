@@ -1,6 +1,6 @@
 import math
 import pytest
-from thal import forecasts as fc
+from thal import db, forecasts as fc
 from thal.prices import FakeProvider
 from .conftest import DAY, T0, series
 
@@ -68,7 +68,9 @@ EVENTS = {"events": [
      "markets": [{"ticker": "KXFED-26DEC-CUT25", "yes_sub_title": "Cut 25bps", "rules_primary": "Resolves Yes if the Fed cuts by 25bps.",
                   "close_time": "2026-12-16T19:00:00Z", "yes_bid_dollars": "0.6000", "yes_ask_dollars": "0.6400", "last_price_dollars": "0.6100", "volume_fp": "5000", "status": "active", "result": ""},
                  {"ticker": "KXFED-26DEC-HOLD", "yes_sub_title": "Hold", "rules_primary": "Resolves Yes if no change.",
-                  "close_time": "2026-12-16T19:00:00Z", "yes_bid_dollars": None, "yes_ask_dollars": None, "last_price_dollars": None, "status": "active", "result": ""}]},
+                  "close_time": "2026-12-16T19:00:00Z", "yes_bid_dollars": None, "yes_ask_dollars": None, "last_price_dollars": None, "status": "active", "result": ""},
+                 {"ticker": "KXFED-28DEC-CUT25", "yes_sub_title": "Cut 25bps in 2028", "rules_primary": "Far away.",
+                  "close_time": "2028-12-16T19:00:00Z", "yes_bid_dollars": "0.3000", "yes_ask_dollars": "0.3400", "status": "active", "result": ""}]},
     {"event_ticker": "KXNFL-1", "category": "Sports", "title": "Game", "markets": [{"ticker": "KXNFL-1-A", "close_time": "2026-12-01T00:00:00Z", "yes_bid_dollars": "0.5", "yes_ask_dollars": "0.52"}]}],
     "cursor": ""}
 M_NOW = 1794300000.0      # 2026-11-10
@@ -76,7 +78,8 @@ M_NOW = 1794300000.0      # 2026-11-10
 
 def test_markets_refresh_search_and_skip_sports_and_unquoted(conn):
     calls = []
-    assert fc.refresh_markets(conn, get=lambda u: calls.append(u) or EVENTS, now=M_NOW) == 2
+    assert fc.refresh_markets(conn, get=lambda u: calls.append(u) or EVENTS, now=M_NOW) == 1    # unquoted, far-dated and sports are not stored
+    assert [r[0] for r in conn.execute("SELECT ticker FROM markets")] == ["KXFED-26DEC-CUT25"]
     assert "with_nested_markets=true" in calls[0] and len(calls) == 1
     hits = fc.search_markets(conn, "Fed rate cut December", now=M_NOW)
     assert [h["ticker"] for h in hits] == ["KXFED-26DEC-CUT25"] and hits[0]["price"] == pytest.approx(0.62) and hits[0]["closes"] == "2026-12-16"
@@ -98,7 +101,8 @@ def test_market_forecast_uses_the_market_price_as_baseline_and_resolves_from_the
     r = fc.add_market(conn, "KXFED-26DEC-CUT25", 0.8, "labour data", ["macro"], now=M_NOW)
     assert r["baseline"] == 0.62 and r["question"] == "Fed decision in December — Cut 25bps"
     with pytest.raises(ValueError, match="already an open forecast"): fc.add_market(conn, "KXFED-26DEC-CUT25", 0.7, now=M_NOW)
-    with pytest.raises(ValueError, match="no usable quote"): fc.add_market(conn, "KXFED-26DEC-HOLD", 0.3, now=M_NOW)
+    with pytest.raises(ValueError, match="find_markets"): fc.add_market(conn, "KXFED-26DEC-HOLD", 0.3, now=M_NOW)      # unquoted: never stored
+    with pytest.raises(ValueError, match="no usable quote"): fc.add_market(conn, "KXFED-26DEC-CUT25", 0.3, now=M_NOW + 60 * DAY)
     with pytest.raises(ValueError, match="find_markets"): fc.add_market(conn, "NOPE", 0.3, now=M_NOW)
     fc.refresh_markets(conn, get=lambda u: {"events": [], "cursor": ""}, now=M_NOW + DAY)
     assert conn.execute("SELECT COUNT(*) FROM markets").fetchone()[0] == 1                  # a market with an open forecast is kept
@@ -126,3 +130,19 @@ def test_scores_reward_beating_the_baseline_not_matching_it(conn):
     assert "all: n=4" in text and "1 still open" in text
     empty = __import__("thal.db", fromlist=["x"]).connect(":memory:")
     assert fc.scores_text(empty) == "no forecasts resolved yet (0 open)"
+
+
+def test_compact_shrinks_the_file_and_empties_the_log(tmp_path):
+    import os
+    path = tmp_path / "t.db"
+    c = db.connect(path)
+    with c:
+        c.executemany("INSERT INTO kv(k, v) VALUES (?, ?)", [(str(i), "x" * 2000) for i in range(2000)])
+    c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    big = os.path.getsize(path)
+    with c:
+        c.execute("DELETE FROM kv")
+    assert db.compact(c)["vacuumed"] is True
+    assert os.path.getsize(path) < big / 4 and os.path.getsize(str(path) + "-wal") == 0
+    assert db.compact(c)["vacuumed"] is False                               # nothing to reclaim: no rebuild
+    c.close()

@@ -179,6 +179,18 @@ def connect(path: str | Path | None = None) -> sqlite3.Connection:
     return conn
 
 
+def compact(conn: sqlite3.Connection, min_free: float = 0.25) -> dict:
+    """Give disk back: rebuild the file when at least min_free of it is empty pages, then empty the write-ahead log.
+    The log otherwise stays as large as the biggest transaction ever written (the market catalogue is rewritten whole)."""
+    pages = conn.execute("PRAGMA page_count").fetchone()[0]
+    free = conn.execute("PRAGMA freelist_count").fetchone()[0]
+    vacuumed = bool(pages) and free / pages >= min_free
+    if vacuumed:
+        conn.execute("VACUUM")
+    conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    return {"vacuumed": vacuumed, "pages": conn.execute("PRAGMA page_count").fetchone()[0]}
+
+
 def now() -> float:
     return time.time()
 
