@@ -11,3 +11,7 @@ memory/last_scan.txt
 memory/.schwab_token.json
 memory/.schwab_storage_state.json
 memory/schwab_debug/
+.venv/
+data/
+.pytest_cache/
+wiki/

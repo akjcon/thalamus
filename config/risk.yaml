@@ -1,0 +1,10 @@
+# Hard trading limits, enforced in code before any order reaches a broker.
+# Live trading also needs THAL_LIVE=yes in the environment.
+mode: paper
+max_position_usd: 2000
+max_gross_usd: 20000
+max_positions: 15
+max_orders_per_day: 10
+allowed_asset_classes: [equity]
+allow_short: false
+blocked_symbols: []
