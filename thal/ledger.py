@@ -2,6 +2,10 @@
 
 Nothing here calls a model. A bet is marked at 5, 20 and 60 sessions after entry and
 "now", signed by side, raw and relative to SPY and to an optional sector benchmark.
+A bet can be closed (its invalidation was met, or its horizon ran out). From then on its
+"now" mark is frozen at the exit, taken with the same timing rule as the entry: the close
+of the first complete session that opened after the decision. The fixed-horizon marks keep
+being filled in, so the record also shows what holding on would have done.
 """
 from __future__ import annotations
 
@@ -43,12 +47,18 @@ def add_bet(conn: sqlite3.Connection, *, symbol: str, side: str, source: str = "
     return cur.lastrowid
 
 
-def _leg_return(bars: list[Bar], ts: float, h: int | None) -> tuple[float, float, float, float] | None:
-    """(return, entry_ts, entry_px, exit_ts) from entry to h sessions later, or None if not there yet."""
+def _leg_return(bars: list[Bar], ts: float, h: int | None, closed_at: float | None = None) -> tuple[float, float, float, float] | None:
+    """(return, entry_ts, entry_px, exit_ts) from entry to h sessions later, or None if not there yet.
+    With h None the leg runs to the latest bar, or to the exit bar once the bet is closed."""
     i = entry_index(bars, ts)
     if i is None:
         return None
     j = len(bars) - 1 if h is None else i + h
+    if h is None and closed_at is not None:
+        x = entry_index(bars, closed_at)
+        if x is not None:
+            j = max(i, x)               # closed before it was ever entered: a flat result
+            return bars[j][1] / bars[i][1] - 1, bars[i][0], bars[i][1], bars[j][0]
     if j >= len(bars) or j <= i:
         return None
     return bars[j][1] / bars[i][1] - 1, bars[i][0], bars[i][1], bars[j][0]
@@ -70,12 +80,12 @@ def mark_bet(conn: sqlite3.Connection, bet: sqlite3.Row, provider: PriceProvider
     sign = 1 if bet["side"] == "LONG" else -1
     written = 0
     for name, h in HORIZONS:
-        leg = _leg_return(bars, bet["created_at"], h)
+        leg = _leg_return(bars, bet["created_at"], h, bet["closed_at"])
         if leg is None:
             continue
         raw, t0, px0, t1 = leg
         if hedge is not None:
-            other = _leg_return(hedge, bet["created_at"], h)
+            other = _leg_return(hedge, bet["created_at"], h, bet["closed_at"])
             if other is None:
                 continue
             raw -= other[0]
@@ -91,6 +101,19 @@ def mark_bet(conn: sqlite3.Connection, bet: sqlite3.Row, provider: PriceProvider
                  None if s is None else ret - sign * s, now))
         written += 1
     return written
+
+
+def close_bet(conn: sqlite3.Connection, bet_id: int, reason: str, now: float | None = None) -> bool:
+    """Mark an open bet as closed. Returns False if it does not exist or was already closed."""
+    with conn:
+        cur = conn.execute("UPDATE bets SET closed_at = ?, closed_reason = ? WHERE id = ? AND closed_at IS NULL",
+                           (now if now is not None else time.time(), " ".join(reason.split())[:300] or "closed", bet_id))
+    return bool(cur.rowcount)
+
+
+def open_bets(conn: sqlite3.Connection, source: str = "v2") -> list[sqlite3.Row]:
+    return conn.execute("SELECT b.*, m.ret, m.vs_bench FROM bets b LEFT JOIN marks m ON m.bet_id = b.id AND m.horizon = 'now'"
+                        " WHERE b.source = ? AND b.closed_at IS NULL ORDER BY b.created_at, b.id", (source,)).fetchall()
 
 
 def mark_all(conn: sqlite3.Connection, provider: PriceProvider, now: float | None = None) -> int:

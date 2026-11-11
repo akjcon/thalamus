@@ -84,7 +84,7 @@ def test_write_tools_go_through_the_same_guards(world):
     assert s.call("drop_tables", {})[1] and s.call("call", {"name": "x", "args": {}})[1] and s.call("open_fuse", "not a dict")[1]
     assert s.close_fuse(1, "USDA recovery forecast") == "closed" and "not open" in s.close_fuse(1, "again")
     assert world[1].slugs() == ["sugar"]                                   # the session cannot write pages
-    assert s.counts == {"fuses_opened": 1, "evidence": 1, "fuses_closed": 1, "notes": 1, "forecasts": 0, "tool_calls": 5, "tool_errors": 5}
+    assert s.counts == {"fuses_opened": 1, "evidence": 1, "fuses_closed": 1, "notes": 1, "forecasts": 0, "bets_closed": 0, "tool_calls": 5, "tool_errors": 5}
 
 
 def test_bets_are_checked_recorded_limited_and_capped(world):

@@ -89,11 +89,14 @@ def test_markets_refresh_search_and_skip_sports_and_unquoted(conn):
     assert [h["ticker"] for h in fc.search_markets(conn, "Fed zebra", now=M_NOW)] == ["KXFED-26DEC-CUT25"]   # no all-word match: any-word fallback
 
 
-def test_market_price_ignores_wide_or_one_sided_quotes():
-    assert fc.market_price({"yes_bid": 0.6, "yes_ask": 0.64, "last": 0.2}) == pytest.approx(0.62)
-    assert fc.market_price({"yes_bid": 0.1, "yes_ask": 0.9, "last": 0.4}) == 0.4            # too wide: fall back to last trade
-    assert fc.market_price({"yes_bid": None, "yes_ask": 0.9, "last": None}) is None
-    assert fc.market_price({"yes_bid": 0.0, "yes_ask": 1.0, "last": 1.0}) is None
+def test_market_price_needs_a_tight_two_sided_quote_in_a_contract_that_trades():
+    q = lambda bid, ask, last=0.5, volume=5000: {"yes_bid": bid, "yes_ask": ask, "last": last, "volume": volume}
+    assert fc.market_price(q(0.6, 0.64, last=0.2)) == pytest.approx(0.62)
+    assert fc.market_price(q(0.60, 0.70)) == pytest.approx(0.65)           # exactly at the widest allowed spread
+    assert fc.market_price(q(0.1, 0.9, last=0.71)) is None                 # wide: a stale last trade is not a price
+    assert fc.market_price(q(0.55, 0.70)) is None
+    assert fc.market_price(q(None, 0.9)) is None and fc.market_price(q(0.0, 1.0, last=1.0)) is None
+    assert fc.market_price(q(0.6, 0.64, volume=20)) is None and fc.market_price(q(0.6, 0.64, volume=None)) is None   # nobody trades it
 
 
 def test_market_forecast_uses_the_market_price_as_baseline_and_resolves_from_the_exchange(conn):

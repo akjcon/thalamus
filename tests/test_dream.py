@@ -142,7 +142,7 @@ def test_full_dream_does_housekeeping_session_and_health(world):
     client = Both(resp("tool_use", use(1, "write_page", page="sugar", title="Sugar", kind="commodity", body="Swing supplier is [[brazil]]. " + "x" * 200)),
                   resp("end_turn", text("done")), lessons)
     rep = dream.dream(conn, LLM(conn, client), wiki, prov, broker, now=NOW)
-    assert rep["housekeeping"] == {"fuses_expired": 1, "orders_filled": 1, "marks": 3, "forecasts_resolved": 0}
+    assert rep["housekeeping"] == {"fuses_expired": 1, "bets_expired": 0, "orders_filled": 1, "marks": 3, "forecasts_resolved": 0}
     assert rep["session"]["pages_written"] == ["sugar"] and rep["reflected"]
     h = rep["health"]
     assert h["broken_links"] == {"sugar": ["brazil"]} and h["notes_waiting"] == 0 and h["bloated"] is True and h["duplicates_merged"] == 0

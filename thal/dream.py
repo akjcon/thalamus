@@ -88,7 +88,9 @@ class LessonsOut(BaseModel):
 def housekeeping(conn: sqlite3.Connection, provider: PriceProvider, broker, now: float) -> dict:
     with conn:      # notes addressed to the lessons page can never be folded; clear any left from before that was blocked
         conn.execute("UPDATE page_notes SET folded = 1 WHERE slug = 'lessons' AND folded = 0")
-    return {"fuses_expired": memory.expire_fuses(conn, now), "orders_filled": broker.settle(now) if broker else 0,
+    from .thesis import close_expired
+    return {"fuses_expired": memory.expire_fuses(conn, now), "bets_expired": close_expired(conn, broker, now),
+            "orders_filled": broker.settle(now) if broker else 0,
             "marks": ledger.mark_all(conn, provider, now), "forecasts_resolved": forecasts.resolve(conn, provider, now=now)}
 
 

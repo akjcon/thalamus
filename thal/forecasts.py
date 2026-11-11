@@ -127,7 +127,7 @@ KEEP_DAYS = 180      # the exchange lists ~80,000 contracts; only ones the analy
 
 
 def refresh_markets(conn: sqlite3.Connection, get=_json, now: float | None = None, max_pages: int = 400) -> int:
-    """Pull open Kalshi markets that have a usable price and close within KEEP_DAYS into the local table.
+    """Pull open Kalshi markets that have a tradable quote and close within KEEP_DAYS into the local table.
     Returns how many are stored from this pull. Markets with an open forecast are always kept."""
     ensure(conn)
     now = now or time.time()
@@ -140,12 +140,12 @@ def refresh_markets(conn: sqlite3.Connection, get=_json, now: float | None = Non
             for m in ev.get("markets") or []:
                 close = _ts(m.get("close_time"))
                 quote = {"yes_bid": _f(m.get("yes_bid_dollars")), "yes_ask": _f(m.get("yes_ask_dollars")),
-                         "last": _f(m.get("last_price_dollars"))}
+                         "last": _f(m.get("last_price_dollars")), "volume": _f(m.get("volume_fp"))}
                 if close is None or not now < close <= now + KEEP_DAYS * DAY or market_price(quote) is None:
                     continue
                 title = " — ".join(x for x in (ev.get("title"), m.get("yes_sub_title") or m.get("title")) if x)
                 rows.append((m["ticker"], ev.get("event_ticker"), ev.get("category"), title[:300], (m.get("rules_primary") or "")[:600],
-                             close, quote["yes_bid"], quote["yes_ask"], quote["last"], _f(m.get("volume_fp")),
+                             close, quote["yes_bid"], quote["yes_ask"], quote["last"], quote["volume"],
                              m.get("status"), m.get("result") or "", now))
         cursor = d.get("cursor") or ""
         if not cursor:
@@ -158,12 +158,19 @@ def refresh_markets(conn: sqlite3.Connection, get=_json, now: float | None = Non
     return len(rows)
 
 
+MAX_SPREAD = 0.10        # a wider quote, or none, is not a price anyone could trade against
+MIN_VOLUME = 100.0       # contracts ever traded; below this the quote is one resting order, not a market
+
+
 def market_price(m) -> float | None:
-    """The market's probability of YES: the bid/ask midpoint when both sides quote, else the last trade."""
+    """The market's probability of YES: the midpoint of a live two-sided quote in a contract that actually trades.
+    A stale last trade is not a price. Forecasting against one measures the quote's age, not skill."""
     bid, ask = m["yes_bid"], m["yes_ask"]
-    if bid is not None and ask is not None and 0 < bid <= ask < 1 and ask - bid <= 0.2:
-        return (bid + ask) / 2
-    return m["last"] if m["last"] is not None and 0 < m["last"] < 1 else None
+    if bid is None or ask is None or not 0 < bid <= ask < 1 or ask - bid > MAX_SPREAD + 1e-9:
+        return None
+    if (m["volume"] or 0) < MIN_VOLUME:
+        return None
+    return (bid + ask) / 2
 
 
 def search_markets(conn: sqlite3.Connection, query: str, limit: int = 10, now: float | None = None,

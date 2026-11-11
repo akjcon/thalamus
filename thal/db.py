@@ -176,6 +176,10 @@ def connect(path: str | Path | None = None) -> sqlite3.Connection:
     for col in ("dup_of INTEGER", "sources INTEGER NOT NULL DEFAULT 1"):   # the same story from several feeds is merged into one
         if col.split()[0] not in have:
             conn.execute(f"ALTER TABLE events ADD COLUMN {col}")
+    have = {r["name"] for r in conn.execute("PRAGMA table_info(bets)")}
+    for col in ("closed_at REAL", "closed_reason TEXT"):                  # a bet ends when it is closed, not only at its horizon
+        if col.split()[0] not in have:
+            conn.execute(f"ALTER TABLE bets ADD COLUMN {col}")
     return conn
 
 

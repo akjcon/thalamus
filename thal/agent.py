@@ -15,7 +15,7 @@ import time
 from . import db, forecasts, ledger, memory
 from .llm import LLM
 from .prices import PriceProvider, complete
-from .thesis import BetOut, place_bet
+from .thesis import BetOut, close_position, place_bet
 from .wiki import Wiki
 
 DAY = 86400.0
@@ -46,7 +46,15 @@ prices and its sector, and that record is how the system learns which kinds of c
 prove it wrong. Conviction 1-5 places a paper order sized by conviction; use it rarely, since a bet that merely \
 tracks its sector is worth nothing. Conviction 0 is a shadow bet: recorded and scored with no order. Shadow bets \
 are free and are how the system learns, so record one for every specific, falsifiable view you form, tagged by \
-the kind of connection it is.
+the kind of connection it is. When a bet or forecast expresses a fuse, pass that fuse's id: the record is scored \
+per thesis, so five positions on one thesis count as one view, not five. Prefer a new, unrelated view to another \
+way of expressing a thesis you already hold.
+
+Start each session by reviewing the open bets listed on the dashboard. Each one stated what would prove it wrong. \
+Close a bet when that condition has been met, when the facts or reasoning it rested on have since been corrected \
+in memory, or when the move it was for has happened. A closed bet is scored at its exit, so closing a broken bet \
+early is how a wrong call stays small; a bet also closes by itself when its horizon runs out. Do not close a bet \
+merely because the price has gone against it.
 
 - Forecasts: dated yes/no predictions that resolve in days and are scored against a no-view baseline. They are the \
 fastest feedback the system gets, and the record needs volume and breadth to mean anything: aim for ten to fifteen \
@@ -96,11 +104,15 @@ TOOLS = [
     {"name": "note_for_page", "description": "Leave a durable note for a memory wiki page (existing or new). An offline step folds notes into the page.",
      "input_schema": {"type": "object", "properties": {"page": {"type": "string"}, "kind": {"type": "string", "enum": ["commodity", "chokepoint", "company", "country", "theme", "rule"]}, "note": {"type": "string"}}, "required": ["page", "kind", "note"]}},
     {"name": "forecast_price", "description": "Record a forecast that a stock, ETF or future will close above or below a level a number of days from now, with your probability. Returns the no-view baseline probability it will be scored against. Resolved automatically from prices.",
-     "input_schema": {"type": "object", "properties": {"symbol": {"type": "string"}, "direction": {"type": "string", "enum": ["above", "below"]}, "level": {"type": "number"}, "days": {"type": "integer"}, "probability": {"type": "number"}, "rationale": {"type": "string"}, "tags": {"type": "array", "items": {"type": "string"}}}, "required": ["symbol", "direction", "level", "days", "probability", "rationale"]}},
-    {"name": "find_markets", "description": "Search open prediction-market contracts (Kalshi) on economics, politics, world events, climate and more. Returns each contract's ticker, current market probability, closing date and resolution rule.",
+     "input_schema": {"type": "object", "properties": {"symbol": {"type": "string"}, "direction": {"type": "string", "enum": ["above", "below"]}, "level": {"type": "number"}, "days": {"type": "integer"}, "probability": {"type": "number"}, "rationale": {"type": "string"}, "tags": {"type": "array", "items": {"type": "string"}}, "fuse_id": {"type": "integer", "description": "the fuse this view comes from, if any"}}, "required": ["symbol", "direction", "level", "days", "probability", "rationale"]}},
+    {"name": "find_markets", "description": "Search open prediction-market contracts (Kalshi) on economics, politics, world events, climate and more. Only contracts with a live, tight two-sided quote and real trading volume are listed, so the price is one you could trade against. Returns each contract's ticker, current market probability, closing date and resolution rule.",
      "input_schema": {"type": "object", "properties": {"query": {"type": "string"}, "max_days": {"type": "integer", "description": "only contracts closing within this many days (default 60)"}}, "required": ["query"]}},
     {"name": "forecast_market", "description": "Record your probability that a prediction-market contract resolves Yes. It is scored against the market's own price at this moment. No money is traded.",
-     "input_schema": {"type": "object", "properties": {"ticker": {"type": "string"}, "probability": {"type": "number"}, "rationale": {"type": "string"}, "tags": {"type": "array", "items": {"type": "string"}}}, "required": ["ticker", "probability", "rationale"]}},
+     "input_schema": {"type": "object", "properties": {"ticker": {"type": "string"}, "probability": {"type": "number"}, "rationale": {"type": "string"}, "tags": {"type": "array", "items": {"type": "string"}}, "fuse_id": {"type": "integer", "description": "the fuse this view comes from, if any"}}, "required": ["ticker", "probability", "rationale"]}},
+    {"name": "read_bet", "description": "Read one bet in full: thesis, what would prove it wrong, its fuse, age and return so far.",
+     "input_schema": {"type": "object", "properties": {"bet_id": {"type": "integer"}}, "required": ["bet_id"]}},
+    {"name": "close_bet", "description": "Close an open bet because its invalidation was met, its reasoning no longer holds, or its move has played out. It is scored at the exit and any paper position is sold. Give the specific reason.",
+     "input_schema": {"type": "object", "properties": {"bet_id": {"type": "integer"}, "reason": {"type": "string"}}, "required": ["bet_id", "reason"]}},
     {"name": "propose_bet", "description": "Propose a bet. It is checked (the stock, ETF or future must really trade), recorded in the scored ledger, and sent to the paper broker within the risk limits. Benchmark is the sector ETF it must beat to count as skill.",
      "input_schema": {"type": "object", "properties": {"symbol": {"type": "string"}, "side": {"type": "string", "enum": ["LONG", "SHORT"]}, "thesis": {"type": "string"}, "invalidation": {"type": "string"}, "horizon_days": {"type": "integer"}, "benchmark": {"type": "string"}, "conviction": {"type": "integer"}, "tags": {"type": "array", "items": {"type": "string"}}, "fuse_id": {"type": "integer"}}, "required": ["symbol", "side", "thesis", "invalidation", "horizon_days", "conviction"]}},
 ]
@@ -115,7 +127,8 @@ class Session:
             from .fetch import fetch_text as fetch
         self.fetch = fetch
         self.bets: list[dict] = []
-        self.counts = {"fuses_opened": 0, "evidence": 0, "fuses_closed": 0, "notes": 0, "forecasts": 0, "tool_calls": 0, "tool_errors": 0}
+        self.counts = {"fuses_opened": 0, "evidence": 0, "fuses_closed": 0, "notes": 0, "forecasts": 0, "bets_closed": 0,
+                       "tool_calls": 0, "tool_errors": 0}
 
     def search_events(self, query: str, limit: int = 12) -> str:
         q = db.fts_query(query)
@@ -202,10 +215,15 @@ class Session:
         if self.counts.get("forecasts", 0) >= MAX_FORECASTS:
             raise ValueError(f"this session already made {MAX_FORECASTS} forecasts")
 
+    def _fuse(self, fuse_id) -> int | None:
+        ok = fuse_id is not None and self.conn.execute("SELECT 1 FROM fuses WHERE id = ?", (fuse_id,)).fetchone()
+        return int(fuse_id) if ok else None
+
     def forecast_price(self, symbol: str, direction: str, level: float, days: int, probability: float, rationale: str = "",
-                       tags: list | None = None) -> str:
+                       tags: list | None = None, fuse_id: int | None = None) -> str:
         self._forecast_room()
-        r = forecasts.add_price(self.conn, self.provider, symbol, direction, level, days, probability, rationale, tags, now=self.now)
+        r = forecasts.add_price(self.conn, self.provider, symbol, direction, level, days, probability, rationale, tags,
+                                fuse_id=self._fuse(fuse_id), now=self.now)
         self.counts["forecasts"] = self.counts.get("forecasts", 0) + 1
         return f"forecast #{r['id']}: {r['question']}. Yours {r['prob']:.0%}, baseline {r['baseline']:.0%}."
 
@@ -214,11 +232,37 @@ class Session:
         return "\n".join(f"{h['ticker']}: {h['title']} | market {h['price']:.0%} | closes {h['closes']} | {h['rules'][:160]}"
                          for h in hits) or "no open markets match; try fewer or different words, or a longer max_days"
 
-    def forecast_market(self, ticker: str, probability: float, rationale: str = "", tags: list | None = None) -> str:
+    def forecast_market(self, ticker: str, probability: float, rationale: str = "", tags: list | None = None,
+                        fuse_id: int | None = None) -> str:
         self._forecast_room()
-        r = forecasts.add_market(self.conn, ticker, probability, rationale, tags, now=self.now)
+        r = forecasts.add_market(self.conn, ticker, probability, rationale, tags, fuse_id=self._fuse(fuse_id), now=self.now)
         self.counts["forecasts"] = self.counts.get("forecasts", 0) + 1
         return f"forecast #{r['id']}: {r['question']}. Yours {r['prob']:.0%}, market {r['baseline']:.0%}."
+
+    def read_bet(self, bet_id: int) -> str:
+        b = self.conn.execute("SELECT * FROM bets WHERE id = ?", (bet_id,)).fetchone()
+        if b is None:
+            return f"no bet #{bet_id}"
+        m = self.conn.execute("SELECT ret, vs_bench FROM marks WHERE bet_id = ? AND horizon = 'now'", (bet_id,)).fetchone()
+        pct = lambda v: "n/a" if v is None else f"{v * 100:+.1f}%"
+        state = f"closed {time.strftime('%Y-%m-%d', time.gmtime(b['closed_at']))}: {b['closed_reason']}" if b["closed_at"] else "open"
+        return (f"Bet #{b['id']} [{state}] {b['side']} {b['symbol']}" + (f" vs {b['benchmark']}" if b["benchmark"] else "")
+                + f", {b['kind']}, opened {time.strftime('%Y-%m-%d', time.gmtime(b['created_at']))}, horizon {b['horizon_days']} days"
+                + (f", fuse #{b['fuse_id']}" if b["fuse_id"] else "")
+                + f"\nReturn so far: {pct(m['ret'] if m else None)}, vs sector {pct(m['vs_bench'] if m else None)}"
+                + f"\nThesis: {b['thesis']}\nWrong if: {b['invalidation']}")
+
+    def close_bet(self, bet_id: int, reason: str) -> str:
+        if not reason.strip():
+            return "not closed: give the specific reason"
+        b = self.conn.execute("SELECT source FROM bets WHERE id = ?", (bet_id,)).fetchone()
+        if b is None or b["source"] != "v2":
+            return f"no open bet #{bet_id}"
+        done = close_position(self.conn, self.broker, bet_id, reason, self.now)
+        if done is None:
+            return f"bet #{bet_id} is already closed"
+        self.counts["bets_closed"] += 1
+        return f"closed bet #{bet_id} ({done['side']} {done['symbol']}); sell order: {done['order']}. It is scored at the exit."
 
     def propose_bet(self, **kw) -> str:
         shadow = int(kw.get("conviction", 0) or 0) <= 0

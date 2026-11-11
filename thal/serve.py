@@ -90,7 +90,7 @@ def run_job(job: str, conn, llm, wiki, provider, broker, now: float) -> str:
             return head + "No new events to consider."
         bets = ", ".join(f"{b['side']} {b['symbol']}" + (" (shadow)" if b["conviction"] == 0 else "") for b in a["bets"]) or "none"
         return (head + f"{a['events']} events, {a['fuses_opened']} fuses opened, {a['evidence']} evidence attached, {a['forecasts']} forecasts made "
-                f"({settled} settled), bets: {bets}. "
+                f"({settled} settled), bets: {bets}, {a.get('bets_closed', 0)} closed. "
                 f"Paper equity ${pf.equity:,.0f}. Spent today ${llm.spent_today(now):.2f}."
                 + ("" if a["finished"] else " (Session hit its turn limit; events will be re-read.)")
                 + (f"\n\n{a['summary'][:1500]}" if a["summary"] else ""))
@@ -100,7 +100,8 @@ def run_job(job: str, conn, llm, wiki, provider, broker, now: float) -> str:
         h = d["health"]
         s = d["session"]
         return (f"Dream: wrote {len(s['pages_written'])} pages, merged {s['merged']} duplicate events, "
-                f"{d['housekeeping']['fuses_expired']} fuses expired, {d['housekeeping']['forecasts_resolved']} forecasts settled. "
+                f"{d['housekeeping']['fuses_expired']} fuses expired, {d['housekeeping'].get('bets_expired', 0)} bets reached their horizon, "
+                f"{d['housekeeping']['forecasts_resolved']} forecasts settled. "
                 f"Wiki: {h['pages']} pages, {h['notes_waiting']} notes waiting"
                 + (", lessons rewritten." if d["reflected"] else ".")
                 + ("" if s["finished"] else " (Session hit its turn limit.)")

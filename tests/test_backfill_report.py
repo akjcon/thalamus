@@ -98,7 +98,7 @@ def test_scorecard_reports_forecast_skill_and_bets_against_sector(conn):
     assert "all: 3 resolved, skill" in text and "(too few to judge)" in text and "1 resolved this week" not in text
     assert "3 resolved this week, 1 open" in text and "- price: 2 resolved, skill +9" in text and "- market: 1 resolved, skill -3" in text
     assert "By topic: energy" in text
-    assert "4 recorded." in text and "- 1w: n=4" in text and "- 4w: n=4" in text and "vs sector" in text
+    assert "4 recorded, 0 closed." in text and "- 1w: n=4" in text and "- 4w: n=4" in text and "vs sector" in text
     assert "To date by side: LONG" in text and "Best: long UP" in text and "Worst: short UP" in text
     assert len(text) < 1900                                               # fits in one Discord message
 
@@ -123,3 +123,30 @@ def test_report_job_returns_the_scorecard(conn):
         def settle(self, now): return 0
     out = serve.run_job("report", conn, None, None, FakeProvider({}), B(), T0)
     assert out.startswith("**Weekly scorecard")
+
+
+def test_views_count_each_thesis_once(conn):
+    from thal import memory
+    forecasts.ensure(conn)
+    f1 = memory.open_fuse(conn, "Diesel premium deflates", "t", ["w"], now=T0)
+    prov = FakeProvider({"SPY": series(100, 0.0, 40), "XLE": series(50, 0.0, 40), "UP": series(10, 0.01, 40), "DOWN": series(10, -0.01, 40),
+                         "SOLO": series(10, 0.01, 40)})
+    ledger.add_bet(conn, symbol="UP", side="LONG", created_at=T0 - 3600, benchmark="XLE", kind="shadow", fuse_id=f1)
+    ledger.add_bet(conn, symbol="DOWN", side="SHORT", created_at=T0 - 3600, benchmark="XLE", kind="shadow", tags=["fuse-1"])   # named only in a tag
+    ledger.add_bet(conn, symbol="SOLO", side="SHORT", created_at=T0 - 3600, kind="shadow")
+    ledger.mark_all(conn, prov, T0 + 41 * DAY)
+    add = lambda kind, ref, prob, base, outcome, fuse=None: conn.execute(
+        "INSERT INTO forecasts(created_at, kind, ref, question, due_at, prob, baseline, fuse_id, resolved_at, outcome) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        (T0, kind, ref, "q", T0 + DAY, prob, base, fuse, T0 + 2 * DAY, outcome))
+    add("price", "HO=F", 0.9, 0.5, 1, f1)                                  # same thesis as the two bets
+    add("price", "SOLO", 0.8, 0.5, 0)                                      # pairs with the SOLO bet by symbol
+    add("market", "KXSUEZ-26NOV15-300", 0.6, 0.5, 1); add("market", "KXSUEZ-26NOV15-310", 0.3, 0.2, 0)   # one event, two strikes
+    add("price", "ZC=F", 0.6, 0.5, 1)
+    v = report.views(conn)
+    assert set(v) == {"fuse #1", "short SOLO", "KXSUEZ-26NOV15", "ZC=F"}
+    assert len(v["fuse #1"]["bets"]) == 2 and len(v["fuse #1"]["forecasts"]) == 1 and len(v["KXSUEZ-26NOV15"]["forecasts"]) == 2
+    text = report.scorecard(conn, T0 + 41 * DAY)
+    assert "8 scored picks rest on 4 separate theses" in text
+    assert "- Forecasts: 4 views" in text and "3 of 4 beat the baseline (too few to judge)" in text
+    assert "- Bets: 2 views" in text and "1 of 2 ahead" in text
+    assert "Most picks: fuse #1 (Diesel premium deflates): 2 bets" in text and "1 forecasts ahead of baseline" in text

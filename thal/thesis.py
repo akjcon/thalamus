@@ -3,7 +3,8 @@
 Code checks that the instrument really trades, records the bet in the scored ledger,
 and sends a sized order through the risk limits. A conviction of 0 is a shadow bet:
 recorded and scored like any other, with no order. Shadow bets are free and are the
-system's main learning signal.
+system's main learning signal. Closing a bet goes through here too: it stops the bet's
+score at the exit and sells whatever the paper account holds for it.
 """
 from __future__ import annotations
 
@@ -54,3 +55,24 @@ def place_bet(conn: sqlite3.Connection, provider: PriceProvider, broker, b: BetO
     _, ok = broker.submit(sym, "BUY" if b.side == "LONG" else "SELL", qty, bet_id=bet_id, now=now)
     return {"bet": bet_id, "symbol": sym, "side": b.side, "conviction": conviction, "qty": qty,
             "order": "placed" if ok else "blocked: " + "; ".join(ok.reasons)}
+
+
+def close_position(conn: sqlite3.Connection, broker, bet_id: int, reason: str, now: float) -> dict | None:
+    """Close an open bet: freeze its score at the exit and unwind any paper position it opened. None if not open."""
+    bet = conn.execute("SELECT * FROM bets WHERE id = ? AND closed_at IS NULL", (bet_id,)).fetchone()
+    if bet is None or not ledger.close_bet(conn, bet_id, reason, now):
+        return None
+    held = sum(o["qty"] if o["action"] == "BUY" else -o["qty"] for o in conn.execute(
+        "SELECT action, qty FROM orders WHERE bet_id = ? AND status IN ('pending', 'filled')", (bet_id,)))
+    order = "none (nothing held)"
+    if abs(held) > 1e-9 and broker is not None:
+        _, ok = broker.submit(bet["symbol"], "SELL" if held > 0 else "BUY", abs(held), bet_id=bet_id, now=now)
+        order = "placed" if ok else "blocked: " + "; ".join(ok.reasons)
+    return {"bet": bet_id, "symbol": bet["symbol"], "side": bet["side"], "order": order}
+
+
+def close_expired(conn: sqlite3.Connection, broker, now: float, source: str = "v2") -> int:
+    """Close every open bet whose stated horizon has passed. A bet said how long it was for; holding on is a new bet."""
+    due = conn.execute("SELECT id FROM bets WHERE source = ? AND closed_at IS NULL AND horizon_days IS NOT NULL"
+                       " AND created_at + horizon_days * ? <= ?", (source, DAY, now)).fetchall()
+    return sum(close_position(conn, broker, r["id"], "horizon reached", now) is not None for r in due)

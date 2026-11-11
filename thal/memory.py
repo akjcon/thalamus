@@ -17,6 +17,7 @@ from .wiki import KINDS, Wiki, slugify
 ROOT = Path(__file__).resolve().parent.parent
 DAY = 86400.0
 MAX_DASHBOARD_LINES = 200
+MAX_BETS_SHOWN = 40
 MAX_DASHBOARD_BYTES = 25_000
 MAX_OPEN_FUSES = 40
 
@@ -123,10 +124,22 @@ def dashboard(conn: sqlite3.Connection, wiki: Wiki, now: float | None = None) ->
     for f in fuses:
         n = conn.execute("SELECT COUNT(*) FROM fuse_evidence WHERE fuse_id = ?", (f["id"],)).fetchone()[0]
         days = int((f["expires_at"] - now) / DAY) if f["expires_at"] else 0
-        parts.append(f"- #{f['id']} {f['title']} [{n} evidence, {days}d left] waiting for: "
+        held = conn.execute("SELECT COUNT(*) FROM bets WHERE fuse_id = ? AND closed_at IS NULL", (f["id"],)).fetchone()[0]
+        parts.append(f"- #{f['id']} {f['title']} [{n} evidence, {days}d left" + (f", {held} open bets" if held else "") + "] waiting for: "
                      + "; ".join(json.loads(f["watch"]))[:240])
     if not fuses:
         parts.append("- none yet")
+    bets = ledger.open_bets(conn)
+    parts += ["", f"## Open bets ({len(bets)}): review each, close the ones proved wrong"]
+    pct = lambda v: "n/a" if v is None else f"{v * 100:+.1f}%"
+    for b in bets[:MAX_BETS_SHOWN]:
+        parts.append(f"- #{b['id']} {b['side']} {b['symbol']}" + (f" vs {b['benchmark']}" if b["benchmark"] else "")
+                     + f" [day {int((now - b['created_at']) / DAY)} of {b['horizon_days']}, {pct(b['ret'])}, vs sector {pct(b['vs_bench'])}"
+                     + (f", fuse #{b['fuse_id']}" if b["fuse_id"] else "") + f"] wrong if: {b['invalidation'][:200]}")
+    if len(bets) > MAX_BETS_SHOWN:
+        parts.append(f"- ... and {len(bets) - MAX_BETS_SHOWN} newer ones; use read_bet")
+    if not bets:
+        parts.append("- none")
     parts += ["", "## Wiki pages", wiki.index() or "- none yet"]
     lines = "\n".join(parts).splitlines()
     if len(lines) > MAX_DASHBOARD_LINES:

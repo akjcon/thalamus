@@ -35,7 +35,12 @@ by what they would add: coverage of something the open fuses are waiting on, pri
 port and pipeline operators, statistics agencies, exchanges, courts, company filings), specialist trade press, \
 regional and non-English outlets, and anything that reports facts before the wire services do. A source that \
 duplicates what is already read adds nothing. Spend roughly half your effort on what the open fuses need and half on \
-areas the system does not cover at all, since it cannot form a hypothesis about something it never reads.
+areas the system does not cover at all, since it cannot form a hypothesis about something it never reads. The \
+system trades stocks, ETFs and futures in every sector, but its reading began in shipping, energy, agriculture and \
+geopolitics, and its bets cluster there as a result. Until the source table is balanced, favour what is thin or \
+missing: semiconductors and technology hardware, pharmaceuticals and medical devices (regulators, trial \
+registries), power and utilities, industrials and aerospace, metals and mining, autos, chemicals, banking and \
+insurance supervisors, competition authorities, courts, and company filings.
 
 Test every feed before adding it; only a feed that returns real, recent entries can be added, and it starts on \
 trial. Retire sources the table shows have produced many items and nothing of use, and say why. Let the yield \

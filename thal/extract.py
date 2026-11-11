@@ -17,17 +17,23 @@ from .llm import LLM
 BATCH = 20
 FULLTEXT_CHARS = 3500        # how much of each article the extraction step reads
 EventType = Literal["supply_disruption", "trade_flow", "policy_sanction", "conflict", "disease_outbreak",
-                    "weather_climate", "infrastructure", "corporate", "demand_shift", "diplomacy", "other"]
+                    "weather_climate", "infrastructure", "corporate", "demand_shift", "diplomacy",
+                    "regulatory_legal", "technology", "health_pharma", "finance", "labour", "other"]
 
-SYSTEM = """You read news items for a system that trades on slow-moving, physical, real-world change: who \
-supplies what to whom, through which chokepoint, and what just altered that. It keeps a long-term memory of \
-events so that an item today can be connected to something months from now.
+SYSTEM = """You read news items for a system that trades on real-world change that markets are slow to connect: \
+who supplies what to whom, what a rule or ruling now permits or forbids, where capacity is being added or lost, and \
+what just altered any of that. It keeps a long-term memory of events so that an item today can be connected to \
+something months from now. It trades stocks, ETFs and futures in every sector, not only commodities.
 
 For each item decide whether it reports a concrete development worth remembering for that purpose. Keep: \
-disruptions to production, transport or trade; sanctions, tariffs, export bans, regulation; conflict that touches \
-infrastructure or routes; disease, crop and weather events; plant, mine, port, pipeline changes; company events with \
-a physical or supply-chain consequence; meaningful shifts in demand. Skip: opinion, explainers, profiles, pure \
-politics with no economic channel, market commentary, and repeats that add nothing.
+disruptions to production, transport or trade; sanctions, tariffs, export bans; conflict that touches \
+infrastructure or routes; disease, crop and weather events; plant, mine, port, pipeline, fab, data-centre and grid \
+changes; regulatory decisions, approvals, rejections, recalls and enforcement; court rulings and litigation \
+outcomes with a commercial consequence; drug and device trial results; supply agreements, capacity and capital \
+spending plans, shortages and allocation in any industry; strikes and labour settlements; bank, insurer or \
+payment-system stress; company events that change what it can make, sell or ship; meaningful shifts in demand. \
+Skip: opinion, explainers, profiles, pure politics with no economic channel, market commentary, price recaps, \
+analyst ratings, routine earnings with no new fact about the business, and repeats that add nothing.
 
 Return one record per kept item and nothing for skipped ones. In each record:
 - item: the number in the item's tag.
