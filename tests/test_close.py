@@ -113,3 +113,10 @@ def test_dashboard_caps_the_open_bet_list(world, monkeypatch):
         ledger.add_bet(conn, symbol=f"S{i}", side="LONG", created_at=T0 + i, horizon_days=28, invalidation="x")
     dash = memory.dashboard(conn, wiki, T0 + DAY)
     assert "## Open bets (5)" in dash and "... and 2 newer ones; use read_bet" in dash and "#4 LONG S3" not in dash
+
+
+def test_a_horizon_noticed_late_is_still_dated_at_the_horizon(world):
+    conn, _, prov, broker = world
+    a = ledger.add_bet(conn, symbol="UP", side="LONG", created_at=T0, horizon_days=10)
+    assert close_expired(conn, broker, T0 + 60 * DAY) == 1                  # the check ran fifty days late
+    assert conn.execute("SELECT closed_at FROM bets WHERE id = ?", (a,)).fetchone()[0] == T0 + 10 * DAY

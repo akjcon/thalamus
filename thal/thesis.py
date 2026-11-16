@@ -57,10 +57,11 @@ def place_bet(conn: sqlite3.Connection, provider: PriceProvider, broker, b: BetO
             "order": "placed" if ok else "blocked: " + "; ".join(ok.reasons)}
 
 
-def close_position(conn: sqlite3.Connection, broker, bet_id: int, reason: str, now: float) -> dict | None:
-    """Close an open bet: freeze its score at the exit and unwind any paper position it opened. None if not open."""
+def close_position(conn: sqlite3.Connection, broker, bet_id: int, reason: str, now: float, at: float | None = None) -> dict | None:
+    """Close an open bet: freeze its score at the exit and unwind any paper position it opened. None if not open.
+    `at` is the moment the close counts from when that is earlier than now (a horizon noticed late)."""
     bet = conn.execute("SELECT * FROM bets WHERE id = ? AND closed_at IS NULL", (bet_id,)).fetchone()
-    if bet is None or not ledger.close_bet(conn, bet_id, reason, now):
+    if bet is None or not ledger.close_bet(conn, bet_id, reason, now if at is None else min(at, now)):
         return None
     held = sum(o["qty"] if o["action"] == "BUY" else -o["qty"] for o in conn.execute(
         "SELECT action, qty FROM orders WHERE bet_id = ? AND status IN ('pending', 'filled')", (bet_id,)))
@@ -72,7 +73,9 @@ def close_position(conn: sqlite3.Connection, broker, bet_id: int, reason: str, n
 
 
 def close_expired(conn: sqlite3.Connection, broker, now: float, source: str = "v2") -> int:
-    """Close every open bet whose stated horizon has passed. A bet said how long it was for; holding on is a new bet."""
-    due = conn.execute("SELECT id FROM bets WHERE source = ? AND closed_at IS NULL AND horizon_days IS NOT NULL"
-                       " AND created_at + horizon_days * ? <= ?", (source, DAY, now)).fetchall()
-    return sum(close_position(conn, broker, r["id"], "horizon reached", now) is not None for r in due)
+    """Close every open bet whose stated horizon has passed. A bet said how long it was for; holding on is a new bet.
+    The close is dated at the horizon itself, so a check that runs late (a gap between runs, or the final scoring of
+    a replay) does not score the bet over a longer period than it asked for."""
+    due = conn.execute("SELECT id, created_at + horizon_days * ? AS ends FROM bets WHERE source = ? AND closed_at IS NULL AND horizon_days IS NOT NULL"
+                       " AND created_at + horizon_days * ? <= ?", (DAY, source, DAY, now)).fetchall()
+    return sum(close_position(conn, broker, r["id"], "horizon reached", now, at=r["ends"]) is not None for r in due)
