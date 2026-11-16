@@ -191,3 +191,18 @@ def test_yahoo_caches_skips_nulls_and_survives_outages(conn):
     y2 = YahooProvider(conn, fetch=down)
     assert len(y2.bars("ZC=F", now=T0 + 20 * DAY)) == 4                # stale but kept
     assert y2.bars("NEW", now=T0 + 20 * DAY) == []
+
+
+def test_latest_refetches_a_cache_older_than_fifteen_minutes(tmp_path):
+    from thal import db
+    from thal.prices import YahooProvider, latest
+    calls = []
+    def fetch(url):
+        calls.append(url)
+        return {"chart": {"result": [{"timestamp": [T0, T0 + DAY], "indicators": {"adjclose": [{"adjclose": [1.0, 2.0]}]}}]}}
+    y = YahooProvider(db.connect(tmp_path / "p.db"), fetch=fetch)
+    now = T0 + DAY + 3600
+    assert y.bars("AAA", now=now) and len(calls) == 1
+    assert latest(y, "AAA", now + 600)[-1] == (T0 + DAY, 2.0) and len(calls) == 1      # ten minutes old: still fresh
+    assert latest(y, "AAA", now + 1200) and len(calls) == 2                             # twenty minutes: fetched again
+    assert y.bars("AAA", now=now + 3000) and len(calls) == 2                            # scoring keeps the six-hour cache

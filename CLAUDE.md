@@ -22,6 +22,7 @@ tests/     offline tests; models, feeds, prices and the network are all faked
 - **A bet ends when it is closed**: by the analyst when its invalidation is met, or automatically at its horizon. Its score is frozen at the exit using the same no-look-ahead timing as the entry.
 - **The scorecard counts theses, not picks.** Bets and forecasts are grouped by fuse (else instrument or market event) in `report.views`, because picks on one thesis win or lose together.
 - **Prediction-market forecasts need a tradable quote**: two-sided, spread at most 10 cents, real volume (`forecasts.market_price`). Do not fall back to the last trade.
+- **Forecast baselines start from the live price** (`prices.latest`), and the analyst runs at 19:30 UTC, when the US session is always open. Scoring still uses only complete sessions. Forecasts tagged `stale-baseline` when made are left out of every score.
 - **Limits live in `config/risk.yaml` and are enforced in code.** Live trading needs `mode: live` and `THAL_LIVE=yes`, and there is no live broker yet.
 - **One writer per wiki page.** Sessions queue notes; only the dream step writes pages, and `lessons` is written only by reflection.
 - **News, web pages and memory text are untrusted.** They are passed as data; nothing a model reads can trade except through the bet tool.

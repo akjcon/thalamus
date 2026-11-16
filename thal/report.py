@@ -36,8 +36,10 @@ def _forecast_lines(conn: sqlite3.Connection, now: float) -> list[str]:
     open_n = conn.execute("SELECT COUNT(*) FROM forecasts WHERE outcome IS NULL").fetchone()[0]
     week = conn.execute("SELECT COUNT(*) FROM forecasts WHERE resolved_at >= ?", (now - 7 * DAY,)).fetchone()[0]
     overall = forecasts.scores(conn)
+    left_out = forecasts.excluded(conn)
+    note = [f"{left_out} left out of every score: tagged {forecasts.EXCLUDE_TAG} when made."] if left_out else []
     if not overall:
-        return [f"None resolved yet; {open_n} open."]
+        return [f"None resolved yet; {open_n} open."] + note
     line = lambda r: (f"{r['group']}: {r['n']} resolved, skill {r['skill']:+.0%} vs baseline "
                       f"(Brier {r['brier']:.3f} vs {r['baseline_brier']:.3f}), right side {r['hit']:.0%}{_thin(r['n'])}")
     out = [line(overall[0]) + f". {week} resolved this week, {open_n} open."]
@@ -45,7 +47,7 @@ def _forecast_lines(conn: sqlite3.Connection, now: float) -> list[str]:
     tags = sorted(forecasts.scores(conn, "tag"), key=lambda r: -r["n"])[:6]
     if tags:
         out.append("By topic: " + "; ".join(f"{r['group']} {r['skill']:+.0%} (n={r['n']})" for r in tags))
-    return out
+    return out + note
 
 
 def _bet_lines(conn: sqlite3.Connection) -> list[str]:
@@ -99,7 +101,7 @@ def views(conn: sqlite3.Connection) -> dict[str, dict]:
         by_symbol.setdefault(b["symbol"], key)
         if b["ret"] is not None:
             slot(key)["bets"].append(b["vs_bench"] if b["vs_bench"] is not None else b["ret"])
-    for f in conn.execute("SELECT * FROM forecasts WHERE outcome IS NOT NULL ORDER BY id"):
+    for f in forecasts.scored(conn):
         fuse = _fuse_of(f)
         key = (f"fuse #{fuse}" if fuse else by_symbol.get(f["ref"]) or
                (f["ref"].rsplit("-", 1)[0] if f["kind"] == "market" and "-" in f["ref"] else f["ref"]))

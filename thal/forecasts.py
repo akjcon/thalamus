@@ -17,7 +17,7 @@ import time
 import urllib.request
 
 from . import db
-from .prices import PriceProvider, complete
+from .prices import PriceProvider, complete, latest
 
 DAY = 86400.0
 KALSHI = "https://api.elections.kalshi.com/trade-api/v2"
@@ -89,12 +89,12 @@ def add_price(conn: sqlite3.Connection, provider: PriceProvider, symbol: str, di
     if isinstance(days, bool) or not isinstance(days, int) or not 1 <= days <= MAX_DAYS:
         raise ValueError(f"days must be a whole number from 1 to {MAX_DAYS}")
     prob = _check_prob(prob)
-    bars = complete(provider.bars(sym), now)
+    bars = latest(provider, sym, now)      # the live price, so the baseline knows what the market knows now
     if not bars or now - bars[-1][0] > 10 * DAY:
         raise ValueError(f"{sym} has no recent price; cannot forecast it")
     base = price_baseline([c for _, c in bars], float(level), direction, days)
     due = (now - now % DAY) + days * DAY
-    q = f"{sym} closes {direction} {level:g} on {time.strftime('%Y-%m-%d', time.gmtime(due))} (last close {bars[-1][1]:.2f})"
+    q = f"{sym} closes {direction} {level:g} on {time.strftime('%Y-%m-%d', time.gmtime(due))} (last price {bars[-1][1]:.2f})"
     with conn:
         cur = conn.execute("INSERT INTO forecasts(created_at, kind, ref, question, direction, level, due_at, prob, baseline, rationale,"
                            " tags, fuse_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -158,6 +158,7 @@ def refresh_markets(conn: sqlite3.Connection, get=_json, now: float | None = Non
     return len(rows)
 
 
+EXCLUDE_TAG = "stale-baseline"
 MAX_SPREAD = 0.10        # a wider quote, or none, is not a price anyone could trade against
 MIN_VOLUME = 100.0       # contracts ever traded; below this the quote is one resting order, not a market
 
@@ -242,11 +243,24 @@ def resolve(conn: sqlite3.Connection, provider: PriceProvider, get=_json, now: f
     return done
 
 
+def scored(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Resolved forecasts that count towards the score. One tagged EXCLUDE_TAG when it was made is left out:
+    its baseline could not see a move the forecaster could, so beating it is not skill."""
+    ensure(conn)
+    return [f for f in conn.execute("SELECT * FROM forecasts WHERE outcome IS NOT NULL ORDER BY id")
+            if EXCLUDE_TAG not in json.loads(f["tags"] or "[]")]
+
+
+def excluded(conn: sqlite3.Connection) -> int:
+    ensure(conn)
+    return sum(EXCLUDE_TAG in json.loads(r["tags"] or "[]") for r in conn.execute("SELECT tags FROM forecasts"))
+
+
 def scores(conn: sqlite3.Connection, by: str | None = None) -> list[dict]:
     """Brier score of the forecasts against their baselines; skill above 0 means better than the baseline."""
     ensure(conn)
     groups: dict[str, list] = {}
-    for f in conn.execute("SELECT * FROM forecasts WHERE outcome IS NOT NULL"):
+    for f in scored(conn):
         keys = [f["kind"]] if by == "kind" else (json.loads(f["tags"]) or ["(untagged)"]) if by == "tag" else ["all"]
         for k in keys:
             groups.setdefault(k, []).append(f)

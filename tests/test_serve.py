@@ -17,26 +17,29 @@ def test_schedule_through_a_monday_and_a_sunday(conn):
     serve.mark_run(conn, "dream", at(9, 3, 5))
     assert serve.due(conn, at(9, 5, 30)) == ["intake"]
     serve.mark_run(conn, "intake", at(9, 5, 30))
-    assert serve.due(conn, at(9, 12, 1)) == ["analyst"]                    # the analyst job does its own intake
-    serve.mark_run(conn, "analyst", at(9, 12, 1)); serve.mark_run(conn, "intake", at(9, 12, 1))
-    assert serve.due(conn, at(9, 13)) == [] and serve.due(conn, at(9, 16, 2)) == ["intake"]
+    assert serve.due(conn, at(9, 12, 1)) == ["intake"]                     # midday is no longer the analyst's slot
+    serve.mark_run(conn, "intake", at(9, 15, 31))
+    assert serve.due(conn, at(9, 19, 29)) == []                            # one minute early
+    assert serve.due(conn, at(9, 19, 31)) == ["analyst"]                   # the analyst job does its own intake
+    serve.mark_run(conn, "analyst", at(9, 19, 31)); serve.mark_run(conn, "intake", at(9, 19, 31))
+    assert serve.due(conn, at(9, 20)) == [] and serve.due(conn, at(9, 23, 32)) == ["intake"]
     assert "scout" not in serve.due(conn, at(9, 6))                        # Monday: no scout
     assert serve.due(conn, at(15, 6)) == ["dream", "scout", "intake"]      # the next Sunday morning
     assert serve.due(conn, at(15, 4)) == ["dream", "intake"]               # before the scout's hour
 
 
 def test_restart_does_not_repeat_a_job_that_already_ran_today(conn):
-    serve.mark_run(conn, "analyst", at(9, 12, 5)); serve.mark_run(conn, "dream", at(9, 3)); serve.mark_run(conn, "intake", at(9, 12, 5))
-    assert serve.due(conn, at(9, 12, 6)) == []
-    assert serve.due(conn, at(10, 12, 0)) == ["dream", "analyst"]          # a day missed entirely: both run once
+    serve.mark_run(conn, "analyst", at(9, 19, 35)); serve.mark_run(conn, "dream", at(9, 3)); serve.mark_run(conn, "intake", at(9, 19, 35))
+    assert serve.due(conn, at(9, 19, 36)) == []
+    assert serve.due(conn, at(10, 19, 30)) == ["dream", "analyst"]          # a day missed entirely: both run once
 
 
 def test_a_failing_job_is_reported_once_and_does_not_loop(conn, monkeypatch):
     calls, said = [], []
     def boom(job, *a): calls.append(job); raise RuntimeError("yahoo down")
     monkeypatch.setattr(serve, "run_job", boom)
-    assert serve.tick(conn, None, None, None, None, said.append, at(9, 12, 1)) == ["dream", "analyst"]
-    assert serve.tick(conn, None, None, None, None, said.append, at(9, 12, 2)) == []
+    assert serve.tick(conn, None, None, None, None, said.append, at(9, 19, 31)) == ["dream", "analyst"]
+    assert serve.tick(conn, None, None, None, None, said.append, at(9, 19, 32)) == []
     assert calls == ["dream", "analyst"] and all("failed: RuntimeError: yahoo down" in s for s in said) and len(said) == 2
 
 

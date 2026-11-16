@@ -149,3 +149,24 @@ def test_compact_shrinks_the_file_and_empties_the_log(tmp_path):
     assert os.path.getsize(path) < big / 4 and os.path.getsize(str(path) + "-wal") == 0
     assert db.compact(c)["vacuumed"] is False                               # nothing to reclaim: no rebuild
     c.close()
+
+
+def test_price_baseline_starts_from_the_live_price_not_the_last_finished_session(conn):
+    bars = wobble(n=71) + [(NOW - 3600, 130.0)]                             # a session that opened an hour ago, far above
+    prov = FakeProvider({"AAA": bars})
+    r = fc.add_price(conn, prov, "AAA", "above", 125, 5, 0.8, now=NOW)
+    assert "last price 130.00" in r["question"] and r["baseline"] > 0.5     # the old baseline, from the finished close near 100, was near zero
+    prov.data["AAA"] = bars + [(NOW + DAY, 50.0)]                           # a bar dated after now is never used
+    assert "last price 130.00" in fc.add_price(conn, prov, "AAA", "below", 125, 5, 0.2, now=NOW)["question"]
+
+
+def test_forecasts_tagged_stale_baseline_are_left_out_of_every_score(conn):
+    prov = FakeProvider({"AAA": wobble(n=71)})
+    fc.add_price(conn, prov, "AAA", "above", 100.5, 3, 0.8, tags=["steel"], now=NOW)
+    fc.add_price(conn, prov, "AAA", "below", 100.5, 3, 0.8, tags=["stale-baseline", "steel"], now=NOW)
+    prov.data["AAA"] = wobble(n=74)
+    assert fc.resolve(conn, prov, now=T0 + 74 * DAY) == 2
+    assert fc.scores(conn)[0]["n"] == 1 and [r["n"] for r in fc.scores(conn, "tag")] == [1] and fc.excluded(conn) == 1
+    from thal import report
+    assert sum(len(v["forecasts"]) for v in report.views(conn).values()) == 1
+    assert "1 left out of every score" in report.scorecard(conn, T0 + 75 * DAY)

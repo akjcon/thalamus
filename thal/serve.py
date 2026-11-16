@@ -2,7 +2,8 @@
 
 Jobs and when they run (UTC):
   intake    every 4 hours        ingest feeds, fetch full text, extract events
-  analyst   daily at 12:00       intake, then one analyst session, then settle and mark
+  analyst   daily at 19:30       intake, then one analyst session, then settle and mark. The US session is open
+                                 at 19:30 UTC all year, so forecast baselines start from a live price
   dream     daily at 03:00       housekeeping and note folding; lessons are rewritten on Sundays
   scout     Sundays at 05:00     look for new sources, retire dead weight
   report    Sundays at 13:00     the weekly scorecard: forecasts vs baseline, bets vs sector
@@ -27,6 +28,7 @@ from .prices import YahooProvider
 from .wiki import Wiki
 
 HOUR, DAY = 3600.0, 86400.0
+ANALYST_AT = (19, 30)         # UTC; inside the regular US session in winter (14:30 ET) and summer (15:30 ET)
 DISCORD = "https://discord.com/api/v10"
 
 
@@ -50,7 +52,7 @@ def due(conn: sqlite3.Connection, now: float) -> list[str]:
         out.append("dream")
     if t.tm_wday == 6 and t.tm_hour >= 5 and not ran_today("scout"):
         out.append("scout")
-    if t.tm_hour >= 12 and not ran_today("analyst"):
+    if (t.tm_hour, t.tm_min) >= ANALYST_AT and not ran_today("analyst"):
         out.append("analyst")
     elif now - max(last_run(conn, "intake"), last_run(conn, "analyst")) >= 4 * HOUR:
         out.append("intake")

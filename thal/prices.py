@@ -16,10 +16,11 @@ from typing import Protocol
 Bar = tuple[float, float]
 SESSION_SECONDS = 20 * 3600   # a bar is trusted as final 20h after its session opened
 STALE_SECONDS = 6 * 3600
+FRESH_SECONDS = 15 * 60       # how old a cached series may be when the live price matters
 
 
 class PriceProvider(Protocol):
-    def bars(self, symbol: str) -> list[Bar]: ...
+    def bars(self, symbol: str, now: float | None = None, max_age: float | None = None) -> list[Bar]: ...
 
 
 class FakeProvider:
@@ -28,7 +29,7 @@ class FakeProvider:
     def __init__(self, data: dict[str, list[Bar]] | None = None):
         self.data = data or {}
 
-    def bars(self, symbol: str) -> list[Bar]:
+    def bars(self, symbol: str, now: float | None = None, max_age: float | None = None) -> list[Bar]:
         return list(self.data.get(symbol, []))
 
 
@@ -66,10 +67,10 @@ class YahooProvider:
                               (symbol, now, int(ok)))
         return ok
 
-    def bars(self, symbol: str, now: float | None = None) -> list[Bar]:
+    def bars(self, symbol: str, now: float | None = None, max_age: float | None = None) -> list[Bar]:
         now = now or time.time()
         meta = self.conn.execute("SELECT fetched_at FROM bars_meta WHERE symbol = ?", (symbol,)).fetchone()
-        if meta is None or now - meta["fetched_at"] > STALE_SECONDS:
+        if meta is None or now - meta["fetched_at"] > (STALE_SECONDS if max_age is None else max_age):
             self.refresh(symbol, now)
         return [(r["ts"], r["close"]) for r in
                 self.conn.execute("SELECT ts, close FROM bars WHERE symbol = ? ORDER BY ts", (symbol,))]
@@ -78,6 +79,13 @@ class YahooProvider:
 def complete(bars: list[Bar], now: float) -> list[Bar]:
     """Drop the bar of a session that may still be trading."""
     return [b for b in bars if now - b[0] >= SESSION_SECONDS]
+
+
+def latest(provider: PriceProvider, symbol: str, now: float, max_age: float = FRESH_SECONDS) -> list[Bar]:
+    """Every bar up to now, freshly fetched, including the session still trading: its last value is the live price.
+    This is what the market knows right now, so forecast baselines start from it. Scoring never uses it; scoring
+    uses complete()."""
+    return [b for b in provider.bars(symbol, now, max_age) if b[0] <= now]
 
 
 def entry_index(bars: list[Bar], ts: float) -> int | None:

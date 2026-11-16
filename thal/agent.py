@@ -14,7 +14,7 @@ import time
 
 from . import db, forecasts, ledger, memory
 from .llm import LLM
-from .prices import PriceProvider, complete
+from .prices import PriceProvider, complete, latest
 from .thesis import BetOut, close_position, place_bet
 from .wiki import Wiki
 
@@ -63,7 +63,9 @@ each session, most of them due within a week, spread across unrelated topics rat
 future, or a prediction-market contract. Do not pad: a forecast on something you have no view on is noise. Whenever you record a bet, also record \
 a forecast on the same instrument due within about a week, so the view is tested long before the bet's horizon. \
 The tool tells you the baseline; a forecast that merely repeats it teaches nothing, and one that is confidently \
-wrong is penalised.
+wrong is penalised. A price baseline starts from the latest traded price. If the market has been closed since news \
+that moves the instrument (a weekend, a holiday, after-hours results), the baseline cannot see it and beating it is \
+not skill: do not record that price forecast.
 
 The universe is what the account can trade at Interactive Brokers: US-listed stocks and ETFs, futures (the account \
 has futures approval), and prediction-market contracts, which Interactive Brokers carries from Kalshi. Bets are on \
@@ -176,7 +178,10 @@ class Session:
         stale = "" if self.now - last_t <= 10 * DAY else "  WARNING: last trade is old; this may no longer trade."
         ret = lambda n: f"{(last / bars[-1 - n][1] - 1) * 100:+.1f}%" if len(bars) > n else "n/a"
         closes = ", ".join(f"{c:.2f}" for _, c in bars[-10:])
-        return (f"{sym}: last close {last:.2f} on {time.strftime('%Y-%m-%d', time.gmtime(last_t))}{stale}\n"
+        live = latest(self.provider, sym, self.now)
+        now_px = (f"\nprice now {live[-1][1]:.2f} (session of {time.strftime('%Y-%m-%d', time.gmtime(live[-1][0]))}, not final);"
+                  " forecast baselines start from this" if live and live[-1][0] > last_t else "")
+        return (f"{sym}: last close {last:.2f} on {time.strftime('%Y-%m-%d', time.gmtime(last_t))}{stale}{now_px}\n"
                 f"change over 1w {ret(5)}, 4w {ret(20)}, 12w {ret(60)}\nlast 10 closes: {closes}")
 
     def scoreboard(self, by: str) -> str:
