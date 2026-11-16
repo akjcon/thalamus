@@ -24,6 +24,7 @@ MAX_EVENTS = 400
 MAX_BETS_PER_SESSION = 5        # bets that place an order
 MAX_SHADOW_BETS = 30            # conviction 0: scored, no order
 MAX_FORECASTS = 40
+OFFLINE_BLOCKED = ("fetch_url", "find_markets", "forecast_market")    # tools that reach outside the database
 WEB_SEARCH = {"type": "web_search_20260209", "name": "web_search", "max_uses": 40}
 
 SYSTEM = """You are the analyst of a trading system whose goal is to make money. Its approach: take in a large \
@@ -128,6 +129,7 @@ class Session:
         if fetch is None:
             from .fetch import fetch_text as fetch
         self.fetch = fetch
+        self.allowed = {t["name"] for t in TOOLS}
         self.bets: list[dict] = []
         self.counts = {"fuses_opened": 0, "evidence": 0, "fuses_closed": 0, "notes": 0, "forecasts": 0, "bets_closed": 0,
                        "tool_calls": 0, "tool_errors": 0}
@@ -288,7 +290,7 @@ class Session:
     def call(self, name: str, args) -> tuple[str, bool]:
         """Run one tool. Returns (text, is_error). Never raises: the model gets the error and can adjust."""
         self.counts["tool_calls"] += 1
-        fn = getattr(self, name, None) if name in {t["name"] for t in TOOLS} else None
+        fn = getattr(self, name, None) if name in self.allowed else None
         try:
             if fn is None:
                 raise ValueError(f"unknown tool {name!r}")
@@ -331,17 +333,24 @@ def digest(events: list[sqlite3.Row]) -> str:
 
 
 def run_session(conn: sqlite3.Connection, llm: LLM, wiki: Wiki, provider: PriceProvider, broker, now: float | None = None,
-                max_turns: int = MAX_TURNS, web: bool = True) -> dict | None:
-    """One analyst session over every event not yet seen. Returns a report, or None if there is nothing new."""
+                max_turns: int = MAX_TURNS, web: bool = True, offline: str = "") -> dict | None:
+    """One analyst session over every event not yet seen. Returns a report, or None if there is nothing new.
+    With offline set (a note to the analyst, used by replays) the session gets no tool that reaches outside its own
+    database: no web search, no page fetching, no prediction markets."""
     now = now or time.time()
     events = conn.execute("SELECT * FROM events WHERE connected = 0 AND dup_of IS NULL ORDER BY magnitude * novelty DESC, id LIMIT ?",
                           (MAX_EVENTS,)).fetchall()
     if not events:
         return None
     s = Session(conn, wiki, provider, broker, now)
-    messages = [{"role": "user", "content": f"# Dashboard\n{memory.dashboard(conn, wiki, now)}\n\n"
-                                            f"# Events since the last session ({len(events)})\n{digest(events)}"}]
     tools = TOOLS + ([WEB_SEARCH] if web else [])
+    if offline:
+        tools = [t for t in TOOLS if t["name"] not in OFFLINE_BLOCKED]
+        s.allowed = {t["name"] for t in tools}
+    today = time.strftime("%Y-%m-%d", time.gmtime(now))
+    messages = [{"role": "user", "content": f"Today is {today}." + (f" {offline}" if offline else "") + "\n\n"
+                                            f"# Dashboard\n{memory.dashboard(conn, wiki, now)}\n\n"
+                                            f"# Events since the last session ({len(events)})\n{digest(events)}"}]
     summary, finished, turns = loop(llm, "analyst", SYSTEM, messages, tools, s.call, max_turns, now)
     if finished:      # events count as seen only when the session ran to its own conclusion
         with conn:

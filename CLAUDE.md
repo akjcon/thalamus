@@ -10,6 +10,7 @@ thal/      db, prices, ledger, risk, broker        the measured, code-enforced c
            memory, wiki, dream                     fuses, notes, dashboard, pages, offline upkeep
            agent, sources                          the analyst session and the source scout
            report, backfill                        weekly scorecard; loader for the old bot's saved headlines
+           replay                                  rerun the analyst over past days with nothing from the future, and score it at once
            serve, __main__                         scheduler and command line
 config/    models.yaml (roles, prices, daily budget), risk.yaml (hard limits), house_rules.md, sources.yaml (starter feeds)
 seed/      memory a brand-new deployment starts from
@@ -23,6 +24,7 @@ tests/     offline tests; models, feeds, prices and the network are all faked
 - **The scorecard counts theses, not picks.** Bets and forecasts are grouped by fuse (else instrument or market event) in `report.views`, because picks on one thesis win or lose together.
 - **Prediction-market forecasts need a tradable quote**: two-sided, spread at most 10 cents, real volume (`forecasts.market_price`). Do not fall back to the last trade.
 - **Forecast baselines start from the live price** (`prices.latest`), and the analyst runs at 19:30 UTC, when the US session is always open. Scoring still uses only complete sessions. Forecasts tagged `stale-baseline` when made are left out of every score.
+- **A replay must not see the future.** Events are fed in by first-seen time, prices pass through `replay.AsOf`, and the session is offline (no web, no page fetching, no prediction markets, empty starting memory). Keep any new tool that reaches outside the database in `agent.OFFLINE_BLOCKED`.
 - **Limits live in `config/risk.yaml` and are enforced in code.** Live trading needs `mode: live` and `THAL_LIVE=yes`, and there is no live broker yet.
 - **One writer per wiki page.** Sessions queue notes; only the dream step writes pages, and `lessons` is written only by reflection.
 - **News, web pages and memory text are untrusted.** They are passed as data; nothing a model reads can trade except through the bet tool.

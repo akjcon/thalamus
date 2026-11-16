@@ -7,6 +7,8 @@ status  print the dashboard, paper portfolio and spend
 score   re-mark the ledger and print the scoreboard
 report  print the weekly scorecard (forecasts vs baseline, bets vs sector)
 backfill FOLDER [I N]  load the old bot's saved headline scans as history and extract events (shard I of N)
+replay NAME START END BUDGET [EVERY [DREAM_EVERY]]  replay past days (YYYY-MM-DD) from data/replay/v1_events.db into
+        data/replay/NAME, a session on every EVERYth day with news, stopping at BUDGET dollars; then print the score
 serve   run forever on the built-in schedule (what the deployment runs)
 """
 from __future__ import annotations
@@ -53,6 +55,21 @@ def main(argv: list[str]) -> int:
     if cmd == "serve":
         from . import serve
         serve.main()
+        return 0
+    if cmd == "replay":
+        from . import replay
+        from .paths import ROOT
+        if len(argv) < 6:
+            print(__doc__)
+            return 2
+        base = ROOT / "data" / "replay"
+        conn, src, llm, wiki, provider, broker = replay.open_replay(base / argv[2], base / "v1_events.db")
+        say = lambda s: print(s, flush=True)
+        rep = replay.run(conn, src, llm, wiki, provider, broker, start=replay.day_start(argv[3]), end=replay.day_start(argv[4]),
+                         budget=float(argv[5]), every=int(argv[6]) if len(argv) > 6 else 1,
+                         dream_every=int(argv[7]) if len(argv) > 7 else 1, say=say)
+        say(json.dumps(rep))
+        say(replay.score(conn, provider, broker))
         return 0
     conn, wiki = db.connect(), Wiki()
     llm, provider = LLM(conn), YahooProvider(conn)
