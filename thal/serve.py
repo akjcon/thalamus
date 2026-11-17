@@ -11,7 +11,8 @@ Jobs and when they run (UTC):
   overseer  08:00 and 18:00      the top model checks every part is running and that they fit together
   report    Sundays at 13:00     the weekly scorecard: forecasts vs baseline, bets vs sector
 Last-run times live in the database, so a restart neither repeats nor skips a job.
-Each job posts a short summary to Discord when a bot token is configured.
+Each job posts a short summary to Discord when a bot token is configured. When THAL_UI_PASSWORD is set, the
+control page (thal/ui.py) is served from the same process.
 """
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ import time
 import traceback
 import urllib.request
 
-from . import agent, crawl, db, dream, extract, forecasts, ingest, ledger, memory, oversee, report, risk, sources
+from . import agent, crawl, db, dream, extract, forecasts, ingest, ledger, memory, oversee, report, risk, sources, ui
 from . import fetch as fetch_mod
 from .broker import get_broker
 from .llm import LLM, BudgetExceeded, load_env
@@ -191,6 +192,8 @@ def tick(conn, llm, wiki, provider, broker, notify, now: float) -> list[str]:
     """Run whatever is due. A failing job is reported and marked as run, so it cannot loop on an error all day."""
     done = []
     for job in due(conn, now):
+        with conn:                          # so the control page can show which job is running
+            conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES ('running_job', ?)", (f"{job}|{now}",))
         try:
             msg = run_job(job, conn, llm, wiki, provider, broker, now)
         except BudgetExceeded as e:
@@ -200,6 +203,7 @@ def tick(conn, llm, wiki, provider, broker, notify, now: float) -> list[str]:
             msg = f"{job.capitalize()} failed: {type(e).__name__}: {str(e)[:300]}"
         mark_run(conn, job, now)
         with conn:
+            conn.execute("DELETE FROM kv WHERE k = 'running_job'")
             conn.execute("INSERT INTO job_log(at, job, ok, summary) VALUES (?,?,?,?)",
                          (now, job, int(not msg.startswith((f"{job.capitalize()} failed", f"{job.capitalize()} stopped"))), msg[:2000]))
         if job == "analyst":
@@ -220,7 +224,10 @@ def main() -> None:
     seeded = load_seed(conn, wiki, time.time())
     synced = sources.sync(conn) if conn.execute("SELECT COUNT(*) FROM sources").fetchone()[0] else 0   # an empty table is seeded by the first intake
     discord.post(f"**Thalamus v2 online** ({risk.load().mode} mode). " + ("Started from seed memory." if seeded else "Resumed from saved state."))
-    print("thalamus v2 serving", flush=True)
+    with conn:
+        conn.execute("DELETE FROM kv WHERE k = 'running_job'")           # nothing is running just after a start
+    page = ui.start(db.connect)
+    print("thalamus v2 serving" + (f"; control page on port {page.server_address[1]}" if page else "; no control page (THAL_UI_PASSWORD not set)"), flush=True)
     while True:
         tick(conn, llm, wiki, provider, broker, discord.post, time.time())
         time.sleep(60)

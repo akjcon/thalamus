@@ -11,6 +11,7 @@ replay NAME START END BUDGET [EVERY [DREAM_EVERY]]  replay past days (YYYY-MM-DD
         data/replay/NAME, a session on every EVERYth day with news, stopping at BUDGET dollars; then print the score
         (a dream after every DREAM_EVERYth session; 0 means never, the no-memory control)
 serve   run forever on the built-in schedule (what the deployment runs)
+ui [DB] show the control page at http://localhost:8787 for a database (default: the local one), on this machine only
 """
 from __future__ import annotations
 
@@ -57,6 +58,13 @@ def main(argv: list[str]) -> int:
         from . import serve
         serve.main()
         return 0
+    if cmd == "ui":
+        from . import ui
+        path = argv[2] if len(argv) > 2 else None
+        ui.start_local(lambda: db.connect(path))
+        print("control page on http://localhost:8787 (this machine only; Ctrl-C to stop)", flush=True)
+        while True:
+            time.sleep(3600)
     if cmd == "replay":
         from . import replay
         from .paths import ROOT
