@@ -9,7 +9,34 @@ def at(day, hour, minute=0):                      # November 2026: the 8th is a 
     return float(calendar.timegm((2026, 11, day, hour, minute, 0)))
 
 
+def quiet(conn, day):
+    """Mark the crawler and the overseer as already run, for tests that are about the other jobs."""
+    serve.mark_run(conn, "crawl", at(day, 18)); serve.mark_run(conn, "overseer", at(day, 18))
+
+
+def test_crawl_runs_daily_and_the_overseer_twice_a_day(conn):
+    for job in ("dream", "intake", "analyst"):
+        serve.mark_run(conn, job, at(9, 23))
+    assert serve.due(conn, at(9, 5, 59)) == [] and serve.due(conn, at(9, 6)) == ["crawl"]
+    serve.mark_run(conn, "crawl", at(9, 6))
+    assert serve.due(conn, at(9, 7, 59)) == [] and serve.due(conn, at(9, 8)) == ["overseer"]
+    serve.mark_run(conn, "overseer", at(9, 8))
+    assert serve.due(conn, at(9, 17, 59)) == [] and serve.due(conn, at(9, 18, 1)) == ["overseer"]      # the evening look
+    serve.mark_run(conn, "overseer", at(9, 18, 1))
+    assert serve.due(conn, at(9, 23)) == []
+    serve.mark_run(conn, "overseer", at(10, 7)); serve.mark_run(conn, "crawl", at(10, 7)); serve.mark_run(conn, "dream", at(10, 7))
+    serve.mark_run(conn, "intake", at(10, 19))
+    assert serve.due(conn, at(10, 19)) == ["overseer"]                    # a restart that missed the morning slot runs it once
+
+
+def test_every_job_run_is_logged_for_the_overseer(conn, monkeypatch):
+    monkeypatch.setattr(serve, "run_job", lambda job, *a: (_ for _ in ()).throw(RuntimeError("down")) if job == "dream" else f"{job} ok")
+    serve.tick(conn, None, None, None, None, lambda s: None, at(9, 3, 1))
+    assert [tuple(r) for r in conn.execute("SELECT job, ok FROM job_log ORDER BY id")] == [("dream", 0), ("intake", 1)]
+
+
 def test_schedule_through_a_monday_and_a_sunday(conn):
+    quiet(conn, 15)
     assert serve.due(conn, at(9, 1)) == ["intake"]                         # fresh start, before any daily slot
     serve.mark_run(conn, "intake", at(9, 1))
     assert serve.due(conn, at(9, 2)) == []                                 # intake is every four hours
@@ -29,6 +56,7 @@ def test_schedule_through_a_monday_and_a_sunday(conn):
 
 
 def test_restart_does_not_repeat_a_job_that_already_ran_today(conn):
+    quiet(conn, 10)
     serve.mark_run(conn, "analyst", at(9, 19, 35)); serve.mark_run(conn, "dream", at(9, 3)); serve.mark_run(conn, "intake", at(9, 19, 35))
     assert serve.due(conn, at(9, 19, 36)) == []
     assert serve.due(conn, at(10, 19, 30)) == ["dream", "analyst"]          # a day missed entirely: both run once
@@ -36,6 +64,7 @@ def test_restart_does_not_repeat_a_job_that_already_ran_today(conn):
 
 def test_a_failing_job_is_reported_once_and_does_not_loop(conn, monkeypatch):
     calls, said = [], []
+    quiet(conn, 9)
     def boom(job, *a): calls.append(job); raise RuntimeError("yahoo down")
     monkeypatch.setattr(serve, "run_job", boom)
     assert serve.tick(conn, None, None, None, None, said.append, at(9, 19, 31)) == ["dream", "analyst"]

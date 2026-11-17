@@ -162,6 +162,23 @@ CREATE TABLE IF NOT EXISTS readings (
     unit TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (source, day)
 );
+-- What the source crawler has considered. A candidate that is not a free feed waits as a proposal for a person.
+CREATE TABLE IF NOT EXISTS candidates (
+    url TEXT PRIMARY KEY,                    -- the address as proposed
+    name TEXT NOT NULL DEFAULT '',
+    found_at REAL NOT NULL,
+    status TEXT NOT NULL DEFAULT 'new',      -- new | tested | added | rejected | dead | proposal
+    feed_url TEXT,                           -- the working feed found behind the address
+    note TEXT NOT NULL DEFAULT ''
+);
+-- One line per job run, so the overseer can see what each part last did and whether it failed.
+CREATE TABLE IF NOT EXISTS job_log (
+    id INTEGER PRIMARY KEY,
+    at REAL NOT NULL,
+    job TEXT NOT NULL,
+    ok INTEGER NOT NULL,
+    summary TEXT NOT NULL DEFAULT ''
+);
 CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL);
 """
 

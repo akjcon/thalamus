@@ -6,6 +6,8 @@ Jobs and when they run (UTC):
                                  at 19:30 UTC all year, so forecast baselines start from a live price
   dream     daily at 03:00       housekeeping and note folding; lessons are rewritten on Sundays
   scout     Sundays at 05:00     look for new sources, retire dead weight
+  crawl     daily at 06:00       cheap hunt for new sources: a model proposes, code tests, working feeds join on trial
+  overseer  08:00 and 18:00      the top model checks every part is running and that they fit together
   report    Sundays at 13:00     the weekly scorecard: forecasts vs baseline, bets vs sector
 Last-run times live in the database, so a restart neither repeats nor skips a job.
 Each job posts a short summary to Discord when a bot token is configured.
@@ -19,7 +21,7 @@ import time
 import traceback
 import urllib.request
 
-from . import agent, db, dream, extract, forecasts, ingest, ledger, memory, report, risk, sources
+from . import agent, crawl, db, dream, extract, forecasts, ingest, ledger, memory, oversee, report, risk, sources
 from . import fetch as fetch_mod
 from .broker import get_broker
 from .llm import LLM, BudgetExceeded, load_env
@@ -29,6 +31,7 @@ from .wiki import Wiki
 
 HOUR, DAY = 3600.0, 86400.0
 ANALYST_AT = (19, 30)         # UTC; inside the regular US session in winter (14:30 ET) and summer (15:30 ET)
+OVERSEER_AT = (8, 18)         # UTC hours; both fall before the analyst, so the day's budget is not yet spent
 DISCORD = "https://discord.com/api/v10"
 
 
@@ -52,6 +55,11 @@ def due(conn: sqlite3.Connection, now: float) -> list[str]:
         out.append("dream")
     if t.tm_wday == 6 and t.tm_hour >= 5 and not ran_today("scout"):
         out.append("scout")
+    if t.tm_hour >= 6 and not ran_today("crawl"):
+        out.append("crawl")
+    slot = max((h for h in OVERSEER_AT if t.tm_hour >= h), default=None)
+    if slot is not None and last_run(conn, "overseer") < today + slot * HOUR:
+        out.append("overseer")
     if (t.tm_hour, t.tm_min) >= ANALYST_AT and not ran_today("analyst"):
         out.append("analyst")
     elif now - max(last_run(conn, "intake"), last_run(conn, "analyst")) >= 4 * HOUR:
@@ -111,6 +119,12 @@ def run_job(job: str, conn, llm, wiki, provider, broker, now: float) -> str:
     if job == "scout":
         s = sources.scout(conn, llm, wiki, now)
         return f"Scout: added {len(s['added'])} sources ({', '.join(s['added']) or 'none'}), retired {len(s['retired'])}."
+    if job == "crawl":
+        c = crawl.crawl(conn, llm, now)
+        return (f"Crawl: {c['proposed']} new candidates, {c['working']} with a working feed, added {len(c['added'])} on trial "
+                f"({', '.join(c['added']) or 'none'}), {c['new_proposals']} new proposals for you (data or paid sources).")
+    if job == "overseer":
+        return oversee.review(conn, llm, now)
     if job == "report":
         broker.settle(now); ledger.mark_all(conn, provider, now); forecasts.resolve(conn, provider, now=now)
         return report.scorecard(conn, now)
@@ -183,6 +197,9 @@ def tick(conn, llm, wiki, provider, broker, notify, now: float) -> list[str]:
             traceback.print_exc()
             msg = f"{job.capitalize()} failed: {type(e).__name__}: {str(e)[:300]}"
         mark_run(conn, job, now)
+        with conn:
+            conn.execute("INSERT INTO job_log(at, job, ok, summary) VALUES (?,?,?,?)",
+                         (now, job, int(not msg.startswith((f"{job.capitalize()} failed", f"{job.capitalize()} stopped"))), msg[:2000]))
         if job == "analyst":
             mark_run(conn, "intake", now)
         print(msg, flush=True)

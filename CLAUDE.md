@@ -11,6 +11,8 @@ thal/      db, prices, ledger, risk, broker        the measured, code-enforced c
            agent, sources                          the analyst session and the source scout
            report, backfill                        weekly scorecard; loader for the old bot's saved headlines
            replay                                  rerun the analyst over past days with nothing from the future, and score it at once
+           crawl                                   daily cheap hunt for sources: a model proposes, code tests, a model judges; non-feed and paid ones wait as proposals
+           oversee                                 the top model's look at the whole system twice a day; its directions steer the crawler
            serve, __main__                         scheduler and command line
 config/    models.yaml (roles, prices, daily budget), risk.yaml (hard limits), house_rules.md, sources.yaml (starter feeds)
 seed/      memory a brand-new deployment starts from
@@ -35,3 +37,5 @@ tests/     offline tests; models, feeds, prices and the network are all faked
 ## Deployment
 
 Railway builds the Dockerfile and auto-deploys on push to `main`. Service settings (build, restart policy, volume mount) are declared in `.railway/railway.py`; preview a change with `railway config plan` and never apply a plan that detaches the volume. State lives on the volume at `/data/thal` (database, wiki, kill switch). Variables: `ANTHROPIC_API_KEY`, `DISCORD_BOT_TOKEN`, optional `THAL_CONTACT_EMAIL`. After a push, look for "Thalamus v2 online" in #thal-logs. To stop all trading, create the file `/data/thal/KILL`.
+- **Three sections, one shared record.** Data comes in through sources of any kind (`ingest.SERIES` for measurements) and always ends up as dated items plus daily `readings`. The parts never talk to each other; they read and write the database, and the overseer's directions are one more thing written there. A new kind of data is a new reader, not a new pipeline.
+- **The crawler never adds what it has not fetched, and never adds anything paid or non-feed.** Those wait in `candidates` as proposals for the owner.
