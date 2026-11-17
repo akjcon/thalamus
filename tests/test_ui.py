@@ -86,3 +86,11 @@ def test_open_page_is_read_only(tmp_path):
         server.shutdown()
     c = db.connect(path)
     assert c.execute("SELECT status FROM candidates WHERE name = 'Vessel tracking'").fetchone()[0] == "proposal"
+
+
+def test_sources_still_queued_for_the_builder_are_counted_not_listed(conn):
+    fill(conn)
+    conn.execute("INSERT INTO candidates(url, name, found_at, status, note) VALUES ('https://q.example/', 'Queued one', 1, 'proposal', '[data] river levels')")
+    html = ui.page(conn, NOW)
+    assert "Waiting for you · 2" in html and "Queued one" not in html and "1 more are queued for the builder" in html
+    assert "[paid]" not in html and "about $500 a month" in html

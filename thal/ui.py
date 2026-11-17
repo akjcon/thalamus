@@ -137,21 +137,22 @@ def page(conn: sqlite3.Connection, now: float | None = None, decisions: bool = T
     if last:
         out.append(f"<h2>Overseer · {ago(last['at'], now)}</h2><div class='card pad prose'>{e(last['summary'].replace('**', ''))}</div>")
 
-    # ---- waiting for the owner
-    waiting = q("SELECT url, name, note, status FROM candidates WHERE status IN ('proposal', 'needs_work') ORDER BY (note LIKE '[paid]%') DESC, found_at DESC")
-    if waiting:
+    # ---- waiting for the owner: paid sources, and free ones the builder could not wire in
+    waiting = q("SELECT url, name, note, status FROM candidates WHERE status = 'needs_work' OR (status = 'proposal' AND note LIKE '[paid]%') "
+                "ORDER BY (note LIKE '[paid]%') DESC, found_at DESC")
+    queued = one("SELECT COUNT(*) FROM candidates WHERE status = 'proposal' AND note NOT LIKE '[paid]%'")
+    if waiting or queued:
         rows = []
         for w in waiting:
             paid = w["note"].startswith("[paid]")
-            kind = "paid" if paid else "needs work" if w["status"] == "needs_work" else "queued for the builder"
-            acts = (("<button name=action value=approve>Approve</button>" if paid else "")
-                    + ("<button name=action value=retry>Retry</button>" if w["status"] == "needs_work" else "")
-                    + "<button name=action value=decline>Decline</button>")
-            if not decisions:
-                acts = ""
-            rows.append(f"<tr><td><a href='{e(w['url'])}' rel=noreferrer target=_blank>{e(w['name'])}</a><br><span class=tag>{kind}</span></td>"
-                        f"<td class=dim>{e(w['note'])}</td><td class=nw><form method=post action=decide><input type=hidden name=url value='{e(w['url'])}'>{acts}</form></td></tr>")
-        out.append(f"<h2>Waiting for you · {len(waiting)}</h2><div class=card><table>" + "".join(rows) + "</table></div>")
+            note = w["note"].removeprefix("[paid]").removeprefix("[data]").strip()
+            acts = "" if not decisions else (("<button name=action value=approve>Approve</button>" if paid else "<button name=action value=retry>Retry</button>")
+                                             + "<button name=action value=decline>Decline</button>")
+            rows.append(f"<tr><td><a href='{e(w['url'])}' rel=noreferrer target=_blank>{e(w['name'])}</a><br><span class=tag>{'paid' if paid else 'needs work'}</span></td>"
+                        f"<td class=dim>{e(note)}</td><td class=nw><form method=post action=decide><input type=hidden name=url value='{e(w['url'])}'>{acts}</form></td></tr>")
+        out.append(f"<h2>Waiting for you · {len(waiting)}</h2>"
+                   + (f"<div class=dim style='margin-bottom:8px'>{queued} more are queued for the builder's next run.</div>" if queued else "")
+                   + ("<div class=card><table>" + "".join(rows) + "</table></div>" if rows else ""))
 
     # ---- measurements
     tiles = []

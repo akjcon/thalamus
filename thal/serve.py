@@ -205,7 +205,7 @@ def tick(conn, llm, wiki, provider, broker, notify, now: float) -> list[str]:
         with conn:
             conn.execute("DELETE FROM kv WHERE k = 'running_job'")
             conn.execute("INSERT INTO job_log(at, job, ok, summary) VALUES (?,?,?,?)",
-                         (now, job, int(not msg.startswith((f"{job.capitalize()} failed", f"{job.capitalize()} stopped"))), msg[:2000]))
+                         (now, job, int(not msg.startswith((f"{job.capitalize()} failed", f"{job.capitalize()} stopped"))), msg[:8000]))
         if job == "analyst":
             mark_run(conn, "intake", now)
         print(msg, flush=True)
