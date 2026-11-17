@@ -34,7 +34,8 @@ paid sources, and free ones the builder could not wire in, wait for the owner
 - analyst: daily; reads new events and memory, keeps hypotheses, records forecasts and paper bets
 - dream: nightly; folds the analyst's notes into the long-term memory and, weekly, rewrites the lessons
 - report: weekly scorecard. Bets against their sector, counted per thesis, are the measure of skill.
-All trading is on paper. Spending is capped per day.
+All trading is on paper. There is no spending cap in the system itself (the owner limits it at the provider), so say \
+plainly when a part's cost is rising or out of proportion to what it produces.
 
 You are given a health report built by code. Judge, from the facts in it only:
 - whether each part is running and doing what it should (a job that has stopped, failed, or runs but produces \

@@ -1,4 +1,4 @@
-# Which model does which job, and the daily spending cap enforced in code.
+# Which model does which job. Every call's cost is still logged, and the overseer reports spending twice a day.
 roles:
   extract: {model: claude-haiku-5-5, effort: low,  max_tokens: 16000}   # high volume: turn items into event records
   analyst: {model: claude-fable-5-2, effort: high, max_tokens: 32000}   # one session with tools: reads memory, connects, decides
@@ -7,9 +7,9 @@ roles:
   crawl:    {model: claude-haiku-5-5, effort: low,  max_tokens: 16000}   # cheap: proposes sources and judges candidates that code has tested
   build:    {model: claude-opus-5-5,  effort: medium, max_tokens: 4000}  # writes the recipe that reads a page or data source the crawler found
   overseer: {model: claude-fable-5-2, effort: high, max_tokens: 8000}    # a few times a day: is every part running, and do they fit together
-daily_budget_usd: 15.00
-# Part of the day's budget kept for a role until it has spent it, so earlier jobs (the dream runs first) cannot starve it.
-reserved_usd: {analyst: 6.50}
+# No spending cap in code: the owner limits spend in Anthropic billing. Set a number here to cap a day's spend again,
+# and reserved_usd: {analyst: N} to keep part of that for a role.
+daily_budget_usd: 0
 # USD per million tokens: input, output, cache read
 prices:
   claude-haiku-5-5: [0.10, 0.50, 0.01]

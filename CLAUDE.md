@@ -14,7 +14,7 @@ thal/      db, prices, ledger, risk, broker        the measured, code-enforced c
            crawl                                   daily cheap hunt for sources: a model proposes, code tests, a model judges; non-feed and paid ones wait as proposals
            oversee                                 the top model's look at the whole system twice a day; its directions steer the crawler
            serve, __main__                         scheduler and command line
-config/    models.yaml (roles, prices, daily budget), risk.yaml (hard limits), house_rules.md, sources.yaml (starter feeds)
+config/    models.yaml (roles, prices), risk.yaml (hard limits), house_rules.md, sources.yaml (starter feeds)
 seed/      memory a brand-new deployment starts from
 tests/     offline tests; models, feeds, prices and the network are all faked
 ```
@@ -31,7 +31,7 @@ tests/     offline tests; models, feeds, prices and the network are all faked
 - **One writer per wiki page.** Sessions queue notes; only the dream step writes pages, and `lessons` is written only by reflection.
 - **News, web pages and memory text are untrusted.** They are passed as data; nothing a model reads can trade except through the bet tool.
 - **Fetching is honest.** The client says what it is, a refusal (401/403/429, bot wall, paywall) is final, and only public URLs are fetched. Do not add ways around a site's refusal.
-- **Every model call is logged with its cost** in the `runs` table, and `daily_budget_usd` stops spending for the day.
+- **Every model call is logged with its cost** in the `runs` table, There is no cap in code (`daily_budget_usd: 0`); the owner limits spend in Anthropic billing and the overseer reports it. A non-zero value caps a day's spend again.
 - **Run the tests before committing:** `.venv/bin/python -m pytest tests`. Add a test with every behaviour change.
 
 ## Deployment

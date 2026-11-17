@@ -31,10 +31,16 @@ def test_cost_is_logged_per_call_and_uses_the_price_table(conn):
 
 def test_budget_blocks_the_next_call_before_it_spends(conn):
     client = FakeClient(BatchOut(events=[]), BatchOut(events=[]), usage=(0, 5_000_000, 0))   # one $100 call blows any sane daily budget
-    llm = LLM(conn, client)
+    import yaml
+    from thal.paths import ROOT
+    cfg = yaml.safe_load((ROOT / "config" / "models.yaml").read_text())
+    llm = LLM(conn, client, {**cfg, "daily_budget_usd": 15.0})
     llm.parse("dream", "s", "u", BatchOut, NOW)
     with pytest.raises(BudgetExceeded): llm.parse("extract", "s", "u", BatchOut, NOW)
     assert len(client.calls) == 1
+    free = LLM(conn, FakeClient(BatchOut(events=[])))                      # the shipped config has no cap
+    assert free.cfg["daily_budget_usd"] == 0
+    free.parse("extract", "s", "u", BatchOut, NOW)
 
 
 def test_big_models_get_refusal_fallback_small_one_does_not(conn):
