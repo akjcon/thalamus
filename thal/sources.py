@@ -12,7 +12,7 @@ import sqlite3
 import time
 from urllib.parse import urlparse
 
-from . import ingest, memory
+from . import db, ingest, memory
 from .llm import LLM
 from .wiki import Wiki
 
@@ -74,8 +74,8 @@ def _add_missing(conn: sqlite3.Connection, status: str, now: float) -> int:
         for f in ingest.load_feeds():
             if conn.execute("SELECT 1 FROM sources WHERE name = ? OR url = ?", (f["name"], f["url"])).fetchone():
                 continue
-            conn.execute("INSERT INTO sources(name, url, status, added_at, added_by, kind, why) VALUES (?,?,?,?,'seed',?,?)",
-                         (f["name"], f["url"], status, now, f["kind"], f.get("why", "")))
+            conn.execute("INSERT INTO sources(name, url, status, added_at, added_by, kind, why, recipe) VALUES (?,?,?,?,'seed',?,?,?)",
+                         (f["name"], f["url"], status, now, f["kind"], f.get("why", ""), db.jl(f["recipe"]) if f.get("recipe") else ""))
             added += 1
     return added
 
@@ -95,7 +95,7 @@ def sync(conn: sqlite3.Connection, now: float | None = None) -> int:
 
 
 def live(conn: sqlite3.Connection) -> list[dict]:
-    return [dict(r) for r in conn.execute("SELECT name, url, kind FROM sources WHERE status != 'retired' ORDER BY name")]
+    return [dict(r) for r in conn.execute("SELECT name, url, kind, recipe, why FROM sources WHERE status != 'retired' ORDER BY name")]
 
 
 def record_fetch(conn: sqlite3.Connection, name: str, ok: bool, now: float) -> None:

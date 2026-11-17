@@ -2,10 +2,13 @@
 
 A source has a kind. Whatever the kind, what comes out is the same: dated items, which the rest of the system reads.
   rss      a news feed; one item per entry
-  series   a measurement that changes over time (a river level today; rainfall, canal drafts, freight rates later).
-           Each day's value is kept in the readings table, and one item a day states the level and how it has moved,
-           so a measurement reaches the analyst the same way a headline does.
-To read a new kind of data, add a reader to SERIES (or a new kind beside it) and list the source in config/sources.yaml.
+  page     a web page with no feed (notices to shipping, an outage list). The lines not seen on it before become
+           one item, so a new notice reaches the analyst the day it is posted
+  series   a measurement that changes over time (a river level, a canal draft, rainfall, a queue of ships). Each
+           day's value is kept in the readings table, and one item a day states the level and how it has moved
+A page or series source is read by a recipe: a small piece of data saying where the text or the number is (see
+RECIPE). A recipe is data, not code, so the source builder can write one for a source it has just found, have it
+checked by check_recipe, and switch it on without a deploy. The two named readers in SERIES predate recipes.
 """
 from __future__ import annotations
 
@@ -37,7 +40,7 @@ def item_id(url: str, title: str) -> str:
 def load_feeds(path: str | Path = ROOT / "config" / "sources.yaml") -> list[dict]:
     """Every configured source: news feeds (kind rss) and data feeds (their own kind)."""
     cfg = yaml.safe_load(Path(path).read_text()) or {}
-    feeds = [{**f, "kind": "rss"} for f in cfg.get("rss_feeds", [])] + [f for f in cfg.get("data_feeds", []) if f.get("kind") in SERIES]
+    feeds = [{**f, "kind": "rss"} for f in cfg.get("rss_feeds", [])] + [f for f in cfg.get("data_feeds", []) if f.get("kind") in KINDS]
     return [f for f in feeds if f.get("url") and f.get("name")]
 
 
@@ -59,15 +62,148 @@ def _usgs(text: str) -> list[tuple[float, float]]:
 
 
 SERIES = {"pegelonline": (_pegelonline, "cm"), "usgs_gauge": (_usgs, "ft")}     # kind -> (reader, unit)
+KINDS = ("rss", "page", "series") + tuple(SERIES)
 WEEK = 7
+MAX_PATTERN, MAX_SCAN = 300, 200_000
+
+RECIPE = """A recipe is a JSON object.
+For a page (kind "page"), all fields optional:
+  {"after": "text that comes just before the part worth watching", "before": "text that comes just after it"}
+For a series (kind "series"), one of:
+  {"format": "json", "rows": "dotted.path.to.the.list ('' if the document is the list; numbers index into lists)",
+   "time": "field of each row holding its time (dotted path)", "value": "field holding the number", "unit": "cm"}
+  {"format": "csv", "time": "name of the time column", "value": "name of the value column", "unit": "mm",
+   "delimiter": ","}
+  {"format": "regex", "pattern": "regular expression with ONE group capturing the current number in the page text",
+   "unit": "ft"}                    (the reading is dated when it is fetched)
+Optional for any series: "min" and "max" (values outside are dropped as errors or missing-data markers)."""
 
 
-def read_series(conn: sqlite3.Connection, feed: dict, text: str) -> list[dict]:
+def _dig(obj, path: str):
+    for key in [k for k in str(path).split(".") if k != ""]:
+        obj = obj[int(key)] if isinstance(obj, list) else obj[key]
+    return obj
+
+
+def _when(v) -> float:
+    """A timestamp from epoch seconds, epoch milliseconds, or an ISO or common date string. Naive times are UTC."""
+    from datetime import datetime, timezone
+    if isinstance(v, (int, float)) or str(v).strip().replace(".", "", 1).isdigit():
+        x = float(v)
+        return x / 1000 if x > 1e11 else x
+    text = str(v).strip().replace("Z", "+00:00")
+    try:
+        d = datetime.fromisoformat(text)
+    except ValueError:
+        d = next(d for d in (_try(text, f) for f in ("%Y-%m-%d %H:%M", "%d/%m/%Y %H:%M", "%m/%d/%Y %H:%M", "%d/%m/%Y", "%m/%d/%Y",
+                                                      "%d.%m.%Y %H:%M", "%d.%m.%Y", "%Y%m%d", "%d %b %Y", "%b %d, %Y")) if d)
+    return (d if d.tzinfo else d.replace(tzinfo=timezone.utc)).timestamp()
+
+
+def _try(text: str, fmt: str):
+    from datetime import datetime
+    try:
+        return datetime.strptime(text, fmt)
+    except ValueError:
+        return None
+
+
+def _number(v) -> float:
+    return float(str(v).replace(",", "").strip()) if not isinstance(v, (int, float)) else float(v)
+
+
+def recipe_readings(recipe: dict, text: str, now: float) -> list[tuple[float, float]]:
+    """(time, value) pairs a series recipe finds in the fetched text. Rows it cannot read are skipped."""
+    import csv, io, math
+    fmt, out = recipe.get("format"), []
+    if fmt == "json":
+        for row in _dig(json.loads(text), recipe.get("rows", "")):
+            try:
+                out.append((_when(_dig(row, recipe["time"])), _number(_dig(row, recipe["value"]))))
+            except (KeyError, IndexError, TypeError, ValueError, StopIteration):
+                continue
+    elif fmt == "csv":
+        for row in csv.DictReader(io.StringIO(text), delimiter=recipe.get("delimiter") or ","):
+            try:
+                out.append((_when(row[recipe["time"]]), _number(row[recipe["value"]])))
+            except (KeyError, TypeError, ValueError, StopIteration):
+                continue
+    elif fmt == "regex":
+        pattern = str(recipe.get("pattern", ""))
+        if not pattern or len(pattern) > MAX_PATTERN:
+            raise ValueError("a regex recipe needs a pattern of at most %d characters" % MAX_PATTERN)
+        from .fetch import plain
+        m = re.search(pattern, plain(text)[:MAX_SCAN] if "<" in text[:2000] else text[:MAX_SCAN], re.I | re.S)
+        if m and m.groups():
+            out.append((now, _number(m.group(1))))
+    else:
+        raise ValueError(f"unknown series format {fmt!r}")
+    lo, hi = recipe.get("min"), recipe.get("max")
+    return [(at, v) for at, v in out if math.isfinite(v) and (lo is None or v >= float(lo)) and (hi is None or v <= float(hi))]
+
+
+def page_lines(recipe: dict, html: str) -> list[str]:
+    """The lines of visible text on a page worth comparing from one visit to the next."""
+    from .fetch import plain
+    text = plain(html)
+    for key, keep_after in (("after", True), ("before", False)):
+        mark = str(recipe.get(key) or "")
+        i = text.find(mark) if mark else -1
+        if i >= 0:
+            text = text[i + len(mark):] if keep_after else text[:i]
+    return list(dict.fromkeys(l for l in text.splitlines() if len(l) >= 25))
+
+
+def read_page(conn: sqlite3.Connection, feed: dict, html: str, now: float) -> tuple[list[dict], bool]:
+    """(items, whether the page was readable). The first visit only remembers what is there. After that, the lines
+    not seen before become one item. Lines are remembered, so a notice that scrolls off and returns is not new."""
+    lines = page_lines(feed.get("recipe") or {}, html)
+    hashes = {hashlib.sha256(l.lower().encode()).hexdigest()[:16]: l for l in lines}
+    seen = {r[0] for r in conn.execute("SELECT h FROM page_seen WHERE source = ?", (feed["name"],))}
+    fresh = [l for h, l in hashes.items() if h not in seen]
+    with conn:
+        conn.executemany("INSERT OR IGNORE INTO page_seen(source, h) VALUES (?, ?)", [(feed["name"], h) for h in hashes])
+    if not seen or not fresh:
+        return [], bool(lines)
+    body = "New on this page since the last visit:\n" + "\n".join(fresh)
+    return [{"id": item_id("", feed["name"] + "|" + "|".join(sorted(h for h, l in hashes.items() if l in fresh))), "source": feed["name"],
+             "url": feed["url"], "title": f"{feed['name']}: {fresh[0][:140]}", "body": body[:MAX_BODY], "published_at": now}], True
+
+
+def check_recipe(kind: str, recipe: dict, text: str, now: float) -> str:
+    """Why a recipe does not work on this fetched text, or '' if it does. This is the gate a source the builder
+    wrote must pass before it is switched on."""
+    try:
+        if kind == "page":
+            n = len(page_lines(recipe, text))
+            return "" if n >= 3 else f"only {n} lines of text found; the page may be empty, scripted or walled"
+        if kind != "series":
+            return f"unknown kind {kind!r}"
+        got = recipe_readings(recipe, text, now)
+        if not got:
+            return "the recipe found no readings in the fetched text"
+        newest = max(at for at, _ in got)
+        if newest > now + 2 * 86400 or newest < now - 120 * 86400:
+            return f"the newest reading is dated {time.strftime('%Y-%m-%d', time.gmtime(newest))}, which is not recent; the time field is probably wrong"
+        if not str(recipe.get("unit") or "").strip():
+            return "a series recipe must state its unit"
+        return ""
+    except Exception as e:
+        return f"{type(e).__name__}: {str(e)[:200]}"
+
+
+def read_series(conn: sqlite3.Connection, feed: dict, text: str, now: float | None = None) -> list[dict]:
     """Store each day's latest measurement, and return one item for the newest day saying where the level is and
     how it has moved. The item's id is the source and the day, so it is written once per day."""
-    reader, unit = SERIES[feed["kind"]]
+    now = now or time.time()
+    if feed["kind"] in SERIES:
+        reader, unit = SERIES[feed["kind"]]
+        found = reader(text)
+    else:
+        recipe = feed.get("recipe") or {}
+        found, unit = recipe_readings(recipe, text, now), str(recipe.get("unit") or "")
     days: dict[str, tuple[float, float]] = {}
-    for at, value in sorted(reader(text)):
+    for at, value in sorted(found):
         days[time.strftime("%Y-%m-%d", time.gmtime(at))] = (at, value)
     if not days:
         return []
@@ -81,10 +217,11 @@ def read_series(conn: sqlite3.Connection, feed: dict, text: str) -> list[dict]:
         ref = hist[max(0, len(hist) - 1 - WEEK)]
         title += f", {last['value'] - ref['value']:+g} {unit} since {ref['day']}"
     values = [r["value"] for r in hist]
-    body = (f"Measured level, not news. Over the {len(hist)} days on record ({hist[0]['day']} to {last['day']}) it ranged from "
+    note = feed.get("note") or feed.get("why") or ""
+    body = (f"Measured value, not news. Over the {len(hist)} days on record ({hist[0]['day']} to {last['day']}) it ranged from "
             f"{min(values):g} to {max(values):g} {unit}." + (" This is the lowest on record here." if len(hist) >= 30 and last["value"] == min(values) else "")
             + (" This is the highest on record here." if len(hist) >= 30 and last["value"] == max(values) else "")
-            + (f" {feed['note']}" if feed.get("note") else ""))
+            + (f" {note}" if note else ""))
     return [{"id": item_id("", f"{feed['name']} {last['day']}"), "source": feed["name"], "url": feed["url"], "title": title,
              "body": body[:MAX_BODY], "published_at": last["at"]}]
 
@@ -132,15 +269,24 @@ def ingest(conn: sqlite3.Connection, feeds: list[dict] | None = None, fetch=None
     notes = {c["name"]: c for c in load_feeds() if c["kind"] != "rss"}      # a data feed's note lives in the config
     for f in feeds:
         try:
-            if (f.get("kind") or "rss") == "rss":
+            kind = f.get("kind") or "rss"
+            if kind == "rss":
                 rows = parse_feed(f["name"], fetch(f["url"]))
+                ok = bool(rows)                                        # an empty feed counts as a failure
             else:
                 if get is None:
                     from .fetch import http_get
                     get = lambda url: http_get(url)[1]
-                rows = read_series(conn, {**notes.get(f["name"], {}), **f}, get(f["url"]))
+                spec = {**notes.get(f["name"], {}), **f}
+                if isinstance(spec.get("recipe"), str):
+                    spec["recipe"] = json.loads(spec["recipe"] or "{}")
+                if kind == "page":
+                    rows, ok = read_page(conn, spec, get(f["url"]), now)   # an unchanged page is a success with no items
+                else:
+                    rows = read_series(conn, spec, get(f["url"]), now)
+                    ok = bool(rows)
             report[f["name"]] = store(conn, rows, now)
-            sources.record_fetch(conn, f["name"], bool(rows), now)     # an empty feed counts as a failure
+            sources.record_fetch(conn, f["name"], ok, now)
         except Exception as e:
             report[f["name"]] = f"error: {str(e)[:80]}"
             sources.record_fetch(conn, f["name"], False, now)

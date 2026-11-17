@@ -162,6 +162,12 @@ CREATE TABLE IF NOT EXISTS readings (
     unit TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (source, day)
 );
+-- Lines already seen on a watched page, so only what is new becomes an item.
+CREATE TABLE IF NOT EXISTS page_seen (
+    source TEXT NOT NULL,
+    h TEXT NOT NULL,
+    PRIMARY KEY (source, h)
+);
 -- What the source crawler has considered. A candidate that is not a free feed waits as a proposal for a person.
 CREATE TABLE IF NOT EXISTS candidates (
     url TEXT PRIMARY KEY,                    -- the address as proposed
@@ -204,6 +210,8 @@ def connect(path: str | Path | None = None) -> sqlite3.Connection:
             conn.execute(f"ALTER TABLE events ADD COLUMN {col}")
     if "kind" not in {r["name"] for r in conn.execute("PRAGMA table_info(sources)")}:   # sources are no longer only RSS feeds
         conn.execute("ALTER TABLE sources ADD COLUMN kind TEXT NOT NULL DEFAULT 'rss'")
+    if "recipe" not in {r["name"] for r in conn.execute("PRAGMA table_info(sources)")}:  # how to read a page or series source, as data
+        conn.execute("ALTER TABLE sources ADD COLUMN recipe TEXT NOT NULL DEFAULT ''")
     have = {r["name"] for r in conn.execute("PRAGMA table_info(bets)")}
     for col in ("closed_at REAL", "closed_reason TEXT"):                  # a bet ends when it is closed, not only at its horizon
         if col.split()[0] not in have:

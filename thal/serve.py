@@ -6,7 +6,8 @@ Jobs and when they run (UTC):
                                  at 19:30 UTC all year, so forecast baselines start from a live price
   dream     daily at 03:00       housekeeping and note folding; lessons are rewritten on Sundays
   scout     Sundays at 05:00     look for new sources, retire dead weight
-  crawl     daily at 06:00       cheap hunt for new sources: a model proposes, code tests, working feeds join on trial
+  crawl     daily at 06:00       hunt for new sources: a model proposes, code tests, feeds join on trial, and pages
+                                 and data services are wired in by a recipe the builder writes and code checks
   overseer  08:00 and 18:00      the top model checks every part is running and that they fit together
   report    Sundays at 13:00     the weekly scorecard: forecasts vs baseline, bets vs sector
 Last-run times live in the database, so a restart neither repeats nor skips a job.
@@ -121,8 +122,9 @@ def run_job(job: str, conn, llm, wiki, provider, broker, now: float) -> str:
         return f"Scout: added {len(s['added'])} sources ({', '.join(s['added']) or 'none'}), retired {len(s['retired'])}."
     if job == "crawl":
         c = crawl.crawl(conn, llm, now)
-        return (f"Crawl: {c['proposed']} new candidates, {c['working']} with a working feed, added {len(c['added'])} on trial "
-                f"({', '.join(c['added']) or 'none'}), {c['new_proposals']} new proposals for you (data or paid sources).")
+        return (f"Crawl: {c['proposed']} new candidates. Feeds added on trial: {', '.join(c['added']) or 'none'}. "
+                f"Pages and data sources wired in: {', '.join(c['built']) or 'none'}. "
+                f"{c['needs_work']} need work before they can be read; {len(crawl.proposals(conn))} in total wait for you.")
     if job == "overseer":
         return oversee.review(conn, llm, now)
     if job == "report":

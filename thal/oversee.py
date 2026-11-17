@@ -27,8 +27,9 @@ SYSTEM = f"""You oversee an automated trading research system and report to its 
 Its parts, each run on a schedule by the same service and sharing one database:
 - intake: reads every source (news feeds and data feeds such as river levels), fetches full text, and a cheap \
 model turns items into event records
-- crawl: daily; a cheap model proposes new sources, code tests them, working on-focus feeds join on trial; data \
-services, notice pages and paid sources are stored as proposals for the owner
+- crawl: daily; a cheap model proposes new sources, code tests them, working on-focus feeds join on trial; for \
+notice pages and data services a builder writes a recipe that code checks before the source is switched on; \
+paid sources, and free ones the builder could not wire in, wait for the owner
 - scout: weekly; a stronger model with web search adds and retires sources by what they yielded
 - analyst: daily; reads new events and memory, keeps hypotheses, records forecasts and paper bets
 - dream: nightly; folds the analyst's notes into the long-term memory and, weekly, rewrites the lessons
@@ -103,7 +104,7 @@ def health(conn: sqlite3.Connection, now: float) -> str:
     lines += [f"- candidates {r['status']}: {r['n']}" for r in q("SELECT status, COUNT(*) n FROM candidates GROUP BY status ORDER BY status")] or ["- no candidates yet"]
     props = crawl.proposals(conn)
     if props:
-        lines += ["", "## Proposals awaiting the owner (not feeds: data services, notice pages, paid sources)"]
+        lines += ["", "## Waiting for the owner (paid sources, and free ones the builder could not wire in)"]
         lines += [f"- {p['name']} ({p['url']}): {p['note'][:200]}" for p in props[:25]]
     d = crawl.directions(conn)
     lines += ["", "## Your last directions to the crawler", d or "(none yet)", "", "## Scorecard", report.scorecard(conn, now)]
