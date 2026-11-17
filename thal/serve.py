@@ -72,6 +72,8 @@ def due(conn: sqlite3.Connection, now: float) -> list[str]:
         out.append("intake")
     if t.tm_wday == 6 and t.tm_hour >= 13 and not ran_today("report"):
         out.append("report")
+    if "analyst" in out:        # it must run while the US session is open, so after a late start it goes before the catch-up
+        out.remove("analyst"); out.insert(0, "analyst")
     return out
 
 

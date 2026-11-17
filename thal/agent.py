@@ -206,19 +206,19 @@ class Session:
                 f"change over 1w {ret(5)}, 4w {ret(20)}, 12w {ret(60)}\nlast 10 closes: {closes}")
 
     def get_readings(self, name: str = "", days: int = 30) -> str:
-        today = time.strftime("%Y-%m-%d", time.gmtime(self.now))            # nothing dated after the session's own day
+        today = time.strftime("%Y-%m-%d", time.gmtime(self.now))
         like = f"%{name.strip()}%"
         found = self.conn.execute("SELECT source, unit, COUNT(*) n, MIN(day) a, MAX(day) b, MIN(value) lo, MAX(value) hi FROM readings"
-                                  " WHERE day <= ? AND source LIKE ? AND (source NOT LIKE 'kalshi:%' OR ? != '')"   # market prices only when a name is given
-                                  " GROUP BY source ORDER BY source LIMIT 60", (today, like, name.strip())).fetchall()
+                                  " WHERE at <= ? AND source LIKE ? AND (source NOT LIKE 'kalshi:%' OR ? != '')"   # market prices only when a name is given
+                                  " GROUP BY source ORDER BY source LIMIT 60", (self.now, like, name.strip())).fetchall()      # nothing measured after the session's own moment
         if not found:
             return "no series by that name; call with no name to list them"
-        if not name.strip() or len(found) > 4:
+        if not name.strip() or len(found) > 8:
             return "\n".join(f"{r['source']} ({r['unit']}): {r['n']} days, {r['a']} to {r['b']}" for r in found)
         out = []
         for r in found:
-            rows = self.conn.execute("SELECT day, value FROM readings WHERE source = ? AND day <= ? ORDER BY day DESC LIMIT ?",
-                                     (r["source"], today, max(1, min(120, int(days))))).fetchall()[::-1]
+            rows = self.conn.execute("SELECT day, value FROM readings WHERE source = ? AND at <= ? ORDER BY day DESC LIMIT ?",
+                                     (r["source"], self.now, max(1, min(120, int(days))))).fetchall()[::-1]
             out.append(f"{r['source']} ({r['unit']}), {r['n']} days on record from {r['a']}, range {r['lo']:g} to {r['hi']:g}\n"
                        + ", ".join(f"{x['day'][5:]} {x['value']:g}" for x in rows))
         return "\n".join(out)
@@ -309,13 +309,17 @@ class Session:
         return f"closed bet #{bet_id} ({done['side']} {done['symbol']}); sell order: {done['order']}. It is scored at the exit."
 
     def propose_bet(self, **kw) -> str:
-        shadow = int(kw.get("conviction", 0) or 0) <= 0
+        shadow = int(kw.get("conviction", 3) or 0) <= 0          # the same default the bet itself is recorded with
         made = sum((b["conviction"] == 0) == shadow for b in self.bets)
         if made >= (MAX_SHADOW_BETS if shadow else MAX_BETS_PER_SESSION):
             return f"not placed: this session already made {made} {'shadow' if shadow else 'order-placing'} bets"
         fuse_id = kw.pop("fuse_id", None)
-        if fuse_id is not None and self.conn.execute("SELECT 1 FROM fuses WHERE id = ?", (fuse_id,)).fetchone() is None:
+        fuse = self.conn.execute("SELECT status FROM fuses WHERE id = ?", (fuse_id,)).fetchone() if fuse_id is not None else None
+        if fuse is None:
             fuse_id = None
+        elif fuse["status"] in ("dead", "expired"):
+            return f"not placed: fuse #{fuse_id} is closed ({fuse['status']}). Open a new fuse for the thesis, or leave the fuse out."
+        fuse_id = int(fuse_id) if fuse_id is not None else None
         same = self.conn.execute("SELECT id FROM bets WHERE source = 'v2' AND closed_at IS NULL AND symbol = ? AND side = ?"
                                  " AND (kind = 'shadow') = ?", (str(kw.get("symbol", "")).strip().upper(), kw.get("side"), shadow)).fetchone()
         if same:
@@ -324,6 +328,9 @@ class Session:
         if "bet" not in placed:
             return f"not placed: {placed['why']}"
         self.bets.append(placed)      # the fuse stays open while the bet rides on it; thesis.close_position ends it
+        if fuse_id is not None and not shadow:      # betting again on a thesis whose last bet had ended puts it back in view
+            with self.conn:
+                self.conn.execute("UPDATE fuses SET status = 'open', updated_at = ? WHERE id = ? AND status = 'fired'", (self.now, fuse_id))
         return f"recorded as bet #{placed['bet']}: {placed['side']} {placed['qty']} {placed['symbol']}; order {placed['order']}"
 
     def call(self, name: str, args) -> tuple[str, bool]:

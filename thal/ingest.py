@@ -24,6 +24,7 @@ import time
 from pathlib import Path
 
 import yaml
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 TAG = re.compile(r"<[^>]+>")
@@ -54,12 +55,12 @@ def _pegelonline(text: str) -> list[tuple[float, float]]:
 
 def _usgs(text: str) -> list[tuple[float, float]]:
     """US Geological Survey water services, daily values for one site and one parameter."""
-    from datetime import datetime
+    from datetime import datetime, timezone
     out = []
     for series in json.loads(text)["value"]["timeSeries"]:
         for v in series["values"][0]["value"]:
             if float(v["value"]) > -999:        # the service's marker for a missing value
-                out.append((datetime.fromisoformat(v["dateTime"]).replace(tzinfo=None).timestamp() - time.timezone, float(v["value"])))
+                out.append((datetime.fromisoformat(v["dateTime"]).replace(tzinfo=timezone.utc).timestamp(), float(v["value"])))
     return out
 
 
@@ -123,7 +124,11 @@ def _try(text: str, fmt: str):
 
 
 def _number(v) -> float:
-    return float(str(v).replace(",", "").strip()) if not isinstance(v, (int, float)) else float(v)
+    """A number, allowing thousands separators and one trailing flag letter (climate records mark some values so)."""
+    if isinstance(v, (int, float)):
+        return float(v)
+    text = str(v).replace(",", "").strip()
+    return float(text[:-1] if len(text) > 1 and text[-1].isalpha() and text[-2].isdigit() else text)
 
 
 def recipe_readings(recipe: dict, text: str, now: float) -> list[tuple[float, float]]:
@@ -218,7 +223,10 @@ def read_series(conn: sqlite3.Connection, feed: dict, text: str, now: float | No
         recipe = feed.get("recipe") or {}
         found, unit = recipe_readings(recipe, text, now), str(recipe.get("unit") or "")
     days: dict[str, tuple[float, float]] = {}
+    today = time.strftime("%Y-%m-%d", time.gmtime(now))
     for at, value in sorted(found):
+        if at > now + 86400 or (feed["kind"] == "usgs_gauge" and time.strftime("%Y-%m-%d", time.gmtime(at)) == today):
+            continue        # a measurement cannot be from the future; and this service's value for today is a part-day average
         days[time.strftime("%Y-%m-%d", time.gmtime(at))] = (at, value)
     if not days:
         return []
@@ -268,9 +276,10 @@ def _totals(hist: list, unit: str) -> tuple[str, str]:
         t, n = total(then, 30)
         if n >= 27:
             past.append(t)
-    if len(past) >= 5:
-        below = sum(p < month for p in past)
+    if len(past) >= 5 and total(end, 30)[1] >= 27:           # with days missing now, the comparison would only say "drier"
+        below, same = sum(p < month for p in past), sum(p == month for p in past)
         body += (f" The 30-day total of {month:g} {unit} is higher than in {below} of the {len(past)} earlier years on record for the same 30 days"
+                 + (f" and the same as in {same}" if same else "") + ""
                  f" (those ranged from {min(past):g} to {max(past):g}, median {statistics.median(past):g}).")
     return title, body
 
@@ -331,7 +340,9 @@ def ingest(conn: sqlite3.Connection, feeds: list[dict] | None = None, fetch=None
                     spec["recipe"] = json.loads(spec["recipe"] or "{}")
                 if kind == "kalshi":
                     from . import forecasts
-                    rows, ok = forecasts.moves(conn, now), True            # a quiet day is a success with no items
+                    rows = forecasts.moves(conn, now)                       # most are written when prices are pulled; a quiet day has none
+                    ok = bool(conn.execute("SELECT 1 FROM readings WHERE day >= ? AND source LIKE 'kalshi:%' LIMIT 1",
+                                           (time.strftime("%Y-%m-%d", time.gmtime(now - 86400)),)).fetchone())   # healthy while prices keep arriving
                 elif kind == "page":
                     rows, ok = read_page(conn, spec, get(expand(f["url"], now)), now)   # an unchanged page is a success with no items
                 else:
@@ -339,7 +350,9 @@ def ingest(conn: sqlite3.Connection, feeds: list[dict] | None = None, fetch=None
                     done = f"history_read:{f['name']}"
                     if past and not conn.execute("SELECT 1 FROM kv WHERE k = ?", (done,)).fetchone():
                         try:                                           # the long record, read once; the daily read never waits on it
-                            if read_series(conn, spec, get(expand(str(past), now)), now):
+                            if not isinstance(past, str) or urlparse(past).hostname != urlparse(f["url"]).hostname:
+                                raise ValueError("a history address must be on the same host as the source")
+                            if read_series(conn, spec, get(expand(past, now)), now):
                                 with conn:
                                     conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES (?, ?)", (done, str(now)))
                         except Exception as e:                         # asked for again at the next intake

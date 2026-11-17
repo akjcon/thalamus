@@ -186,16 +186,19 @@ def page(conn: sqlite3.Connection, now: float | None = None, decisions: bool = T
     rules = q("SELECT * FROM strategies WHERE status != 'invalid' ORDER BY (status = 'live') DESC, (status = 'passed_dev') DESC, id DESC LIMIT 40")
     if rules:
         label = {"passed_dev": "waiting for holdout", "failed_dev": "failed development", "failed_holdout": "failed holdout"}
-        res = lambda r: f"{pct(r['mean'])} <span class=dim>n={r['n']}" + (f", t {r['t']:g}" if "t" in r else "") + "</span>" if r and r["n"] else ""
+        res = lambda r: f"{pct(r['mean'])} <span class=dim>n={r['n']}" + (f", t {r['t']:g}" if "t" in r else "") + (f", placebo {r['p']:.2%}" if "p" in r else "") + "</span>" if r and r["n"] else ""
         rows = []
         for s in rules:
+          try:
             dev, held, live_rec = (json.loads(s["dev"]) if s["dev"] else None), (json.loads(s["holdout"]) if s["holdout"] else None), lab.live_record(conn, s["id"])
             rows.append(f"<tr><td><b title='{e(s['hypothesis'])}'>{e(s['name'])}</b><br><span class=dim>{e(lab.in_words(s['spec']))}</span></td>"
                         f"<td class=nw><span class=tag>{e(label.get(s['status'], s['status']))}</span></td>"
                         f"<td class=n>{res(dev)}</td><td class=n>{res(held)}</td><td class=n>{res(live_rec)}</td></tr>")
+          except Exception:                 # one unreadable rule must not take the page down
+            rows.append(f"<tr><td colspan=5 class=dim>rule #{s['id']} could not be shown</td></tr>")
         tried = one("SELECT COUNT(*) FROM strategies WHERE status != 'invalid'")
         out.append(f"<h2>Strategy lab · {tried} rules tried</h2><div class=dim style='margin-bottom:8px'>Mean return per trade over the benchmark, after costs. "
-                   f"The next rule needs t {lab.bar(tried + 1):g} to pass development.</div>"
+                   f"To pass development, at most {lab.bar(tried + 1):.2%} of the next rule's placebo versions may do as well.</div>"
                    "<div class=card><table><tr><th>Rule<th>Status<th class=n>Development<th class=n>Holdout<th class=n>Live</tr>" + "".join(rows) + "</table></div>")
 
     # ---- what the sources are producing

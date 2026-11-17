@@ -156,12 +156,16 @@ def refresh_markets(conn: sqlite3.Connection, get=_json, now: float | None = Non
         conn.execute("DELETE FROM markets_fts")
         conn.execute("INSERT INTO markets_fts(ticker, title, rules) SELECT ticker, title, rules FROM markets")
     record_prices(conn, now)
+    from .ingest import store
+    store(conn, moves(conn, now), now)      # in the same run: a later pull today overwrites the price a move is measured from
     return len(rows)
 
 
 PRICE_SOURCE = "kalshi:"                              # a contract's daily price is kept in readings under this prefix
 NO_HISTORY = ("Entertainment", "Mentions", "Crypto")  # categories whose prices are not kept: nothing here reads about them
 MOVE, MOVE_VOLUME, MAX_MOVES = 0.15, 1000.0, 12       # what counts as a sharp move, in a contract that really trades
+SETTLING_DAYS = 2                                     # a contract this close to its end is moving because its outcome is being
+                                                      # observed (today's temperature), which is not news
 MOVES_SOURCE = "Kalshi market moves"
 
 
@@ -186,13 +190,13 @@ def moves(conn: sqlite3.Connection, now: float) -> list[dict]:
     rows = conn.execute(
         "SELECT m.ticker, m.title, m.rules, m.category, m.close_at, m.volume, r.value AS p,"
         " (SELECT b.value FROM readings b WHERE b.source = r.source AND b.day < r.day AND b.day >= ? ORDER BY b.day DESC LIMIT 1) AS was"
-        " FROM markets m JOIN readings r ON r.source = ? || m.ticker AND r.day = ? WHERE m.volume >= ?",
-        (since, PRICE_SOURCE, day, MOVE_VOLUME)).fetchall()
+        " FROM markets m JOIN readings r ON r.source = ? || m.ticker AND r.day = ? WHERE m.volume >= ? AND m.close_at > ?",
+        (since, PRICE_SOURCE, day, MOVE_VOLUME, now + SETTLING_DAYS * DAY)).fetchall()
     big = sorted((r for r in rows if r["was"] is not None and abs(r["p"] - r["was"]) >= MOVE), key=lambda r: -abs(r["p"] - r["was"]))
     from .ingest import item_id
     return [{"id": item_id("", f"kalshi move {r['ticker']} {day}"), "source": MOVES_SOURCE, "url": "",
              "title": f"Prediction market moved: {r['title'][:200]}: {r['was']:.0%} to {r['p']:.0%}",
-             "body": (f"The price of this contract ({r['ticker']}, {r['category']}) went from {r['was']:.0%} to {r['p']:.0%} since the day before, "
+             "body": (f"The price of this contract ({r['ticker']}, {r['category']}) went from {r['was']:.0%} at the last earlier day on record to {r['p']:.0%}, "
                       f"on {r['volume']:,.0f} contracts traded so far. It closes {time.strftime('%Y-%m-%d', time.gmtime(r['close_at']))}. "
                       f"A market price, not a report of what happened. Rule: {r['rules'][:500]}"),
              "published_at": now} for r in big[:MAX_MOVES]]

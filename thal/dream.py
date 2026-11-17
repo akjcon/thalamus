@@ -204,13 +204,13 @@ class DreamSession:
         body = current.body.replace(old, new) if old else current.body + "\n\n" + new.strip("\n")
         self.wiki.write(slug, current.title, current.kind, body, expect_rev=current.rev, today=time.strftime("%Y-%m-%d", time.gmtime(self.now)))
         left = self.conn.execute("SELECT COUNT(*) FROM page_notes WHERE slug = ? AND folded = 0", (slug,)).fetchone()[0]
-        if notes_done:
+        if notes_done is True:
             with self.conn:
                 self.conn.execute("UPDATE page_notes SET folded = 1 WHERE slug = ? AND folded = 0", (slug,))
         if slug not in self.written:
             self.written.append(slug)
         return (f"edited {slug} (now {len(body.encode())} bytes); "
-                + (f"{left} queued note(s) folded" if notes_done else f"{left} note(s) still queued for it (set notes_done on the edit that covers them)" if left else "no notes were queued for it"))
+                + (f"{left} queued note(s) folded" if notes_done is True else f"{left} note(s) still queued for it (set notes_done on the edit that covers them)" if left else "no notes were queued for it"))
 
     def search_events(self, query: str, limit: int = 12) -> str:
         q = db.fts_query(query)
@@ -303,7 +303,7 @@ def record_text(conn: sqlite3.Connection) -> str:
 
 def reflect(conn: sqlite3.Connection, llm: LLM, wiki: Wiki, now: float) -> bool:
     """Rewrite the lessons page from the scored record. Skipped when there is no record."""
-    if not ledger.scoreboard(conn) and not forecasts.scores(conn):
+    if not ledger.scoreboard(conn, where="b.source != 'lab'") and not forecasts.scores(conn):
         return False
     page = wiki.read("lessons")
     out: LessonsOut = llm.parse("reflect", LESSONS_SYSTEM, f"{record_text(conn)}\n\n# Current lessons page\n{page.body if page else '(none yet)'}",

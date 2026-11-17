@@ -61,7 +61,7 @@ def test_restart_does_not_repeat_a_job_that_already_ran_today(conn):
     quiet(conn, 10)
     serve.mark_run(conn, "analyst", at(9, 19, 35)); serve.mark_run(conn, "dream", at(9, 3)); serve.mark_run(conn, "intake", at(9, 19, 35))
     assert serve.due(conn, at(9, 19, 36)) == []
-    assert serve.due(conn, at(10, 19, 30)) == ["dream", "analyst"]          # a day missed entirely: both run once
+    assert serve.due(conn, at(10, 19, 30)) == ["analyst", "dream"]          # a day missed entirely: both run once, the analyst first while the market is open
 
 
 def test_a_failing_job_is_reported_once_and_does_not_loop(conn, monkeypatch):
@@ -69,9 +69,9 @@ def test_a_failing_job_is_reported_once_and_does_not_loop(conn, monkeypatch):
     quiet(conn, 9)
     def boom(job, *a): calls.append(job); raise RuntimeError("yahoo down")
     monkeypatch.setattr(serve, "run_job", boom)
-    assert serve.tick(conn, None, None, None, None, said.append, at(9, 19, 31)) == ["dream", "analyst"]
+    assert serve.tick(conn, None, None, None, None, said.append, at(9, 19, 31)) == ["analyst", "dream"]
     assert serve.tick(conn, None, None, None, None, said.append, at(9, 19, 32)) == []
-    assert calls == ["dream", "analyst"] and all("failed: RuntimeError: yahoo down" in s for s in said) and len(said) == 2
+    assert calls == ["analyst", "dream"] and all("failed: RuntimeError: yahoo down" in s for s in said) and len(said) == 2
 
 
 def test_quiet_intake_is_not_posted_but_other_jobs_are(conn, monkeypatch):

@@ -163,3 +163,17 @@ def test_forecast_tools_report_the_baseline_and_are_capped(world, monkeypatch):
     monkeypatch.setattr("thal.agent.MAX_FORECASTS", 2)
     assert "already made 2 forecasts" in s.call("forecast_price", {"symbol": "CANE", "direction": "below", "level": 10, "days": 5, "probability": 0.1, "rationale": "x"})[0]
     assert "Forecast record" in memory.dashboard(conn, world[1], NOW) and "2 open" in memory.dashboard(conn, world[1], NOW)
+
+
+def test_a_thesis_can_be_bet_on_again_and_shadow_bets_hold_nothing_open(world):
+    conn = world[0]; s = sess(world)
+    s.open_fuse("f", "t", ["w"]); s.open_fuse("g", "t", ["w"], expires_days=7)
+    base = dict(symbol="CANE", side="LONG", thesis="t", invalidation="i", horizon_days=30)
+    assert "recorded as bet #1" in s.propose_bet(fuse_id=1, **base)                      # conviction left out is a real bet, as it is recorded
+    assert "bet #1 already holds" in s.propose_bet(fuse_id=1, **base)
+    assert "closed bet #1" in s.close_bet(1, "resizing") and conn.execute("SELECT status FROM fuses WHERE id = 1").fetchone()[0] == "fired"
+    assert "recorded as bet #2" in s.propose_bet(fuse_id=1, conviction=2, **base)        # back in: the thesis is in view again
+    assert conn.execute("SELECT status FROM fuses WHERE id = 1").fetchone()[0] == "open" and s.add_evidence(1, 1, "supports", "x") == "attached"
+    assert "recorded" in s.propose_bet(fuse_id=2, conviction=0, **{**base, "symbol": "XLE"})
+    assert memory.expire_fuses(conn, NOW + 30 * DAY) == 1                                # a shadow bet does not keep fuse #2 past its date
+    assert "fuse #2 is closed (expired)" in s.propose_bet(fuse_id=2, conviction=0, **{**base, "symbol": "SPY"})

@@ -21,7 +21,8 @@ def test_an_address_can_ask_for_a_window_of_dates():
 
 
 def test_rainfall_is_summed_compared_with_earlier_years_and_its_long_record_is_read_once(conn):
-    recent = json.dumps({"data": [["2026-11-13", "0.50"], ["2026-11-14", "T"], ["2026-11-15", "1.00"], ["2026-11-16", "0.25"], ["2026-11-17", "M"]]})
+    wet = {"2026-11-13": "0.50", "2026-11-14": "T", "2026-11-15": "1.00", "2026-11-16": "0.25A", "2026-11-17": "M"}      # a flagged value still counts
+    recent = json.dumps({"data": [[f"2026-{m:02d}-{d:02d}", wet.get(f"2026-{m:02d}-{d:02d}", "0.00")] for m, days in ((10, range(18, 32)), (11, range(1, 18))) for d in days]})
     # the long record: every day of the same 30 days in six earlier years, at 0.01 inches a day times the year's rank
     past = json.dumps({"data": [[f"{2020 + y}-{m:02d}-{d:02d}", f"{0.01 * (y + 1):.2f}"] for y in range(6)
                                 for m, days in ((10, range(18, 32)), (11, range(1, 17))) for d in days]})
@@ -73,18 +74,21 @@ def test_market_prices_are_kept_daily_and_a_sharp_move_becomes_one_item(conn):
         if m["ticker"] != "KXRAIN-6":
             m["yes_bid_dollars"], m["yes_ask_dollars"] = "0.60", "0.64"
     fc.refresh_markets(conn, get=lambda u: later, now=NOW + DAY)
-    assert ingest.ingest(conn, [FEED], now=NOW + DAY) == {fc.MOVES_SOURCE: 1}                            # the thinly traded one is left out
-    item = conn.execute("SELECT * FROM items").fetchone()
+    item = conn.execute("SELECT * FROM items").fetchall()                                               # written in the same run as the prices
+    assert len(item) == 1 and ingest.ingest(conn, [FEED], now=NOW + DAY) == {fc.MOVES_SOURCE: 0}         # the thinly traded one is left out
+    item = item[0]
     assert item["title"] == "Prediction market moved: Rain in Testville in November — KXRAIN-4: 32% to 62%"
     assert "A market price, not a report" in item["body"] and "Rule for KXRAIN-4." in item["body"] and item["url"] == ""
     assert ingest.ingest(conn, [FEED], now=NOW + DAY + 3600) == {fc.MOVES_SOURCE: 0}                     # once per contract and day
     assert conn.execute("SELECT COUNT(*) FROM readings WHERE source = 'kalshi:KXRAIN-4'").fetchone()[0] == 2
     assert fc.moves(conn, NOW + 5 * DAY) == []                                                           # no price today: nothing
+    assert conn.execute("SELECT fails FROM sources WHERE name = ?", (fc.MOVES_SOURCE,)).fetchone() is None
+    assert fc.moves(conn, NOW + DAY) != [] and fc.moves(conn, float(calendar.timegm((2026, 12, 15, 6, 0, 0)))) == []   # near its close a contract is settling, not reacting
 
 
 def test_the_analyst_can_read_a_series_but_not_past_its_own_day(conn, tmp_path):
     for day, v in (("2026-11-15", 80.0), ("2026-11-16", 74.0), ("2026-11-18", 60.0)):
-        conn.execute("INSERT INTO readings VALUES ('Rhine level at Kaub', ?, 1, ?, 'cm')", (day, v))
+        conn.execute("INSERT INTO readings VALUES ('Rhine level at Kaub', ?, ?, ?, 'cm')", (day, calendar.timegm(__import__("time").strptime(day, "%Y-%m-%d")), v))
     conn.execute("INSERT INTO readings VALUES ('kalshi:KXRAIN-4', '2026-11-16', 1, 0.32, 'prob')")
     conn.commit()
     s = Session(conn, Wiki(tmp_path / "wiki"), FakeProvider({}), None, NOW)

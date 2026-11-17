@@ -32,7 +32,7 @@ def open_fuse(conn: sqlite3.Connection, title: str, thesis: str, watch: list[str
     if not watch:
         raise ValueError("a fuse must say what evidence it is waiting for")
     n = conn.execute("SELECT COUNT(*) FROM fuses WHERE status = 'open' AND id NOT IN"       # one a bet is riding on takes no slot
-                     " (SELECT fuse_id FROM bets WHERE closed_at IS NULL AND fuse_id IS NOT NULL)").fetchone()[0]
+                     " (SELECT fuse_id FROM bets WHERE closed_at IS NULL AND kind != 'shadow' AND fuse_id IS NOT NULL)").fetchone()[0]
     if n >= MAX_OPEN_FUSES:
         raise ValueError(f"{n} fuses are already open; close some first")
     days = max(7, min(365, int(expires_days)))
@@ -73,11 +73,11 @@ def close_fuse(conn: sqlite3.Connection, fuse_id: int, status: str, now: float |
 
 
 def expire_fuses(conn: sqlite3.Connection, now: float | None = None) -> int:
-    """Expire fuses past their date. One with an open bet waits for the bet to end."""
+    """Expire fuses past their date. One with an open real bet waits for the bet to end; a shadow bet holds nothing open."""
     now = now or time.time()
     with conn:
         cur = conn.execute("UPDATE fuses SET status = 'expired', updated_at = ? WHERE status = 'open' AND expires_at < ?"
-                           " AND id NOT IN (SELECT fuse_id FROM bets WHERE closed_at IS NULL AND fuse_id IS NOT NULL)", (now, now))
+                           " AND id NOT IN (SELECT fuse_id FROM bets WHERE closed_at IS NULL AND kind != 'shadow' AND fuse_id IS NOT NULL)", (now, now))
     return cur.rowcount
 
 

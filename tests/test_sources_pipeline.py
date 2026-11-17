@@ -147,18 +147,19 @@ def test_a_source_added_to_the_config_reaches_a_running_database_on_trial(conn):
 
 
 def test_a_measurement_is_stored_by_day_and_reaches_the_log_as_one_item_a_day(conn):
-    import json
+    import json, calendar
+    AT = float(calendar.timegm((2026, 11, 10, 12, 0, 0)))
     feed = {"name": "Rhine level at Kaub", "url": "https://g.example/kaub", "kind": "pegelonline", "note": "Below 80 cm barges load light."}
     day = lambda d, h, v: {"timestamp": f"2026-11-{d:02d}T{h:02d}:00:00+00:00", "value": v}
     text = json.dumps([day(8, 6, 150), day(9, 6, 140), day(9, 18, 131), day(10, 6, 120)])
-    assert ingest.ingest(conn, [feed], get=lambda url: text, now=NOW) == {"Rhine level at Kaub": 1}
+    assert ingest.ingest(conn, [feed], get=lambda url: text, now=AT) == {"Rhine level at Kaub": 1}
     assert [tuple(r) for r in conn.execute("SELECT day, value, unit FROM readings ORDER BY day")] == \
         [("2026-11-08", 150.0, "cm"), ("2026-11-09", 131.0, "cm"), ("2026-11-10", 120.0, "cm")]      # the last value of each day
     item = conn.execute("SELECT * FROM items").fetchone()
     assert item["title"] == "Rhine level at Kaub: 120 cm on 2026-11-10, -30 cm since 2026-11-08" and "Below 80 cm" in item["body"]
-    assert ingest.ingest(conn, [feed], get=lambda url: text, now=NOW + 60) == {"Rhine level at Kaub": 0}     # same day: nothing new
+    assert ingest.ingest(conn, [feed], get=lambda url: text, now=AT + 60) == {"Rhine level at Kaub": 0}     # same day: nothing new
     later = json.dumps([day(11, 6, 101)])
-    assert ingest.ingest(conn, [feed], get=lambda url: later, now=NOW + 90000) == {"Rhine level at Kaub": 1}
+    assert ingest.ingest(conn, [feed], get=lambda url: later, now=AT + 90000) == {"Rhine level at Kaub": 1}
     assert conn.execute("SELECT COUNT(*) FROM readings").fetchone()[0] == 4 and "101 cm on 2026-11-11, -49 cm since 2026-11-08" in \
         conn.execute("SELECT title FROM items ORDER BY rowid DESC").fetchone()[0]
 
