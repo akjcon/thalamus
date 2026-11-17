@@ -156,13 +156,15 @@ def page(conn: sqlite3.Connection, now: float | None = None, decisions: bool = T
 
     # ---- measurements
     tiles = []
-    for s in q("SELECT source, MAX(day) d FROM readings GROUP BY source ORDER BY source"):
+    for s in q("SELECT source, MAX(day) d FROM readings WHERE source NOT LIKE 'kalshi:%' GROUP BY source ORDER BY source"):
         hist = q("SELECT value, unit FROM readings WHERE source = ? ORDER BY day DESC LIMIT 90", s["source"])[::-1]
         values = [r["value"] for r in hist]
         tiles.append(f"<div class='card tile'><div class=dim>{e(s['source'])}</div><b>{values[-1]:g}</b> {e(hist[-1]['unit'])} "
                      f"<span class=dim>· {e(s['d'])} · {len(values)}d range {min(values):g}–{max(values):g}</span>{spark(values)}</div>")
-    if tiles:
-        out.append("<h2>Measurements</h2><div class=grid>" + "".join(tiles) + "</div>")
+    priced = one("SELECT COUNT(DISTINCT source) FROM readings WHERE source LIKE 'kalshi:%' AND at >= ?", day)
+    if tiles or priced:
+        out.append("<h2>Measurements</h2>" + (f"<div class=dim style='margin-bottom:8px'>Plus the daily price of {priced} prediction-market contracts.</div>" if priced else "")
+                   + "<div class=grid>" + "".join(tiles) + "</div>")
 
     # ---- bets
     fuses = {r["id"]: r["title"] for r in q("SELECT id, title FROM fuses")}
@@ -189,7 +191,7 @@ def page(conn: sqlite3.Connection, now: float | None = None, decisions: bool = T
     events = {r["source"]: (r["d"], r["w"]) for r in q("SELECT i.source, SUM(i.fetched_at >= ?) d, COUNT(*) w FROM events e JOIN items i ON i.id = e.item_id "
                                                        "WHERE i.fetched_at >= ? GROUP BY i.source", day, week)}
     srcs = sorted(q("SELECT * FROM sources WHERE status != 'retired'"), key=lambda s: (-events.get(s["name"], (0, 0))[1], -items.get(s["name"], (0, 0))[1], s["name"]))
-    shown = lambda kind: "series" if kind in ingest.SERIES else kind          # the two named gauge readers are series too
+    shown = lambda kind: "series" if kind in ingest.SERIES else "markets" if kind == "kalshi" else kind   # the named gauge readers are series too
     count: dict[str, int] = {}
     for s in srcs:
         count[shown(s["kind"])] = count.get(shown(s["kind"]), 0) + 1

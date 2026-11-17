@@ -155,7 +155,47 @@ def refresh_markets(conn: sqlite3.Connection, get=_json, now: float | None = Non
         conn.executemany("INSERT OR REPLACE INTO markets VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
         conn.execute("DELETE FROM markets_fts")
         conn.execute("INSERT INTO markets_fts(ticker, title, rules) SELECT ticker, title, rules FROM markets")
+    record_prices(conn, now)
     return len(rows)
+
+
+PRICE_SOURCE = "kalshi:"                              # a contract's daily price is kept in readings under this prefix
+NO_HISTORY = ("Entertainment", "Mentions", "Crypto")  # categories whose prices are not kept: nothing here reads about them
+MOVE, MOVE_VOLUME, MAX_MOVES = 0.15, 1000.0, 12       # what counts as a sharp move, in a contract that really trades
+MOVES_SOURCE = "Kalshi market moves"
+
+
+def record_prices(conn: sqlite3.Connection, now: float) -> int:
+    """Keep today's price of every quoted contract from this pull as a daily reading, so prediction-market prices
+    are one more measured series: the lab can test against them and a sharp move can become an item."""
+    day = time.strftime("%Y-%m-%d", time.gmtime(now))
+    rows = [(PRICE_SOURCE + m["ticker"], day, now, market_price(m), "prob")
+            for m in conn.execute("SELECT * FROM markets WHERE updated_at = ?", (now,))
+            if m["category"] not in NO_HISTORY and market_price(m) is not None]
+    with conn:
+        conn.executemany("INSERT OR REPLACE INTO readings(source, day, at, value, unit) VALUES (?,?,?,?,?)", rows)
+    return len(rows)
+
+
+def moves(conn: sqlite3.Connection, now: float) -> list[dict]:
+    """One item for each contract whose price today is far from its price on the last earlier day on record (at most
+    three days back). The biggest moves only, in contracts with real volume. An item is written once per contract and day."""
+    ensure(conn)
+    day = time.strftime("%Y-%m-%d", time.gmtime(now))
+    since = time.strftime("%Y-%m-%d", time.gmtime(now - 3 * DAY))
+    rows = conn.execute(
+        "SELECT m.ticker, m.title, m.rules, m.category, m.close_at, m.volume, r.value AS p,"
+        " (SELECT b.value FROM readings b WHERE b.source = r.source AND b.day < r.day AND b.day >= ? ORDER BY b.day DESC LIMIT 1) AS was"
+        " FROM markets m JOIN readings r ON r.source = ? || m.ticker AND r.day = ? WHERE m.volume >= ?",
+        (since, PRICE_SOURCE, day, MOVE_VOLUME)).fetchall()
+    big = sorted((r for r in rows if r["was"] is not None and abs(r["p"] - r["was"]) >= MOVE), key=lambda r: -abs(r["p"] - r["was"]))
+    from .ingest import item_id
+    return [{"id": item_id("", f"kalshi move {r['ticker']} {day}"), "source": MOVES_SOURCE, "url": "",
+             "title": f"Prediction market moved: {r['title'][:200]}: {r['was']:.0%} to {r['p']:.0%}",
+             "body": (f"The price of this contract ({r['ticker']}, {r['category']}) went from {r['was']:.0%} to {r['p']:.0%} since the day before, "
+                      f"on {r['volume']:,.0f} contracts traded so far. It closes {time.strftime('%Y-%m-%d', time.gmtime(r['close_at']))}. "
+                      f"A market price, not a report of what happened. Rule: {r['rules'][:500]}"),
+             "published_at": now} for r in big[:MAX_MOVES]]
 
 
 EXCLUDE_TAG = "stale-baseline"

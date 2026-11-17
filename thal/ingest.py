@@ -6,6 +6,8 @@ A source has a kind. Whatever the kind, what comes out is the same: dated items,
            one item, so a new notice reaches the analyst the day it is posted
   series   a measurement that changes over time (a river level, a canal draft, rainfall, a queue of ships). Each
            day's value is kept in the readings table, and one item a day states the level and how it has moved
+  kalshi   prediction-market prices. Each quoted contract's price is kept daily in readings (by forecasts), and a
+           contract whose price moved sharply since the day before becomes an item
 A page or series source is read by a recipe: a small piece of data saying where the text or the number is (see
 RECIPE). A recipe is data, not code, so the source builder can write one for a source it has just found, have it
 checked by check_recipe, and switch it on without a deploy. The two named readers in SERIES predate recipes.
@@ -62,8 +64,9 @@ def _usgs(text: str) -> list[tuple[float, float]]:
 
 
 SERIES = {"pegelonline": (_pegelonline, "cm"), "usgs_gauge": (_usgs, "ft")}     # kind -> (reader, unit)
-KINDS = ("rss", "page", "series") + tuple(SERIES)
+KINDS = ("rss", "page", "series", "kalshi") + tuple(SERIES)
 WEEK = 7
+HISTORY_BELOW = 60            # a series with fewer days than this on record asks its history address once more
 MAX_PATTERN, MAX_SCAN = 300, 200_000
 
 RECIPE = """A recipe is a JSON object.
@@ -76,7 +79,19 @@ For a series (kind "series"), one of:
    "delimiter": ","}
   {"format": "regex", "pattern": "regular expression with ONE group capturing the current number in the page text",
    "unit": "ft"}                    (the reading is dated when it is fetched)
-Optional for any series: "min" and "max" (values outside are dropped as errors or missing-data markers)."""
+Optional for any series:
+  "min" and "max"      values outside are dropped as errors or missing-data markers
+  "map"                text that stands for a number, e.g. {"T": 0} where T means a trace of rain
+  "sum": true          the value is an amount per day that adds up (rainfall, arrivals), not a level; the daily item
+                       then reports totals over 7 and 30 days and the month so far
+  "history"            an address returning the same rows over many past years; it is read once, when the source is new
+An address may carry dates: {today} and {days_ago:N} are replaced with YYYY-MM-DD dates when it is fetched."""
+
+
+def expand(url: str, now: float) -> str:
+    """Fill in the date placeholders an address may carry, so a data service can be asked for a recent window."""
+    day = lambda n: time.strftime("%Y-%m-%d", time.gmtime(now - n * 86400))
+    return re.sub(r"\{days_ago:(\d{1,5})\}", lambda m: day(int(m.group(1))), url.replace("{today}", day(0)))
 
 
 def _dig(obj, path: str):
@@ -115,17 +130,18 @@ def _number(v) -> float:
 def recipe_readings(recipe: dict, text: str, now: float) -> list[tuple[float, float]]:
     """(time, value) pairs a series recipe finds in the fetched text. Rows it cannot read are skipped."""
     import csv, io, math
-    fmt, out = recipe.get("format"), []
+    fmt, out, means = recipe.get("format"), [], recipe.get("map") or {}
+    num = lambda v: _number(means.get(v.strip(), v) if isinstance(v, str) else v)
     if fmt == "json":
         for row in _dig(json.loads(text), recipe.get("rows", "")):
             try:
-                out.append((_when(_dig(row, recipe["time"])), _number(_dig(row, recipe["value"]))))
+                out.append((_when(_dig(row, recipe["time"])), num(_dig(row, recipe["value"]))))
             except (KeyError, IndexError, TypeError, ValueError, StopIteration):
                 continue
     elif fmt == "csv":
         for row in csv.DictReader(io.StringIO(text), delimiter=recipe.get("delimiter") or ","):
             try:
-                out.append((_when(row[recipe["time"]]), _number(row[recipe["value"]])))
+                out.append((_when(row[recipe["time"]]), num(row[recipe["value"]])))
             except (KeyError, TypeError, ValueError, StopIteration):
                 continue
     elif fmt == "regex":
@@ -135,7 +151,7 @@ def recipe_readings(recipe: dict, text: str, now: float) -> list[tuple[float, fl
         from .fetch import plain
         m = re.search(pattern, plain(text)[:MAX_SCAN] if "<" in text[:2000] else text[:MAX_SCAN], re.I | re.S)
         if m and m.groups():
-            out.append((now, _number(m.group(1))))
+            out.append((now, num(m.group(1))))
     else:
         raise ValueError(f"unknown series format {fmt!r}")
     lo, hi = recipe.get("min"), recipe.get("max")
@@ -213,17 +229,51 @@ def read_series(conn: sqlite3.Connection, feed: dict, text: str, now: float | No
     hist = conn.execute("SELECT day, at, value FROM readings WHERE source = ? ORDER BY day", (feed["name"],)).fetchall()
     last = hist[-1]
     title = f"{feed['name']}: {last['value']:g} {unit} on {last['day']}"
-    if len(hist) > 1:
-        ref = hist[max(0, len(hist) - 1 - WEEK)]
-        title += f", {last['value'] - ref['value']:+g} {unit} since {ref['day']}"
-    values = [r["value"] for r in hist]
     note = feed.get("note") or feed.get("why") or ""
-    body = (f"Measured value, not news. Over the {len(hist)} days on record ({hist[0]['day']} to {last['day']}) it ranged from "
-            f"{min(values):g} to {max(values):g} {unit}." + (" This is the lowest on record here." if len(hist) >= 30 and last["value"] == min(values) else "")
-            + (" This is the highest on record here." if len(hist) >= 30 and last["value"] == max(values) else "")
-            + (f" {note}" if note else ""))
-    return [{"id": item_id("", f"{feed['name']} {last['day']}"), "source": feed["name"], "url": feed["url"], "title": title,
-             "body": body[:MAX_BODY], "published_at": last["at"]}]
+    if feed["kind"] not in SERIES and (feed.get("recipe") or {}).get("sum"):
+        more, body = _totals(hist, unit)
+        title += more
+    else:
+        if len(hist) > 1:
+            ref = hist[max(0, len(hist) - 1 - WEEK)]
+            title += f", {last['value'] - ref['value']:+g} {unit} since {ref['day']}"
+        values = [r["value"] for r in hist]
+        body = (f"Measured value, not news. Over the {len(hist)} days on record ({hist[0]['day']} to {last['day']}) it ranged from "
+                f"{min(values):g} to {max(values):g} {unit}." + (" This is the lowest on record here." if len(hist) >= 30 and last["value"] == min(values) else "")
+                + (" This is the highest on record here." if len(hist) >= 30 and last["value"] == max(values) else ""))
+    # No link: the address is a data service, and its raw rows are not an article to fetch and read.
+    return [{"id": item_id("", f"{feed['name']} {last['day']}"), "source": feed["name"], "url": "", "title": title,
+             "body": (body + (f" {note}" if note else ""))[:MAX_BODY], "published_at": last["at"]}]
+
+
+def _totals(hist: list, unit: str) -> tuple[str, str]:
+    """For an amount that adds up (rainfall): totals to the newest day, and how its 30-day total compares with the same
+    30 days in earlier years on record. Returns (what to add to the title, the body)."""
+    import statistics
+    from datetime import date, timedelta
+    by_day = {r["day"]: r["value"] for r in hist}
+    end = date.fromisoformat(hist[-1]["day"])
+    def total(to: date, days: int) -> tuple[float, int]:
+        got = [by_day[d] for d in ((to - timedelta(days=i)).isoformat() for i in range(days)) if d in by_day]
+        return round(sum(got), 4), len(got)
+    week, month = total(end, 7)[0], total(end, 30)[0]
+    so_far = total(end, end.day)[0]
+    title = f"; {week:g} {unit} in 7 days, {month:g} in 30 days, {so_far:g} this month so far"
+    body = "Measured daily total, not news."
+    past = []
+    for back in range(1, 60):
+        try:
+            then = end.replace(year=end.year - back)
+        except ValueError:                      # 29 February
+            then = end.replace(year=end.year - back, day=28)
+        t, n = total(then, 30)
+        if n >= 27:
+            past.append(t)
+    if len(past) >= 5:
+        below = sum(p < month for p in past)
+        body += (f" The 30-day total of {month:g} {unit} is higher than in {below} of the {len(past)} earlier years on record for the same 30 days"
+                 f" (those ranged from {min(past):g} to {max(past):g}, median {statistics.median(past):g}).")
+    return title, body
 
 
 def parse_feed(source: str, parsed) -> list[dict]:
@@ -280,10 +330,19 @@ def ingest(conn: sqlite3.Connection, feeds: list[dict] | None = None, fetch=None
                 spec = {**notes.get(f["name"], {}), **f}
                 if isinstance(spec.get("recipe"), str):
                     spec["recipe"] = json.loads(spec["recipe"] or "{}")
-                if kind == "page":
-                    rows, ok = read_page(conn, spec, get(f["url"]), now)   # an unchanged page is a success with no items
+                if kind == "kalshi":
+                    from . import forecasts
+                    rows, ok = forecasts.moves(conn, now), True            # a quiet day is a success with no items
+                elif kind == "page":
+                    rows, ok = read_page(conn, spec, get(expand(f["url"], now)), now)   # an unchanged page is a success with no items
                 else:
-                    rows = read_series(conn, spec, get(f["url"]), now)
+                    past = spec.get("history") or (spec.get("recipe") or {}).get("history")
+                    if past and conn.execute("SELECT COUNT(*) FROM readings WHERE source = ?", (f["name"],)).fetchone()[0] < HISTORY_BELOW:
+                        try:                                           # the long record, read once; the daily read never waits on it
+                            read_series(conn, spec, get(expand(str(past), now)), now)
+                        except Exception:
+                            pass
+                    rows = read_series(conn, spec, get(expand(f["url"], now)), now)
                     ok = bool(rows)
             report[f["name"]] = store(conn, rows, now)
             sources.record_fetch(conn, f["name"], ok, now)

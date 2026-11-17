@@ -33,7 +33,9 @@ outcomes with a commercial consequence; drug and device trial results; supply ag
 spending plans, shortages and allocation in any industry; strikes and labour settlements; bank, insurer or \
 payment-system stress; company events that change what it can make, sell or ship; meaningful shifts in demand. \
 A measurement item (a river level, a rainfall total, a draft limit) is kept when the level is at or near an \
-extreme or has moved sharply, and skipped when it is ordinary. Skip: opinion, explainers, profiles, pure politics with no economic channel, market commentary, price recaps, \
+extreme or has moved sharply, and skipped when it is ordinary. A prediction-market move item is kept when the \
+contract is about something physical or economic (weather, supply, trade, policy, rates, a company) and skipped \
+otherwise; say in the summary that it is a market price and not a report. Skip: opinion, explainers, profiles, pure politics with no economic channel, market commentary, price recaps, \
 analyst ratings, routine earnings with no new fact about the business, and repeats that add nothing.
 
 Return one record per kept item and nothing for skipped ones. In each record:

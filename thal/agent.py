@@ -49,7 +49,8 @@ record keeps testing it, but never with conviction above 0.
 
 Each session you get the dashboard (what the system believes, its open fuses, its honest track record) and the \
 events that arrived since the last session. Work however you judge best. You can search the event log and the \
-memory wiki, read fuses, check prices, and search the web to verify a claim, look for the other side of a thesis, \
+memory wiki, read fuses, check prices, read the measured series the system keeps (river levels, rainfall, \
+temperatures, prediction-market prices), and search the web to verify a claim, look for the other side of a thesis, \
 or confirm that an instrument is what you think it is.
 
 Memory is for your future self, who starts with only the dashboard. Three kinds of memory are yours to write:
@@ -112,6 +113,8 @@ TOOLS = [
      "input_schema": {"type": "object", "properties": {"fuse_id": {"type": "integer"}}, "required": ["fuse_id"]}},
     {"name": "get_prices", "description": "Recent daily closes for a US-listed ticker or a futures symbol (CL=F, or a contract month such as CLF27.NYM), with returns over 1, 4 and 12 weeks. Use it to check whether a move is already priced and whether a ticker really trades.",
      "input_schema": {"type": "object", "properties": {"symbol": {"type": "string"}}, "required": ["symbol"]}},
+    {"name": "get_readings", "description": "Measured series the system keeps day by day: river levels, rainfall, temperatures, and the daily price of prediction-market contracts (named kalshi:TICKER). Give part of a name to see its recent daily values and its range on record; give nothing to list the series there are.",
+     "input_schema": {"type": "object", "properties": {"name": {"type": "string"}, "days": {"type": "integer", "description": "how many recent days to show (default 30)"}}}},
     {"name": "scoreboard", "description": "The scored track record of past bets, grouped by source, kind, side, asset_class or tag.",
      "input_schema": {"type": "object", "properties": {"by": {"type": "string", "enum": ["source", "kind", "side", "asset_class", "tag"]}}, "required": ["by"]}},
     {"name": "open_fuse", "description": "Open a new fuse: a checkable hypothesis and the concrete evidence that would confirm or kill it.",
@@ -201,6 +204,24 @@ class Session:
                   " forecast baselines start from this" if live and live[-1][0] > last_t else "")
         return (f"{sym}: last close {last:.2f} on {time.strftime('%Y-%m-%d', time.gmtime(last_t))}{stale}{now_px}\n"
                 f"change over 1w {ret(5)}, 4w {ret(20)}, 12w {ret(60)}\nlast 10 closes: {closes}")
+
+    def get_readings(self, name: str = "", days: int = 30) -> str:
+        today = time.strftime("%Y-%m-%d", time.gmtime(self.now))            # nothing dated after the session's own day
+        like = f"%{name.strip()}%"
+        found = self.conn.execute("SELECT source, unit, COUNT(*) n, MIN(day) a, MAX(day) b, MIN(value) lo, MAX(value) hi FROM readings"
+                                  " WHERE day <= ? AND source LIKE ? AND (source NOT LIKE 'kalshi:%' OR ? LIKE 'kalshi:%')"
+                                  " GROUP BY source ORDER BY source LIMIT 60", (today, like, name.strip().lower())).fetchall()
+        if not found:
+            return "no series by that name; call with no name to list them"
+        if not name.strip() or len(found) > 4:
+            return "\n".join(f"{r['source']} ({r['unit']}): {r['n']} days, {r['a']} to {r['b']}" for r in found)
+        out = []
+        for r in found:
+            rows = self.conn.execute("SELECT day, value FROM readings WHERE source = ? AND day <= ? ORDER BY day DESC LIMIT ?",
+                                     (r["source"], today, max(1, min(120, int(days))))).fetchall()[::-1]
+            out.append(f"{r['source']} ({r['unit']}), {r['n']} days on record from {r['a']}, range {r['lo']:g} to {r['hi']:g}\n"
+                       + ", ".join(f"{x['day'][5:]} {x['value']:g}" for x in rows))
+        return "\n".join(out)
 
     def scoreboard(self, by: str) -> str:
         rows = ledger.scoreboard(self.conn, by=by)

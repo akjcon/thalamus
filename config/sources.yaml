@@ -132,6 +132,53 @@ data_feeds:
     url: "https://waterservices.usgs.gov/nwis/dv/?format=json&sites=07010000&parameterCd=00065&period=P30D"
     why: "the gauge that governs barge drafts for US grain and fertiliser moving to and from the Gulf"
     note: "Flood stage here is 30 ft. Barge draft and tow-size limits on the river below St. Louis typically begin when this gauge falls to around 0 ft."
+    history: "https://waterservices.usgs.gov/nwis/dv/?format=json&sites=07010000&parameterCd=00065&startDT=2005-01-01"
+  # Daily weather from the NOAA regional climate centers (the official station record). The first six are stations that
+  # prediction-market rain and temperature contracts settle on; Des Moines and Memphis are for crops and the lower river.
+  - name: "Rain at New York Central Park"
+    kind: series
+    url: "https://data.rcc-acis.org/StnData?sid=KNYC&sdate={days_ago:45}&edate={today}&elems=pcpn&output=json"
+    recipe: {format: json, rows: data, time: "0", value: "1", unit: inches, min: 0, sum: true, map: {T: 0}, history: "https://data.rcc-acis.org/StnData?sid=KNYC&sdate=2000-01-01&edate={today}&elems=pcpn&output=json"}
+    why: "official daily rainfall for New York; prediction-market rain contracts settle on this station"
+  - name: "Rain at Los Angeles airport"
+    kind: series
+    url: "https://data.rcc-acis.org/StnData?sid=KLAX&sdate={days_ago:45}&edate={today}&elems=pcpn&output=json"
+    recipe: {format: json, rows: data, time: "0", value: "1", unit: inches, min: 0, sum: true, map: {T: 0}, history: "https://data.rcc-acis.org/StnData?sid=KLAX&sdate=2000-01-01&edate={today}&elems=pcpn&output=json"}
+    why: "official daily rainfall for Los Angeles; the most traded monthly rain contract"
+  - name: "Rain at Phoenix airport"
+    kind: series
+    url: "https://data.rcc-acis.org/StnData?sid=KPHX&sdate={days_ago:45}&edate={today}&elems=pcpn&output=json"
+    recipe: {format: json, rows: data, time: "0", value: "1", unit: inches, min: 0, sum: true, map: {T: 0}, history: "https://data.rcc-acis.org/StnData?sid=KPHX&sdate=2000-01-01&edate={today}&elems=pcpn&output=json"}
+    why: "official daily rainfall for Phoenix; monthly rain contracts settle on this station"
+  - name: "Rain at Seattle-Tacoma airport"
+    kind: series
+    url: "https://data.rcc-acis.org/StnData?sid=KSEA&sdate={days_ago:45}&edate={today}&elems=pcpn&output=json"
+    recipe: {format: json, rows: data, time: "0", value: "1", unit: inches, min: 0, sum: true, map: {T: 0}, history: "https://data.rcc-acis.org/StnData?sid=KSEA&sdate=2000-01-01&edate={today}&elems=pcpn&output=json"}
+    why: "official daily rainfall for Seattle; monthly rain contracts settle on this station"
+  - name: "Rain at Des Moines"
+    kind: series
+    url: "https://data.rcc-acis.org/StnData?sid=KDSM&sdate={days_ago:45}&edate={today}&elems=pcpn&output=json"
+    recipe: {format: json, rows: data, time: "0", value: "1", unit: inches, min: 0, sum: true, map: {T: 0}, history: "https://data.rcc-acis.org/StnData?sid=KDSM&sdate=2000-01-01&edate={today}&elems=pcpn&output=json"}
+    why: "rainfall in the centre of the US corn and soybean belt"
+  - name: "Rain at Memphis"
+    kind: series
+    url: "https://data.rcc-acis.org/StnData?sid=KMEM&sdate={days_ago:45}&edate={today}&elems=pcpn&output=json"
+    recipe: {format: json, rows: data, time: "0", value: "1", unit: inches, min: 0, sum: true, map: {T: 0}, history: "https://data.rcc-acis.org/StnData?sid=KMEM&sdate=2000-01-01&edate={today}&elems=pcpn&output=json"}
+    why: "rainfall feeding the lower Mississippi, where barge drafts are restricted first"
+  - name: "High temperature at New York Central Park"
+    kind: series
+    url: "https://data.rcc-acis.org/StnData?sid=KNYC&sdate={days_ago:45}&edate={today}&elems=maxt&output=json"
+    recipe: {format: json, rows: data, time: "0", value: "1", unit: "°F", min: -80, max: 140, history: "https://data.rcc-acis.org/StnData?sid=KNYC&sdate=2000-01-01&edate={today}&elems=maxt&output=json"}
+    why: "official daily high for New York; daily temperature contracts settle on this station"
+  - name: "High temperature at Chicago Midway"
+    kind: series
+    url: "https://data.rcc-acis.org/StnData?sid=KMDW&sdate={days_ago:45}&edate={today}&elems=maxt&output=json"
+    recipe: {format: json, rows: data, time: "0", value: "1", unit: "°F", min: -80, max: 140, history: "https://data.rcc-acis.org/StnData?sid=KMDW&sdate=2000-01-01&edate={today}&elems=maxt&output=json"}
+    why: "official daily high for Chicago; daily temperature contracts settle on this station"
+  - name: "Kalshi market moves"
+    kind: kalshi
+    url: "https://api.elections.kalshi.com/trade-api/v2/events"
+    why: "prediction-market prices: every quoted contract's price is kept daily, and a sharp move becomes an item"
 
 # WAHIS — WOAH global animal-disease notifications (immediate + follow-up).
 # Cloudflare-walled SPA, fetched via headless browser (agent/wahis.py).

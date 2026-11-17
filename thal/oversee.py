@@ -17,6 +17,7 @@ from . import crawl, report
 from .llm import LLM
 
 HOUR, DAY = 3600.0, 86400.0
+MEASURED = "SELECT COUNT(*) FROM readings WHERE at >= ? AND source"
 OPEN_FUSES = "SELECT COUNT(*) FROM fuses WHERE status = 'open'"
 # How long each job may go without running before it counts as stopped.
 EXPECTED = {"intake": 6 * HOUR, "analyst": 26 * HOUR, "dream": 26 * HOUR, "crawl": 26 * HOUR, "overseer": 26 * HOUR,
@@ -25,7 +26,8 @@ EXPECTED = {"intake": 6 * HOUR, "analyst": 26 * HOUR, "dream": 26 * HOUR, "crawl
 SYSTEM = f"""You oversee an automated trading research system and report to its owner. {crawl.FOCUS}
 
 Its parts, each run on a schedule by the same service and sharing one database:
-- intake: reads every source (news feeds and data feeds such as river levels), fetches full text, and a cheap \
+- intake: reads every source (news feeds, and data feeds: river levels, rainfall, temperatures, prediction-market \
+prices), fetches full text, and a cheap \
 model turns items into event records
 - crawl: daily; a cheap model proposes new sources, code tests them, working on-focus feeds join on trial; for \
 notice pages and data services a builder writes a recipe that code checks before the source is switched on; \
@@ -95,7 +97,7 @@ def health(conn: sqlite3.Connection, now: float) -> str:
     lines += ["", "## Flow, last 7 days",
               f"- items {one('SELECT COUNT(*) FROM items WHERE fetched_at >= ?', week)}, events kept {one('SELECT COUNT(*) FROM events e JOIN items i ON i.id = e.item_id WHERE i.fetched_at >= ?', week)}, "
               f"items waiting for extraction {one('SELECT COUNT(*) FROM items WHERE extracted = 0')}",
-              f"- measurements stored {one('SELECT COUNT(*) FROM readings WHERE at >= ?', week)}",
+              f"- measurements stored {one(MEASURED + ' NOT LIKE ?', week, 'kalshi:%')}, prediction-market prices stored {one(MEASURED + ' LIKE ?', week, 'kalshi:%')}",
               f"- hypotheses open {one(OPEN_FUSES)}, bets open {one('SELECT COUNT(*) FROM bets WHERE closed_at IS NULL')}, "
               f"bets recorded in 7 days {one('SELECT COUNT(*) FROM bets WHERE created_at >= ?', week)}"]
     top = q("SELECT i.source s, COUNT(*) n FROM events e JOIN items i ON i.id = e.item_id WHERE i.fetched_at >= ? GROUP BY i.source ORDER BY n DESC LIMIT 12", week)
