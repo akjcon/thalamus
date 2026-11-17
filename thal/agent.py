@@ -116,7 +116,7 @@ TOOLS = [
      "input_schema": {"type": "object", "properties": {"bet_id": {"type": "integer"}}, "required": ["bet_id"]}},
     {"name": "close_bet", "description": "Close an open bet because its invalidation was met, its reasoning no longer holds, or its move has played out. It is scored at the exit and any paper position is sold. Give the specific reason.",
      "input_schema": {"type": "object", "properties": {"bet_id": {"type": "integer"}, "reason": {"type": "string"}}, "required": ["bet_id", "reason"]}},
-    {"name": "propose_bet", "description": "Propose a bet. It is checked (the stock, ETF or future must really trade), recorded in the scored ledger, and sent to the paper broker within the risk limits. Benchmark is the sector ETF it must beat to count as skill.",
+    {"name": "propose_bet", "description": "Propose a bet. It is checked (the stock, ETF or future must really trade), recorded in the scored ledger, and sent to the paper broker within the risk limits. Benchmark is the sector ETF it must beat to count as skill; always give one for a stock (left out, it is scored against the S&P 500, or a future against its commodity basket).",
      "input_schema": {"type": "object", "properties": {"symbol": {"type": "string"}, "side": {"type": "string", "enum": ["LONG", "SHORT"]}, "thesis": {"type": "string"}, "invalidation": {"type": "string"}, "horizon_days": {"type": "integer"}, "benchmark": {"type": "string"}, "conviction": {"type": "integer"}, "tags": {"type": "array", "items": {"type": "string"}}, "fuse_id": {"type": "integer"}}, "required": ["symbol", "side", "thesis", "invalidation", "horizon_days", "conviction"]}},
 ]
 

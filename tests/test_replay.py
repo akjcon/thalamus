@@ -107,10 +107,11 @@ def test_replay_scores_resumes_and_stops_at_its_budget(rig, tmp_path):
     llm = LLM(conn, client=client)
     cost_of_three_turns = 3 * llm.cost("claude-fable-5-2", resp("end_turn").usage)
     rep = replay.run(conn, src, llm, wiki, prov, broker, start=d1, end=d3, budget=cost_of_three_turns, dream_every=99, say=lambda s: None)
-    assert rep["sessions"] == 2 and "budget" in rep["stopped"]              # the third day never started
+    # day one cost two turns, so day two is assumed to cost 2.5 and would pass the budget: it never starts
+    assert rep["sessions"] == 1 and "budget" in rep["stopped"] and rep["spent"] <= cost_of_three_turns
     client.turns.append(resp("end_turn", text("day three")))
-    rep = replay.run(conn, src, llm, wiki, prov, broker, start=d1, end=d3, budget=99, dream_every=99, say=lambda s: None)
-    assert rep["sessions"] == 1 and "history" not in rep and not client.turns   # resumed at day three only
+    rep = replay.run(conn, src, llm, wiki, prov, broker, start=d1, end=d3, budget=99, dream_every=0, say=lambda s: None)
+    assert rep["sessions"] == 2 and rep["dreams"] == 0 and "history" not in rep and not client.turns   # resumed at day two; never dreams
     out = replay.score(conn, prov, broker, now=d3 + 40 * DAY)
     entry = int((d1 - D0) / DAY) + 1                                        # entered at the next session's close
     b = conn.execute("SELECT * FROM bets").fetchone()

@@ -114,3 +114,13 @@ def test_scoreboard_counts_repeats_once_and_groups(conn):
 def test_futures_are_recognised_by_symbol():
     assert [ledger.asset_class(x) for x in ("CL=F", "CLF27.NYM", "zch27.cbt", "GCG27.CMX", "XOM", "BRK.B")] == \
         ["future", "future", "future", "future", "equity", "equity"]
+
+
+def test_every_bet_gets_a_benchmark(conn):
+    assert [ledger.default_benchmark(x) for x in ("CLZ26.NYM", "ZWZ26.CBT", "LE=F", "HGZ26.CMX", "SBH27.NYB", "XXZ26.CME", "ZIM")] == \
+        ["DBE", "DBA", "DBA", "DBB", "DBA", "DBC", "SPY"]
+    p = FakeProvider({"ZCZ26.CBT": series(100, 0.01, 100), "SPY": series(100, 0.0, 100), "DBA": series(50, 0.005, 100)})
+    b = ledger.add_bet(conn, symbol="ZCZ26.CBT", side="LONG", created_at=T0 - 1)       # recorded with no benchmark
+    ledger.mark_all(conn, p, NOW)
+    assert conn.execute("SELECT benchmark FROM bets WHERE id = ?", (b,)).fetchone()[0] == "DBA"
+    assert marks(conn, b)["1w"]["vs_bench"] == pytest.approx(1.01 ** 5 - 1.005 ** 5)

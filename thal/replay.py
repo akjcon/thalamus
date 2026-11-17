@@ -11,8 +11,10 @@ reach the session:
 Each session runs after the US close of its day, so that day's closing prices are fair to use and a bet
 is entered at the next session's close, by the same rule as live.
 
-A replay keeps its place in its own folder, so it can be stopped and resumed, and it stops when it has
-spent its budget. It never touches the live database or wiki.
+A replay keeps its place in its own folder, so it can be stopped and resumed. It stops before a session
+that would probably take it past its budget, judged by what the last session and dream cost. With
+dream_every 0 it never dreams, so the wiki and lessons stay empty: the no-memory control. It never touches
+the live database or wiki.
 """
 from __future__ import annotations
 
@@ -29,6 +31,7 @@ from .wiki import Wiki
 
 DAY = 86400.0
 SESSION_AT = 21.5 * 3600        # UTC; after the US close in winter and summer
+MARGIN = 1.25                   # the next session is assumed to cost this much more than the last one did
 EVENT_COLS = ("id", "item_id", "at", "event_type", "summary", "entities", "commodities", "places", "magnitude", "novelty",
               "reliability", "model")
 NOTE = ("This is a replay of {date}. You have only what was known by then: the event log, memory and prices up to "
@@ -109,15 +112,20 @@ def run(conn: sqlite3.Connection, src: sqlite3.Connection, llm: LLM, wiki: Wiki,
         now = d + SESSION_AT
         if now <= done_to:
             continue
-        if spent(conn) >= budget:
-            rep["stopped"] = f"budget of ${budget:.2f} reached"
+        dreams = dream_every > 0 and (n + 1) % dream_every == 0
+        need = MARGIN * (float(_kv(conn, "replay_cost_analyst", 0)) + (float(_kv(conn, "replay_cost_dream", 0)) if dreams else 0))
+        if spent(conn) >= budget or spent(conn) + need > budget:
+            rep["stopped"] = f"budget of ${budget:.2f} would be passed by the next session"
             break
         provider.now = now
         new = feed(conn, src, done_to, now)
         dream.housekeeping(conn, provider, broker, now)     # expire fuses and bets, fill orders, mark, settle forecasts
         date = time.strftime("%Y-%m-%d", time.gmtime(now))
         try:
+            before = spent(conn)
             a = agent.run_session(conn, llm, wiki, provider, broker, now, offline=NOTE.format(date=date))
+            if a is not None:
+                _set(conn, "replay_cost_analyst", spent(conn) - before)
             if a is not None and not a["finished"]:
                 say(f"{date}: session did not finish; its events will be read again")
             n += 1
@@ -125,8 +133,10 @@ def run(conn: sqlite3.Connection, src: sqlite3.Connection, llm: LLM, wiki: Wiki,
             line = (f"{date}: {new} new events, " + ("nothing to read" if a is None else
                     f"{a['forecasts']} forecasts, {len(a['bets'])} bets, {a['bets_closed']} closed, {a['fuses_opened']} fuses, "
                     f"{a['turns']} turns, {a['tool_errors']} tool errors"))
-            if a is not None and n % max(1, dream_every) == 0:
+            if a is not None and dreams:
+                before = spent(conn)
                 s = dream.dream_session(conn, llm, wiki, now)
+                _set(conn, "replay_cost_dream", spent(conn) - before)
                 rep["dreams"] += 1
                 line += f"; dream wrote {len(s['pages_written'])} pages" + ("" if s["finished"] else " (unfinished)")
                 if (n // max(1, dream_every)) % max(1, reflect_every) == 0 and dream.reflect(conn, llm, wiki, now):

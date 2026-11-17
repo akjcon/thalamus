@@ -10,6 +10,7 @@ being filled in, so the record also shows what holding on would have done.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 import statistics
 import time
@@ -26,6 +27,25 @@ FUTURES_VENUES = (".NYM", ".CMX", ".CBT", ".CME", ".NYB")    # Yahoo suffixes of
 
 def asset_class(symbol: str) -> str:
     return "future" if symbol.upper().endswith(("=F",) + FUTURES_VENUES) else "equity"
+
+
+# A bet with no benchmark cannot show skill, so one is always filled in: a future is measured against the
+# commodity basket of its group, anything else against the market.
+GROUP_ETF = {"DBE": ("CL", "BZ", "HO", "RB", "NG"),                                             # energy
+             "DBB": ("HG", "ALI"),                                                               # base metals
+             "DBP": ("GC", "SI", "PL", "PA"),                                                    # precious metals
+             "DBA": ("ZC", "ZW", "KE", "ZS", "ZL", "ZM", "ZR", "ZO", "SB", "KC", "CC", "CT", "OJ", "LE", "HE", "GF")}
+BROAD_COMMODITIES = "DBC"
+_CONTRACT = re.compile(r"^([A-Z]{1,3}?)(?:[FGHJKMNQUVXZ]\d{2})?(?:=F|\.[A-Z]{3})$")
+
+
+def default_benchmark(symbol: str) -> str:
+    sym = symbol.upper()
+    if asset_class(sym) != "future":
+        return MARKET
+    m = _CONTRACT.match(sym)
+    root = m.group(1) if m else ""
+    return next((etf for etf, roots in GROUP_ETF.items() if root in roots), BROAD_COMMODITIES)
 
 
 def add_bet(conn: sqlite3.Connection, *, symbol: str, side: str, source: str = "v2", kind: str = "paper",
@@ -76,7 +96,12 @@ def mark_bet(conn: sqlite3.Connection, bet: sqlite3.Row, provider: PriceProvider
     if not bars or (bet["hedge_symbol"] and not hedge):
         return 0
     spy = complete(provider.bars(MARKET), now)
-    bench = complete(provider.bars(bet["benchmark"]), now) if bet["benchmark"] else []
+    bench_sym = bet["benchmark"]
+    if not bench_sym and not bet["hedge_symbol"]:           # recorded before a benchmark was always filled in
+        bench_sym = default_benchmark(bet["symbol"])
+        with conn:
+            conn.execute("UPDATE bets SET benchmark = ? WHERE id = ?", (bench_sym, bet["id"]))
+    bench = complete(provider.bars(bench_sym), now) if bench_sym else []
     sign = 1 if bet["side"] == "LONG" else -1
     written = 0
     for name, h in HORIZONS:

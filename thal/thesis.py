@@ -43,7 +43,7 @@ def place_bet(conn: sqlite3.Connection, provider: PriceProvider, broker, b: BetO
     if not sym or not tradeable(provider, sym, now):
         return {"symbol": sym, "why": "no recent price; not a tradeable instrument"}
     bench = b.benchmark.strip().upper()
-    bench = bench if bench and bench != sym and tradeable(provider, bench, now) else None
+    bench = bench if bench and bench != sym and tradeable(provider, bench, now) else ledger.default_benchmark(sym)
     conviction = max(0, min(5, int(b.conviction)))
     bet_id = ledger.add_bet(conn, symbol=sym, side=b.side, source="v2", kind="paper" if conviction else "shadow", created_at=now,
                             thesis=b.thesis.strip()[:1500], invalidation=b.invalidation.strip()[:600],

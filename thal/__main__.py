@@ -9,6 +9,7 @@ report  print the weekly scorecard (forecasts vs baseline, bets vs sector)
 backfill FOLDER [I N]  load the old bot's saved headline scans as history and extract events (shard I of N)
 replay NAME START END BUDGET [EVERY [DREAM_EVERY]]  replay past days (YYYY-MM-DD) from data/replay/v1_events.db into
         data/replay/NAME, a session on every EVERYth day with news, stopping at BUDGET dollars; then print the score
+        (a dream after every DREAM_EVERYth session; 0 means never, the no-memory control)
 serve   run forever on the built-in schedule (what the deployment runs)
 """
 from __future__ import annotations
