@@ -72,10 +72,11 @@ def close_fuse(conn: sqlite3.Connection, fuse_id: int, status: str, now: float |
 
 
 def expire_fuses(conn: sqlite3.Connection, now: float | None = None) -> int:
+    """Expire fuses past their date. One with an open bet waits for the bet to end."""
     now = now or time.time()
     with conn:
-        cur = conn.execute("UPDATE fuses SET status = 'expired', updated_at = ? WHERE status = 'open' AND expires_at < ?",
-                           (now, now))
+        cur = conn.execute("UPDATE fuses SET status = 'expired', updated_at = ? WHERE status = 'open' AND expires_at < ?"
+                           " AND id NOT IN (SELECT fuse_id FROM bets WHERE closed_at IS NULL AND fuse_id IS NOT NULL)", (now, now))
     return cur.rowcount
 
 

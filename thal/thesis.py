@@ -37,15 +37,17 @@ def tradeable(provider: PriceProvider, symbol: str, now: float) -> bool:
     return bool(bars) and now - bars[-1][0] <= STALE_QUOTE_DAYS * DAY
 
 
-def place_bet(conn: sqlite3.Connection, provider: PriceProvider, broker, b: BetOut, fuse_id: int | None, now: float) -> dict:
-    """Check the instrument, record the bet in the ledger, and send a sized order through the risk limits."""
+def place_bet(conn: sqlite3.Connection, provider: PriceProvider, broker, b: BetOut, fuse_id: int | None, now: float,
+              source: str = "v2") -> dict:
+    """Check the instrument, record the bet in the ledger, and send a sized order through the risk limits.
+    source says who made it: the analyst (v2) or a strategy from the lab."""
     sym = b.symbol.strip().upper()
     if not sym or not tradeable(provider, sym, now):
         return {"symbol": sym, "why": "no recent price; not a tradeable instrument"}
     bench = b.benchmark.strip().upper()
     bench = bench if bench and bench != sym and tradeable(provider, bench, now) else ledger.default_benchmark(sym)
     conviction = max(0, min(5, int(b.conviction)))
-    bet_id = ledger.add_bet(conn, symbol=sym, side=b.side, source="v2", kind="paper" if conviction else "shadow", created_at=now,
+    bet_id = ledger.add_bet(conn, symbol=sym, side=b.side, source=source, kind="paper" if conviction else "shadow", created_at=now,
                             thesis=b.thesis.strip()[:1500], invalidation=b.invalidation.strip()[:600],
                             horizon_days=max(5, min(365, int(b.horizon_days))), benchmark=bench, fuse_id=fuse_id,
                             tags=[t.strip().lower()[:30] for t in b.tags if t.strip()][:4])
@@ -69,6 +71,10 @@ def close_position(conn: sqlite3.Connection, broker, bet_id: int, reason: str, n
     if abs(held) > 1e-9 and broker is not None:
         _, ok = broker.submit(bet["symbol"], "SELL" if held > 0 else "BUY", abs(held), bet_id=bet_id, now=now)
         order = "placed" if ok else "blocked: " + "; ".join(ok.reasons)
+    if bet["fuse_id"] is not None and bet["kind"] != "shadow":      # the thesis was acted on and the position is over
+        if not conn.execute("SELECT 1 FROM bets WHERE fuse_id = ? AND closed_at IS NULL AND kind != 'shadow'", (bet["fuse_id"],)).fetchone():
+            with conn:
+                conn.execute("UPDATE fuses SET status = 'fired', updated_at = ? WHERE id = ? AND status = 'open'", (now, bet["fuse_id"]))
     return {"bet": bet_id, "symbol": bet["symbol"], "side": bet["side"], "order": order}
 
 

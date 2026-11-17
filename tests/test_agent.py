@@ -94,14 +94,20 @@ def test_bets_are_checked_recorded_limited_and_capped(world):
     assert "not placed: no recent price" in s.propose_bet(symbol="SGG", **base)
     out = s.propose_bet(symbol="cane", benchmark="XLE", tags=["weather"], fuse_id=1, **base)
     assert "recorded as bet #1: LONG" in out and "order placed" in out
-    assert conn.execute("SELECT status FROM fuses").fetchone()[0] == "fired"
-    assert "blocked" in s.propose_bet(symbol="CANE", **base)                 # over the per-position limit, still recorded
-    assert "short positions are not allowed" in s.propose_bet(symbol="XLE", **{**base, "side": "SHORT"})
+    assert conn.execute("SELECT status FROM fuses").fetchone()[0] == "open"   # the thesis stays in view while the bet rides on it
+    assert "1 open bets" in memory.dashboard(conn, world[1], NOW)
+    assert "bet #1 already holds this position" in s.propose_bet(symbol="CANE", **base)   # the same position twice is refused
+    assert "recorded" in s.propose_bet(symbol="CANE", **{**base, "conviction": 0})          # a shadow of it is a separate record
+    assert memory.expire_fuses(conn, NOW + 400 * DAY) == 0                    # and it cannot expire under an open bet
+    from thal.thesis import close_position
+    assert close_position(conn, world[3], 1, "played out", NOW)["bet"] == 1
+    assert conn.execute("SELECT status FROM fuses").fetchone()[0] == "fired"  # acted on and over
+    assert "short positions are not allowed" in s.propose_bet(symbol="XLE", **{**base, "side": "SHORT"})   # recorded, order blocked
     assert s.call("propose_bet", {"symbol": "CANE", "side": "SIDEWAYS", **{k: v for k, v in base.items() if k != "side"}})[1]
-    for _ in range(2): s.propose_bet(symbol="CANE", **{**base, "conviction": 1})
-    assert "already made 5 order-placing bets" in s.propose_bet(symbol="CANE", **base)
-    assert "none (shadow bet)" in s.propose_bet(symbol="CANE", **{**base, "conviction": 0})      # shadows have their own allowance
-    assert conn.execute("SELECT COUNT(*) FROM bets").fetchone()[0] == 6 and conn.execute("SELECT COUNT(*) FROM orders WHERE status='pending'").fetchone()[0] == 1
+    s.bets += [{"conviction": 1}] * 3
+    assert "already made 5 order-placing bets" in s.propose_bet(symbol="XLE", **base)
+    assert "none (shadow bet)" in s.propose_bet(symbol="XLE", **{**base, "conviction": 0})       # shadows have their own allowance
+    assert conn.execute("SELECT COUNT(*) FROM bets").fetchone()[0] == 4
 
 
 def test_session_loop_runs_tools_returns_all_results_and_marks_events_seen(world):

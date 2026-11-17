@@ -32,12 +32,16 @@ Memory has layers: an append-only log of events (never edited), notes the analys
 pages themselves, and the dashboard. You are the only writer of wiki pages. Things worth doing, in whatever order \
 you judge best:
 - Fold the queued notes into pages. A page holds durable structure about its subject: dependencies, substitutes, \
-lead times, buffers, who supplies whom, rules that held, each with the date it was observed. Rewrite the whole \
-page so new material is integrated, not appended. Keep exact numbers and names. Link related pages as \
+lead times, buffers, who supplies whom, rules that held, each with the date it was observed. Integrate new \
+material where it belongs instead of stacking it at the end. Keep exact numbers and names. Link related pages as \
 [[page-name]]. Abstract rather than accumulate; split a page that grows past about 6,000 characters.
+- Change an existing page with edit_page: replace the passage that needs to change, or add a passage. Use \
+write_page only for a new page or when a page's whole structure has to change. Writing out a full page again to \
+change a few lines is the most expensive thing you can do here, and each page needs writing at most once a night.
 - Correct memory. A note can be wrong from the start or go stale. When a note or page makes a factual claim that \
 matters, check it against the event log and the source article, and fix or remove what the record contradicts. \
-Say when something is unconfirmed.
+Say when something is unconfirmed. Check what tonight's notes claim and what an open fuse or bet rests on; a claim \
+that already carries its source and date does not need checking again.
 - Merge duplicates. The same development often arrives from several feeds as separate events. Review the candidate \
 pairs and merge the ones that truly report the same thing, keeping the most informative. Distinct developments \
 on the same topic are not duplicates.
@@ -57,6 +61,8 @@ TOOLS = [
      "input_schema": {"type": "object", "properties": {"page": {"type": "string"}}, "required": ["page"]}},
     {"name": "write_page", "description": "Create or replace a wiki page with its full new text. Notes queued for that page are marked as folded. The lessons page cannot be written here.",
      "input_schema": {"type": "object", "properties": {"page": {"type": "string"}, "title": {"type": "string"}, "kind": {"type": "string", "enum": ["commodity", "chokepoint", "company", "country", "theme", "rule"]}, "body": {"type": "string"}}, "required": ["page", "title", "kind", "body"]}},
+    {"name": "edit_page", "description": "Change part of an existing wiki page without writing the rest again. Replaces one passage: give the exact text to replace (it must appear once on the page) and the new text. Leave old empty to add the new text at the end of the page. Notes queued for that page are marked as folded.",
+     "input_schema": {"type": "object", "properties": {"page": {"type": "string"}, "old": {"type": "string"}, "new": {"type": "string"}}, "required": ["page", "old", "new"]}},
     {"name": "search_events", "description": "Full-text search over the event log, newest first. Use it to check a claim against what was actually reported.",
      "input_schema": {"type": "object", "properties": {"query": {"type": "string"}, "limit": {"type": "integer"}}, "required": ["query"]}},
     {"name": "read_item", "description": "Read the full source article behind an event.",
@@ -183,6 +189,25 @@ class DreamSession:
             self.written.append(slug)
         return f"wrote {slug} ({len(body.encode())} bytes); {n} queued note(s) folded"
 
+    def edit_page(self, page: str, old: str, new: str) -> str:
+        slug = slugify(page)
+        if slug == "lessons":
+            raise ValueError("the lessons page is rewritten from the scored record by the weekly reflection")
+        current = self.wiki.read(slug)
+        if current is None:
+            raise ValueError(f"no page named {page!r}; create it with write_page")
+        if old and current.body.count(old) != 1:
+            raise ValueError(f"the text to replace appears {current.body.count(old)} times on the page; it must appear exactly once")
+        if not old and not new.strip():
+            raise ValueError("nothing to add")
+        body = current.body.replace(old, new) if old else current.body + "\n\n" + new.strip("\n")
+        self.wiki.write(slug, current.title, current.kind, body, expect_rev=current.rev, today=time.strftime("%Y-%m-%d", time.gmtime(self.now)))
+        with self.conn:
+            n = self.conn.execute("UPDATE page_notes SET folded = 1 WHERE slug = ? AND folded = 0", (slug,)).rowcount
+        if slug not in self.written:
+            self.written.append(slug)
+        return f"edited {slug} (now {len(body.encode())} bytes); {n} queued note(s) folded"
+
     def search_events(self, query: str, limit: int = 12) -> str:
         q = db.fts_query(query)
         if not q:
@@ -277,7 +302,7 @@ def reflect(conn: sqlite3.Connection, llm: LLM, wiki: Wiki, now: float) -> bool:
     if not ledger.scoreboard(conn) and not forecasts.scores(conn):
         return False
     page = wiki.read("lessons")
-    out: LessonsOut = llm.parse("dream", LESSONS_SYSTEM, f"{record_text(conn)}\n\n# Current lessons page\n{page.body if page else '(none yet)'}",
+    out: LessonsOut = llm.parse("reflect", LESSONS_SYSTEM, f"{record_text(conn)}\n\n# Current lessons page\n{page.body if page else '(none yet)'}",
                                 LessonsOut, now)
     wiki.write("lessons", "Lessons from the record", "rule", out.body.strip()[:MAX_PAGE_BYTES - 100],
                expect_rev=page.rev if page else None, today=time.strftime("%Y-%m-%d", time.gmtime(now)))

@@ -47,6 +47,22 @@ def test_notes_are_listed_by_page_and_folded_when_the_page_is_written(world):
     assert wiki.read("sugar").body == "v2" and s.written == ["sugar"] and "v2" in s.read_page("sugar")
 
 
+def test_a_page_can_be_edited_in_part_without_writing_it_again(world):
+    conn, wiki = world[0], world[1]
+    s = DreamSession(conn, wiki, NOW)
+    s.write_page("Sugar", "Sugar", "commodity", "India follows the monsoon.\n\nBrazil swings. Brazil is large.")
+    note(conn)
+    assert s.edit_page("sugar", "India follows the monsoon.", "India follows the monsoon (seen 2026-06).") == "edited sugar (now 74 bytes); 1 queued note(s) folded"
+    assert "edited sugar" in s.edit_page("Sugar", "", "Thailand is third.")                       # an empty old adds at the end
+    page = wiki.read("sugar")
+    assert page.body == "India follows the monsoon (seen 2026-06).\n\nBrazil swings. Brazil is large.\n\nThailand is third."
+    assert page.title == "Sugar" and page.kind == "commodity" and s.written == ["sugar"]
+    assert s.call("edit_page", {"page": "sugar", "old": "Brazil", "new": "x"})[1]                 # ambiguous: appears twice
+    assert s.call("edit_page", {"page": "sugar", "old": "Peru", "new": "x"})[1]                   # not on the page
+    assert s.call("edit_page", {"page": "nope", "old": "", "new": "x"})[1] and s.call("edit_page", {"page": "lessons", "old": "", "new": "x"})[1]
+    assert wiki.read("sugar").body == page.body
+
+
 def test_dream_cannot_write_lessons_or_bad_pages_and_errors_are_returned_not_raised(world):
     conn, wiki = world[0], world[1]
     s = DreamSession(conn, wiki, NOW)
@@ -109,7 +125,7 @@ def test_dream_session_loop_and_first_message(world):
     rep = dream.dream_session(conn, LLM(conn, client), wiki, NOW)
     assert rep["pages_written"] == ["sugar"] and rep["merged"] == 1 and rep["finished"] and rep["summary"].startswith("Folded")
     first = client.calls[0]
-    assert first["model"] == "claude-fable-5-2" and "1 notes waiting" in first["messages"][0]["content"] and "1 likely duplicate pairs" in first["messages"][0]["content"]
+    assert first["model"] == "claude-opus-5-5" and "1 notes waiting" in first["messages"][0]["content"] and "1 likely duplicate pairs" in first["messages"][0]["content"]
     assert {t["name"] for t in first["tools"]} == {t["name"] for t in dream.TOOLS} and not any("bet" in t["name"] or "forecast" in t["name"] for t in first["tools"])
 
 
@@ -146,4 +162,4 @@ def test_full_dream_does_housekeeping_session_and_health(world):
     assert rep["session"]["pages_written"] == ["sugar"] and rep["reflected"]
     h = rep["health"]
     assert h["broken_links"] == {"sugar": ["brazil"]} and h["notes_waiting"] == 0 and h["bloated"] is True and h["duplicates_merged"] == 0
-    assert all(c["model"] == "claude-fable-5-2" for c in client.calls) and len(client.calls) == 3
+    assert [c["model"] for c in client.calls] == ["claude-opus-5-5", "claude-opus-5-5", "claude-fable-5-2"]   # upkeep, then the weekly lessons

@@ -54,7 +54,8 @@ or confirm that an instrument is what you think it is.
 
 Memory is for your future self, who starts with only the dashboard. Three kinds of memory are yours to write:
 - Fuses: specific, checkable hypotheses with the evidence that would confirm or kill each one. Attach new evidence \
-to open fuses, for or against. Close the ones the evidence has turned against.
+to open fuses, for or against. Close the ones the evidence has turned against. A fuse you have bet on stays open, \
+marked with its open bets, until the bet ends: keep attaching evidence to it rather than opening the thesis again.
 - Page notes: durable structure about how a commodity, chokepoint, company or country works. A separate offline \
 step folds your notes into the wiki pages. Not today's status, which goes stale.
 - Bets: when a thesis is ready and probably not priced, propose a bet. Every bet is recorded and scored against \
@@ -294,12 +295,14 @@ class Session:
         fuse_id = kw.pop("fuse_id", None)
         if fuse_id is not None and self.conn.execute("SELECT 1 FROM fuses WHERE id = ?", (fuse_id,)).fetchone() is None:
             fuse_id = None
+        same = self.conn.execute("SELECT id FROM bets WHERE source = 'v2' AND closed_at IS NULL AND symbol = ? AND side = ?"
+                                 " AND (kind = 'shadow') = ?", (str(kw.get("symbol", "")).strip().upper(), kw.get("side"), shadow)).fetchone()
+        if same:
+            return f"not placed: bet #{same['id']} already holds this position and is still open. Close it first if the view has changed."
         placed = place_bet(self.conn, self.provider, self.broker, BetOut(**kw), fuse_id, self.now)
         if "bet" not in placed:
             return f"not placed: {placed['why']}"
-        self.bets.append(placed)
-        if fuse_id is not None and not shadow:
-            memory.close_fuse(self.conn, fuse_id, "fired", self.now)
+        self.bets.append(placed)      # the fuse stays open while the bet rides on it; thesis.close_position ends it
         return f"recorded as bet #{placed['bet']}: {placed['side']} {placed['qty']} {placed['symbol']}; order {placed['order']}"
 
     def call(self, name: str, args) -> tuple[str, bool]:

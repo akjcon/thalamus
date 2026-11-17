@@ -46,7 +46,7 @@ def test_budget_blocks_the_next_call_before_it_spends(conn):
 def test_big_models_get_refusal_fallback_small_one_does_not(conn):
     client = FakeClient(BatchOut(events=[]), BatchOut(events=[]), usage=(10, 10, 0))
     llm = LLM(conn, client)
-    llm.parse("dream", "s", "u", BatchOut, NOW); llm.parse("extract", "s", "u", BatchOut, NOW)
+    llm.parse("analyst", "s", "u", BatchOut, NOW); llm.parse("extract", "s", "u", BatchOut, NOW)
     big, small = client.calls
     assert big["door"] == "beta" and big["fallbacks"] == "default" and big["model"] == "claude-fable-5-2"
     assert small["door"] == "messages" and "fallbacks" not in small

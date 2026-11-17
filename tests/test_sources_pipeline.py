@@ -129,11 +129,11 @@ def test_run_is_now_extract_then_one_analyst_session(conn, tmp_path):
     kinds = [tuple(r) for r in conn.execute("SELECT kind, fuse_id FROM bets ORDER BY id")]
     assert kinds == [("shadow", None), ("paper", 1)]                          # the shadow bet is scored but places no order
     assert conn.execute("SELECT COUNT(*) FROM orders").fetchone()[0] == 1 and rep["analyst"]["notes"] == 0
-    assert conn.execute("SELECT status FROM fuses").fetchone()[0] == "fired"
+    assert conn.execute("SELECT status FROM fuses").fetchone()[0] == "open"
     assert [c["model"] for c in client.calls] == ["claude-haiku-5-5", "claude-fable-5-2", "claude-fable-5-2"]
     again = run(conn, LLM(conn, Script()), wiki, prov, broker, now=NOW + 60, fetch=lambda u: feed(1), fetcher=lambda u: ("x", "http"))
     assert again["new_items"] == 0 and again["analyst"] is None               # nothing new: no model calls at all
-    assert "India sugar shortfall" not in status(conn, LLM(conn, Script()), wiki, broker).split("## Open fuses")[1].split("## Wiki")[0]
+    assert "India sugar shortfall [1 evidence" in status(conn, LLM(conn, Script()), wiki, broker).split("## Open fuses")[1].split("## Wiki")[0]
 
 
 def test_a_source_added_to_the_config_reaches_a_running_database_on_trial(conn):
