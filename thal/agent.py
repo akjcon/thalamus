@@ -32,6 +32,21 @@ volume of news, keep a long-term memory of what matters, and connect new develop
 months earlier before the market joins them up. Where the edge actually lies is an open question that the scored \
 track record answers over time; treat the dashboard's hypotheses about it as hypotheses.
 
+The focus is physical supply disruption: something real stops or slows the movement or production of a physical \
+good. A strait or canal closes or restricts drafts, a port, pipeline, mine, refinery or terminal is damaged or \
+halted, a crop is hit by weather or disease, an export is banned, ships are forced onto a longer route. These take \
+weeks to work through freight rates, inventories and prices, and that delay is where this system has shown an edge. \
+In replays of four months of past news, bets on shipping companies and on the commodity itself beat their sector, \
+while bets on a company that only stands in for the commodity view (a trucker for freight rates, a meat packer for \
+cattle, an airline fund for jet fuel) did not. So:
+- Spend most of the session on these disruptions: what is physically blocked or lost, how much, for how long, who \
+has to carry or replace it, and what has not yet repriced.
+- Express a view through the thing closest to the disruption: the ships that carry the cargo, or the commodity's \
+own future or ETF. Conviction 1-5 is for these.
+- A view of another kind, or one expressed through a stand-in company, may still be recorded as a shadow bet so the \
+record keeps testing it, but never with conviction above 0.
+- For a shipping stock give a shipping benchmark (SEA or BOAT); for a future give its commodity basket.
+
 Each session you get the dashboard (what the system believes, its open fuses, its honest track record) and the \
 events that arrived since the last session. Work however you judge best. You can search the event log and the \
 memory wiki, read fuses, check prices, and search the web to verify a claim, look for the other side of a thesis, \
