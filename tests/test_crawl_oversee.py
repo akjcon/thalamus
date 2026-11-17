@@ -66,8 +66,13 @@ def test_overseer_reports_stopped_jobs_even_without_the_model_and_directs_the_cr
     conn.execute("INSERT INTO job_log(at, job, ok, summary) VALUES (?, 'dream', 0, 'Dream failed: RuntimeError: disk full')", (NOW - HOUR,))
     conn.execute("INSERT INTO candidates(url, name, found_at, status, note) VALUES ('https://ais.example/', 'Vessel tracking', 1, 'proposal', '[paid] about $500 a month')")
     assert oversee.stopped(conn, NOW) == ["intake has not run for 9 hours (expected within 6)", "dream failed on its last run: Dream failed: RuntimeError: disk full"]
+    conn.execute("INSERT INTO items(id, source, title, fetched_at, extracted) VALUES ('k', 'Port News', 'Strait closed', ?, 1), ('d', 'Daily Wire', 'Celebrity wedding', ?, 2)", (NOW - HOUR, NOW - HOUR))
+    conn.execute("INSERT INTO events(item_id, at, event_type, summary) VALUES ('k', ?, 'other', 'The strait closed to tankers.')", (NOW,))
+    conn.execute("INSERT INTO strategies(created_at, key, name, hypothesis, spec, status) VALUES (1, 'k', 'n', 'h', '{}', 'failed_dev')")
     text = oversee.health(conn, NOW)
     assert "Vessel tracking" in text and "intake has not run for 9 hours" in text and "## Scorecard" in text
+    assert "- kept (Port News): The strait closed to tankers." in text and "- dropped (Daily Wire): Celebrity wedding" in text   # a sample to check the cheap model on
+    assert "- rules failed_dev: 1" in text and "prediction-market prices stored 0" in text
     client = FakeClient(Review(verdict="Intake has stalled.", problems=["intake stopped"], crawl_directions="Rhine and Danube port notices",
                                for_owner=["Vessel tracking at about $500 a month"]), RuntimeError("api down"))
     msg = oversee.review(conn, LLM(conn, client), NOW)

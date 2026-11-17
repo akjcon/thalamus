@@ -162,6 +162,7 @@ CREATE TABLE IF NOT EXISTS readings (
     unit TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (source, day)
 );
+CREATE INDEX IF NOT EXISTS readings_day ON readings(day, source);
 -- Lines already seen on a watched page, so only what is new becomes an item.
 CREATE TABLE IF NOT EXISTS page_seen (
     source TEXT NOT NULL,
@@ -184,6 +185,21 @@ CREATE TABLE IF NOT EXISTS job_log (
     job TEXT NOT NULL,
     ok INTEGER NOT NULL,
     summary TEXT NOT NULL DEFAULT ''
+);
+-- Every trading rule the strategy lab has tried, passed or failed. The rule itself (spec) is never changed.
+CREATE TABLE IF NOT EXISTS strategies (
+    id INTEGER PRIMARY KEY,
+    created_at REAL NOT NULL,
+    key TEXT NOT NULL UNIQUE,                -- hash of the rule, so the same rule is not tried twice
+    name TEXT NOT NULL,
+    hypothesis TEXT NOT NULL,                -- the mechanism, written before any test
+    spec TEXT NOT NULL,                      -- the rule, as data
+    status TEXT NOT NULL,                    -- invalid | failed_dev | passed_dev | failed_holdout | live | retired
+    dev TEXT NOT NULL DEFAULT '',            -- result on the development record (JSON)
+    holdout TEXT NOT NULL DEFAULT '',        -- result of its one run on the holdout record (JSON)
+    holdout_at REAL,
+    last_signal TEXT NOT NULL DEFAULT '',    -- the last signal day a live rule acted on
+    note TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL);
 """

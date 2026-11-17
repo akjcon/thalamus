@@ -260,7 +260,7 @@ def build(conn: sqlite3.Connection, llm: LLM, get, now: float, workers: int = 16
     waiting = conn.execute("SELECT url, name, note FROM candidates WHERE status = 'proposal' AND note LIKE '[data]%'").fetchall()
     def grab(r):
         try:
-            return get(sources.safe_url(r["url"]))
+            return get(sources.safe_url(ingest.expand(r["url"], now)))
         except Exception as e:              # refused, walled or gone: recorded, never worked around
             return e
     with ThreadPoolExecutor(workers) as pool:

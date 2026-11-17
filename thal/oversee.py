@@ -20,7 +20,7 @@ HOUR, DAY = 3600.0, 86400.0
 MEASURED = "SELECT COUNT(*) FROM readings WHERE at >= ? AND source"
 OPEN_FUSES = "SELECT COUNT(*) FROM fuses WHERE status = 'open'"
 # How long each job may go without running before it counts as stopped.
-EXPECTED = {"intake": 6 * HOUR, "analyst": 26 * HOUR, "dream": 26 * HOUR, "crawl": 26 * HOUR, "overseer": 26 * HOUR,
+EXPECTED = {"intake": 6 * HOUR, "analyst": 26 * HOUR, "dream": 26 * HOUR, "crawl": 26 * HOUR, "lab": 26 * HOUR, "overseer": 26 * HOUR,
             "scout": 8 * DAY, "report": 8 * DAY}
 
 SYSTEM = f"""You oversee an automated trading research system and report to its owner. {crawl.FOCUS}
@@ -35,6 +35,9 @@ paid sources, and free ones the builder could not wire in, wait for the owner
 - scout: weekly; a stronger model with web search adds and retires sources by what they yielded
 - analyst: daily; reads new events and memory, keeps hypotheses, records forecasts and paper bets
 - dream: nightly; folds the analyst's notes into the long-term memory and, weekly, rewrites the lessons
+- lab: daily; tests trading rules ("when this measured series does X, hold Y for N days") that a model proposes \
+weekly. A rule must pass a development record, then one run on a later record the proposer never sees, and is then \
+judged on shadow bets it places live. Most rules failing is the expected, healthy outcome
 - report: weekly scorecard. Bets against their sector, counted per thesis, are the measure of skill.
 All trading is on paper. There is no spending cap in the system itself (the owner limits it at the provider), so say \
 plainly when a part's cost is rising or out of proportion to what it produces.
@@ -44,6 +47,8 @@ You are given a health report built by code. Judge, from the facts in it only:
 nothing is a problem)
 - whether the parts fit together and fit the focus (for example sources being added that the analyst never uses, \
 spending concentrated where the record shows no return, bets drifting off the focus)
+- whether the sample of extraction decisions shows the cheap model keeping what matters for the focus and \
+dropping what does not (it is the only check on that step, so name any item that was clearly misjudged)
 - what the source crawler should look for next, given what the analyst is tracking and what is thin
 - what needs the owner's decision (proposals for paid or non-feed sources worth acting on, anything risky)
 Be brief and concrete. Say nothing is wrong when nothing is. Do not invent facts that are not in the report."""
@@ -103,6 +108,14 @@ def health(conn: sqlite3.Connection, now: float) -> str:
     top = q("SELECT i.source s, COUNT(*) n FROM events e JOIN items i ON i.id = e.item_id WHERE i.fetched_at >= ? GROUP BY i.source ORDER BY n DESC LIMIT 12", week)
     if top:
         lines.append("- events by source: " + ", ".join(f"{r['s']} {r['n']}" for r in top))
+    day = now - DAY                       # a sample of what the cheap model kept and dropped, so its judgement can be checked
+    kept = q("SELECT e.summary s, i.source src FROM events e JOIN items i ON i.id = e.item_id WHERE i.fetched_at >= ? AND e.dup_of IS NULL ORDER BY RANDOM() LIMIT 8", day)
+    dropped = q("SELECT title s, source src FROM items WHERE fetched_at >= ? AND extracted = 2 ORDER BY RANDOM() LIMIT 8", day)
+    if kept or dropped:
+        lines += ["", "## Extraction, last 24 hours: a random sample of what was kept as an event and what was dropped"]
+        lines += [f"- kept ({r['src']}): {r['s'][:200]}" for r in kept] + [f"- dropped ({r['src']}): {r['s'][:160]}" for r in dropped]
+    lines += ["", "## Strategy lab"]
+    lines += [f"- rules {r['status']}: {r['n']}" for r in q("SELECT status, COUNT(*) n FROM strategies GROUP BY status ORDER BY status")] or ["- no rules tried yet"]
     lines += ["", "## Crawler"]
     lines += [f"- candidates {r['status']}: {r['n']}" for r in q("SELECT status, COUNT(*) n FROM candidates GROUP BY status ORDER BY status")] or ["- no candidates yet"]
     props = crawl.proposals(conn)

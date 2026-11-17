@@ -10,6 +10,7 @@ backfill FOLDER [I N]  load the old bot's saved headline scans as history and ex
 replay NAME START END BUDGET [EVERY [DREAM_EVERY]]  replay past days (YYYY-MM-DD) from data/replay/v1_events.db into
         data/replay/NAME, a session on every EVERYth day with news, stopping at BUDGET dollars; then print the score
         (a dream after every DREAM_EVERYth session; 0 means never, the no-memory control)
+lab [propose]  run the strategy lab once: holdout tests and live rules; with "propose", ask a model for new rules first
 serve   run forever on the built-in schedule (what the deployment runs)
 ui [DB] show the control page at http://localhost:8787 for a database (default: the local one), on this machine only
 """
@@ -94,6 +95,9 @@ def main(argv: list[str]) -> int:
         ledger.mark_all(conn, provider)
         for by in ("source", "kind", "side"):
             print(f"\nby {by}\n" + ledger.format_scoreboard(ledger.scoreboard(conn, by=by)))
+    elif cmd == "lab":
+        from . import lab
+        print(lab.run(conn, llm, provider, proposing="propose" in argv[2:]))
     elif cmd == "report":
         ledger.mark_all(conn, provider); forecasts.resolve(conn, provider)
         print(report.scorecard(conn))

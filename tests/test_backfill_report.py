@@ -108,7 +108,7 @@ def at(day, hour, minute=0):
 
 
 def test_report_is_due_on_sunday_afternoon_once(conn):
-    for job in ("crawl", "overseer"):                                      # scheduled elsewhere; not what this test is about
+    for job in ("crawl", "overseer", "lab"):                               # scheduled elsewhere; not what this test is about
         serve.mark_run(conn, job, at(16, 18))
     for job in ("dream", "scout", "analyst", "intake"):
         serve.mark_run(conn, job, at(15, 12, 5))

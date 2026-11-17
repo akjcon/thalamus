@@ -11,7 +11,7 @@ def at(day, hour, minute=0):                      # November 2026: the 8th is a 
 
 def quiet(conn, day):
     """Mark the crawler and the overseer as already run, for tests that are about the other jobs."""
-    serve.mark_run(conn, "crawl", at(day, 18)); serve.mark_run(conn, "overseer", at(day, 18))
+    serve.mark_run(conn, "crawl", at(day, 18)); serve.mark_run(conn, "overseer", at(day, 18)); serve.mark_run(conn, "lab", at(day, 18))
 
 
 def test_crawl_runs_daily_and_the_overseer_twice_a_day(conn):
@@ -19,12 +19,14 @@ def test_crawl_runs_daily_and_the_overseer_twice_a_day(conn):
         serve.mark_run(conn, job, at(9, 23))
     assert serve.due(conn, at(9, 5, 59)) == [] and serve.due(conn, at(9, 6)) == ["crawl"]
     serve.mark_run(conn, "crawl", at(9, 6))
+    assert serve.due(conn, at(9, 6, 59)) == [] and serve.due(conn, at(9, 7)) == ["lab"]                # the lab, after the crawl
+    serve.mark_run(conn, "lab", at(9, 7))
     assert serve.due(conn, at(9, 7, 59)) == [] and serve.due(conn, at(9, 8)) == ["overseer"]
     serve.mark_run(conn, "overseer", at(9, 8))
     assert serve.due(conn, at(9, 17, 59)) == [] and serve.due(conn, at(9, 18, 1)) == ["overseer"]      # the evening look
     serve.mark_run(conn, "overseer", at(9, 18, 1))
     assert serve.due(conn, at(9, 23)) == []
-    serve.mark_run(conn, "overseer", at(10, 7)); serve.mark_run(conn, "crawl", at(10, 7)); serve.mark_run(conn, "dream", at(10, 7))
+    serve.mark_run(conn, "overseer", at(10, 7)); serve.mark_run(conn, "crawl", at(10, 7)); serve.mark_run(conn, "dream", at(10, 7)); serve.mark_run(conn, "lab", at(10, 7))
     serve.mark_run(conn, "intake", at(10, 19))
     assert serve.due(conn, at(10, 19)) == ["overseer"]                    # a restart that missed the morning slot runs it once
 

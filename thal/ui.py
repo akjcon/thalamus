@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import hmac
 import html
+import json
 import os
 import sqlite3
 import threading
@@ -19,14 +20,14 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from . import ingest, ledger, oversee
+from . import ingest, lab, ledger, oversee
 
 HOUR, DAY = 3600.0, 86400.0
 DECISIONS = {"approve": "approved", "decline": "declined", "retry": "proposal"}
-JOBS = ("intake", "analyst", "dream", "crawl", "overseer", "scout", "report")
+JOBS = ("intake", "analyst", "dream", "crawl", "lab", "overseer", "scout", "report")
 WHAT = {"intake": "reads every source, extracts events", "analyst": "reads events, makes forecasts and bets",
         "dream": "folds notes into long-term memory", "crawl": "finds and wires in new sources",
-        "overseer": "checks every part, directs the crawler", "scout": "weekly source search and retirement",
+        "lab": "tests trading rules, runs the ones that passed", "overseer": "checks every part, directs the crawler", "scout": "weekly source search and retirement",
         "report": "weekly scorecard"}
 
 CSS = """
@@ -114,7 +115,7 @@ def page(conn: sqlite3.Connection, now: float | None = None, decisions: bool = T
                f"<span class=stat>spent today <b>${cost(now - now % DAY):.2f}</b></span><span class=stat>7 days <b>${cost(week):.2f}</b></span>"
                f"<span class=stat>sources <b>{live}</b></span>"
                f"<span class=stat>events 24h <b>{one('SELECT COUNT(*) FROM events e JOIN items i ON i.id = e.item_id WHERE i.fetched_at >= ?', day)}</b></span>"
-               f"<span class=stat>open bets <b>{one('SELECT COUNT(*) FROM bets WHERE closed_at IS NULL')}</b></span>"
+               f"<span class=stat>open bets <b>{one("SELECT COUNT(*) FROM bets WHERE closed_at IS NULL AND source IN ('v2', 'lab')")}</b></span>"
                f"<span class=stat dim>{time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime(now))}</span></header>")
 
     # ---- agents
@@ -156,27 +157,45 @@ def page(conn: sqlite3.Connection, now: float | None = None, decisions: bool = T
 
     # ---- measurements
     tiles = []
-    for s in q("SELECT source, MAX(day) d FROM readings WHERE source NOT LIKE 'kalshi:%' GROUP BY source ORDER BY source"):
-        hist = q("SELECT value, unit FROM readings WHERE source = ? ORDER BY day DESC LIMIT 90", s["source"])[::-1]
+    for s in q("SELECT name FROM sources WHERE status != 'retired' AND kind NOT IN ('rss', 'page', 'kalshi') ORDER BY name"):   # by source: the table also holds market prices
+        hist = q("SELECT value, unit, day FROM readings WHERE source = ? ORDER BY day DESC LIMIT 90", s["name"])[::-1]
+        if not hist:
+            continue
         values = [r["value"] for r in hist]
-        tiles.append(f"<div class='card tile'><div class=dim>{e(s['source'])}</div><b>{values[-1]:g}</b> {e(hist[-1]['unit'])} "
-                     f"<span class=dim>· {e(s['d'])} · {len(values)}d range {min(values):g}–{max(values):g}</span>{spark(values)}</div>")
-    priced = one("SELECT COUNT(DISTINCT source) FROM readings WHERE source LIKE 'kalshi:%' AND at >= ?", day)
+        tiles.append(f"<div class='card tile'><div class=dim>{e(s['name'])}</div><b>{values[-1]:g}</b> {e(hist[-1]['unit'])} "
+                     f"<span class=dim>· {e(hist[-1]['day'])} · {len(values)}d range {min(values):g}–{max(values):g}</span>{spark(values)}</div>")
+    priced = max(one("SELECT COUNT(*) FROM readings WHERE day = ? AND source LIKE 'kalshi:%'", time.strftime("%Y-%m-%d", time.gmtime(t))) for t in (now, day))
     if tiles or priced:
         out.append("<h2>Measurements</h2>" + (f"<div class=dim style='margin-bottom:8px'>Plus the daily price of {priced} prediction-market contracts.</div>" if priced else "")
                    + "<div class=grid>" + "".join(tiles) + "</div>")
 
     # ---- bets
     fuses = {r["id"]: r["title"] for r in q("SELECT id, title FROM fuses")}
-    rows = [f"<tr><td class=nw><b>{e(b['side'])} {e(b['symbol'])}</b> <span class=tag>{'shadow' if b['kind'] == 'shadow' else 'paper'}</span></td>"
+    rows = [f"<tr><td class=nw><b>{e(b['side'])} {e(b['symbol'])}</b> <span class=tag>{'lab rule' if b['source'] == 'lab' else 'shadow' if b['kind'] == 'shadow' else 'paper'}</span></td>"
             f"<td>{e(fuses.get(b['fuse_id'], b['thesis'][:110]))}</td><td class='n dim'>{(now - b['created_at']) / DAY:.0f}d of {b['horizon_days'] or '?'}</td>"
             f"<td class=n>{pct(b['ret'])}</td><td class=n>{pct(b['vs_bench'])} <span class=dim>{e(b['benchmark'] or '')}</span></td></tr>"
-            for b in ledger.open_bets(conn)]
+            for b in ledger.open_bets(conn) + ledger.open_bets(conn, "lab")]
     board = {r["horizon"]: r for r in ledger.scoreboard(conn, by="source", unique=False, where="b.source = 'v2'")}
     record = " · ".join(f"{h}: {pct(board[h]['vs_bench']) or 'n/a'} vs sector (n={board[h]['n']})" for h in ("1w", "4w", "12w") if h in board)
     out.append(f"<h2>Open bets · {len(rows)}</h2>" + (f"<div class=dim style='margin-bottom:8px'>All bets so far — {record}</div>" if record else "")
                + ("<div class=card><table><tr><th>Bet<th>Thesis<th class=n>Held<th class=n>Return<th class=n>vs sector</tr>" + "".join(rows) + "</table></div>"
                   if rows else "<div class='card pad dim'>None open.</div>"))
+
+    # ---- strategy lab
+    rules = q("SELECT * FROM strategies WHERE status != 'invalid' ORDER BY (status = 'live') DESC, (status = 'passed_dev') DESC, id DESC LIMIT 40")
+    if rules:
+        label = {"passed_dev": "waiting for holdout", "failed_dev": "failed development", "failed_holdout": "failed holdout"}
+        res = lambda r: f"{pct(r['mean'])} <span class=dim>n={r['n']}" + (f", t {r['t']:g}" if "t" in r else "") + "</span>" if r and r["n"] else ""
+        rows = []
+        for s in rules:
+            dev, held, live_rec = (json.loads(s["dev"]) if s["dev"] else None), (json.loads(s["holdout"]) if s["holdout"] else None), lab.live_record(conn, s["id"])
+            rows.append(f"<tr><td><b title='{e(s['hypothesis'])}'>{e(s['name'])}</b><br><span class=dim>{e(lab.in_words(s['spec']))}</span></td>"
+                        f"<td class=nw><span class=tag>{e(label.get(s['status'], s['status']))}</span></td>"
+                        f"<td class=n>{res(dev)}</td><td class=n>{res(held)}</td><td class=n>{res(live_rec)}</td></tr>")
+        tried = one("SELECT COUNT(*) FROM strategies WHERE status != 'invalid'")
+        out.append(f"<h2>Strategy lab · {tried} rules tried</h2><div class=dim style='margin-bottom:8px'>Mean return per trade over the benchmark, after costs. "
+                   f"The next rule needs t {lab.bar(tried + 1):g} to pass development.</div>"
+                   "<div class=card><table><tr><th>Rule<th>Status<th class=n>Development<th class=n>Holdout<th class=n>Live</tr>" + "".join(rows) + "</table></div>")
 
     # ---- what the sources are producing
     top = q("SELECT e.magnitude m, e.summary s, i.source src, i.fetched_at t FROM events e JOIN items i ON i.id = e.item_id "

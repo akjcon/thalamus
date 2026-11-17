@@ -11,6 +11,8 @@ HOUR, DAY = 3600.0, 86400.0
 def fill(conn):
     conn.execute("INSERT INTO sources(name, url, status, added_at, kind, last_ok_at, why) VALUES ('Port <b>Notices</b>', 'https://p.example/x', 'trial', 1, 'page', ?, 'w')", (NOW - HOUR,))
     conn.execute("INSERT INTO sources(name, url, status, added_at, fails) VALUES ('Dead Feed', 'https://d.example/', 'retired', 1, 5)")
+    conn.execute("INSERT INTO sources(name, url, status, added_at, kind) VALUES ('Rhine level at Kaub', 'https://g.example/', 'trial', 1, 'pegelonline')")
+    conn.execute("INSERT INTO readings(source, day, at, value, unit) VALUES ('kalshi:KXRAIN-4', '2026-11-17', ?, 0.32, 'prob')", (NOW,))
     conn.execute("INSERT INTO items(id, source, title, fetched_at) VALUES ('i1', 'Port <b>Notices</b>', 't', ?)", (NOW - HOUR,))
     conn.execute("INSERT INTO events(item_id, at, event_type, summary, magnitude) VALUES ('i1', ?, 'x', 'Strait <script>alert(1)</script> closed', 4)", (NOW,))
     for d, v in (("2026-11-15", 60.0), ("2026-11-16", 66.0), ("2026-11-17", 73.0)):
@@ -35,7 +37,8 @@ def test_page_shows_what_is_running_and_escapes_everything(conn):
     assert "LONG DHT" in html and "shadow" in html and "Tankers reroute" in html
     assert "<script>alert(1)" not in html and "Strait &lt;script&gt;" in html and "Port &lt;b&gt;Notices&lt;/b&gt;" in html
     assert "Waiting for you · 2" in html and "value=approve" in html and "value=retry" in html
-    assert "1 live (1 page) · 1 retired" in html and "Dead Feed" not in html and "All jobs are running." in html
+    assert "2 live (1 page, 1 series) · 1 retired" in html and "daily price of 1 prediction-market contracts" in html and "kalshi:" not in html
+    assert "1 live (1 page) · 1 retired" not in html and "Dead Feed" not in html and "All jobs are running." in html
     assert "**" not in html
 
 

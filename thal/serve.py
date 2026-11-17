@@ -8,6 +8,8 @@ Jobs and when they run (UTC):
   scout     Sundays at 05:00     look for new sources, retire dead weight
   crawl     daily at 06:00       hunt for new sources: a model proposes, code tests, feeds join on trial, and pages
                                  and data services are wired in by a recipe the builder writes and code checks
+  lab       daily at 07:00       strategy lab: holdout tests that have come due and the live rules; on Saturdays a
+                                 model also proposes new rules, which code runs on the development record
   overseer  08:00 and 18:00      the top model checks every part is running and that they fit together
   report    Sundays at 13:00     the weekly scorecard: forecasts vs baseline, bets vs sector
 Last-run times live in the database, so a restart neither repeats nor skips a job.
@@ -23,7 +25,7 @@ import time
 import traceback
 import urllib.request
 
-from . import agent, crawl, db, dream, extract, forecasts, ingest, ledger, memory, oversee, report, risk, sources, ui
+from . import agent, crawl, db, dream, extract, forecasts, ingest, lab, ledger, memory, oversee, report, risk, sources, ui
 from . import fetch as fetch_mod
 from .broker import get_broker
 from .llm import LLM, BudgetExceeded, load_env
@@ -59,6 +61,8 @@ def due(conn: sqlite3.Connection, now: float) -> list[str]:
         out.append("scout")
     if t.tm_hour >= 6 and not ran_today("crawl"):
         out.append("crawl")
+    if t.tm_hour >= 7 and not ran_today("lab"):
+        out.append("lab")
     slot = max((h for h in OVERSEER_AT if t.tm_hour >= h), default=None)
     if slot is not None and last_run(conn, "overseer") < today + slot * HOUR:
         out.append("overseer")
@@ -126,6 +130,8 @@ def run_job(job: str, conn, llm, wiki, provider, broker, now: float) -> str:
         return (f"Crawl: {c['proposed']} new candidates. Feeds added on trial: {', '.join(c['added']) or 'none'}. "
                 f"Pages and data sources wired in: {', '.join(c['built']) or 'none'}. "
                 f"{c['needs_work']} need work before they can be read; {len(crawl.proposals(conn))} in total wait for you.")
+    if job == "lab":
+        return lab.run(conn, llm, provider, now, proposing=time.gmtime(now).tm_wday == 5)
     if job == "overseer":
         return oversee.review(conn, llm, now)
     if job == "report":
