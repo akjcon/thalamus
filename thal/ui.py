@@ -1,7 +1,9 @@
 """The control page: one private web page that shows what the system is doing.
 
-It is served by the same process as the scheduler, from a second thread with its own database connection, and
-only when THAL_UI_PASSWORD is set: without a password there is no page. It reads the same tables everything
+It is served by the same process as the scheduler, from a second thread with its own database connection. With
+THAL_UI_PASSWORD set it asks for that password and the owner can decide on waiting sources. With THAL_UI_OPEN=yes
+and no password it is open to anyone who has the address, and read-only: no buttons, and decisions are refused.
+With neither there is no page. It reads the same tables everything
 else writes, and its only writes are the owner's decisions on sources that are waiting (approve, decline, retry).
 Everything shown comes from the database and is escaped: source names, headlines and model text are untrusted.
 """
@@ -95,7 +97,7 @@ def job_state(conn: sqlite3.Connection, job: str, running: str, now: float) -> t
     return state, last, (row["summary"] if row else "")
 
 
-def page(conn: sqlite3.Connection, now: float | None = None) -> str:
+def page(conn: sqlite3.Connection, now: float | None = None, decisions: bool = True) -> str:
     now = now or time.time()
     q = lambda sql, *a: conn.execute(sql, a).fetchall()
     one = lambda sql, *a: conn.execute(sql, a).fetchone()[0]
@@ -145,6 +147,8 @@ def page(conn: sqlite3.Connection, now: float | None = None) -> str:
             acts = (("<button name=action value=approve>Approve</button>" if paid else "")
                     + ("<button name=action value=retry>Retry</button>" if w["status"] == "needs_work" else "")
                     + "<button name=action value=decline>Decline</button>")
+            if not decisions:
+                acts = ""
             rows.append(f"<tr><td><a href='{e(w['url'])}' rel=noreferrer target=_blank>{e(w['name'])}</a><br><span class=tag>{kind}</span></td>"
                         f"<td class=dim>{e(w['note'])}</td><td class=nw><form method=post action=decide><input type=hidden name=url value='{e(w['url'])}'>{acts}</form></td></tr>")
         out.append(f"<h2>Waiting for you · {len(waiting)}</h2><div class=card><table>" + "".join(rows) + "</table></div>")
@@ -223,7 +227,7 @@ def authorised(header: str | None, password: str) -> bool:
     return bool(password) and hmac.compare_digest(given.encode(), password.encode())
 
 
-def make_handler(connect, password: str | None):
+def make_handler(connect, password: str | None, decisions: bool = True):
     class Handler(BaseHTTPRequestHandler):
         def _send(self, code: int, body: str = "", headers: dict | None = None) -> None:
             data = body.encode()
@@ -250,13 +254,15 @@ def make_handler(connect, password: str | None):
                 return self._send(404, "Not found.")
             conn = connect()
             try:
-                self._send(200, page(conn))
+                self._send(200, page(conn, decisions=decisions))
             finally:
                 conn.close()
 
         def do_POST(self):
             if not self._allowed():
                 return
+            if not decisions:
+                return self._send(403, "This page is read-only.")
             origin = self.headers.get("Origin")
             if urlparse(self.path).path != "/decide" or (origin and urlparse(origin).netloc != self.headers.get("Host")):
                 return self._send(403, "Refused.")
@@ -273,12 +279,15 @@ def make_handler(connect, password: str | None):
     return Handler
 
 
-def start(connect, password: str | None = None, port: int | None = None) -> ThreadingHTTPServer | None:
-    """Serve the page from a background thread. Returns None, and serves nothing, when no password is set."""
+def start(connect, password: str | None = None, port: int | None = None, open_page: bool | None = None) -> ThreadingHTTPServer | None:
+    """Serve the page from a background thread: behind the password if one is set, else open and read-only if
+    THAL_UI_OPEN=yes, else not at all (returns None)."""
     password = password if password is not None else os.environ.get("THAL_UI_PASSWORD", "")
-    if not password:
-        return None
-    return _serve(connect, password, "0.0.0.0", port if port is not None else int(os.environ.get("PORT", "8080")))
+    open_page = open_page if open_page is not None else os.environ.get("THAL_UI_OPEN", "").lower() == "yes"
+    port = port if port is not None else int(os.environ.get("PORT", "8080"))
+    if password:
+        return _serve(connect, password, "0.0.0.0", port)
+    return _serve(connect, None, "0.0.0.0", port, decisions=False) if open_page else None
 
 
 def start_local(connect, port: int = 8787) -> ThreadingHTTPServer:
@@ -286,7 +295,7 @@ def start_local(connect, port: int = 8787) -> ThreadingHTTPServer:
     return _serve(connect, None, "127.0.0.1", port)
 
 
-def _serve(connect, password: str | None, host: str, port: int) -> ThreadingHTTPServer:
-    server = ThreadingHTTPServer((host, port), make_handler(connect, password))
+def _serve(connect, password: str | None, host: str, port: int, decisions: bool = True) -> ThreadingHTTPServer:
+    server = ThreadingHTTPServer((host, port), make_handler(connect, password, decisions))
     threading.Thread(target=server.serve_forever, daemon=True, name="ui").start()
     return server

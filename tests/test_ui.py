@@ -68,3 +68,21 @@ def test_decisions_and_password(conn, tmp_path):
         server.shutdown()
     c = db.connect(path)
     assert {r["name"]: r["status"] for r in c.execute("SELECT name, status FROM candidates")} == {"Vessel tracking": "approved", "Scripted": "proposal"}
+
+
+def test_open_page_is_read_only(tmp_path):
+    path = tmp_path / "t.db"
+    c = db.connect(path); fill(c); c.close()
+    assert ui.start(lambda: db.connect(path), "", 0, open_page=False) is None
+    server = ui.start(lambda: db.connect(path), "", 0, open_page=True)
+    base = f"http://127.0.0.1:{server.server_address[1]}"
+    try:
+        html = urllib.request.urlopen(base + "/").read().decode()
+        assert "Waiting for you · 2" in html and "<button" not in html
+        with pytest.raises(urllib.error.HTTPError) as err:
+            urllib.request.urlopen(urllib.request.Request(base + "/decide", data=b"url=https%3A%2F%2Fais.example%2F&action=approve", method="POST"))
+        assert err.value.code == 403
+    finally:
+        server.shutdown()
+    c = db.connect(path)
+    assert c.execute("SELECT status FROM candidates WHERE name = 'Vessel tracking'").fetchone()[0] == "proposal"

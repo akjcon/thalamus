@@ -227,7 +227,7 @@ def main() -> None:
     with conn:
         conn.execute("DELETE FROM kv WHERE k = 'running_job'")           # nothing is running just after a start
     page = ui.start(db.connect)
-    print("thalamus v2 serving" + (f"; control page on port {page.server_address[1]}" if page else "; no control page (THAL_UI_PASSWORD not set)"), flush=True)
+    print("thalamus v2 serving" + (f"; control page on port {page.server_address[1]}" if page else "; no control page (set THAL_UI_PASSWORD, or THAL_UI_OPEN=yes for an open read-only page)"), flush=True)
     while True:
         tick(conn, llm, wiki, provider, broker, discord.post, time.time())
         time.sleep(60)
