@@ -40,11 +40,15 @@ def test_rainfall_is_summed_compared_with_earlier_years_and_its_long_record_is_r
     assert len(asked) == 1 and "2000-01-01" not in asked[0]                # the long record is not asked for again
 
 
-def test_a_failing_history_address_does_not_stop_the_daily_read(conn):
+def test_a_failing_history_address_does_not_stop_the_daily_read_and_is_asked_again(conn):
+    asked = []
     def get(url):
-        if "2000-01-01" in url: raise OSError("down")
+        asked.append(url)
+        if "2000-01-01" in url and len(asked) < 3: raise OSError("down")
         return json.dumps({"data": [["2026-11-16", "0.25"]]})
     assert ingest.ingest(conn, [RAIN], get=get, now=NOW) == {"Rain at Testville": 1}
+    ingest.ingest(conn, [RAIN], get=get, now=NOW + 3600); ingest.ingest(conn, [RAIN], get=get, now=NOW + 7200)
+    assert ["2000-01-01" in u for u in asked] == [True, False, True, False, False]     # again after the failure, never after it was read
 
 
 def market(ticker, bid, ask, volume="5000", close="2026-12-16T19:00:00Z"):
@@ -87,5 +91,5 @@ def test_the_analyst_can_read_a_series_but_not_past_its_own_day(conn, tmp_path):
     assert s.get_readings() == "Rhine level at Kaub (cm): 2 days, 2026-11-15 to 2026-11-16"              # market prices are listed only when asked for
     out = s.get_readings("rhine")
     assert "2 days on record from 2026-11-15, range 74 to 80" in out and out.endswith("11-15 80, 11-16 74")   # the 18th has not happened yet
-    assert "kalshi:KXRAIN-4 (prob)" in s.get_readings("kalshi:KXRAIN") and "no series" in s.get_readings("volga")
+    assert "kalshi:KXRAIN-4 (prob)" in s.get_readings("KXRAIN") and "no series" in s.get_readings("volga")
     assert s.call("get_readings", {"name": "rhine", "days": 1})[0].endswith("11-16 74")

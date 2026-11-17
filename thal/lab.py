@@ -25,6 +25,7 @@ import math
 import sqlite3
 import statistics
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date, timedelta
@@ -107,6 +108,10 @@ class Proposed(BaseModel):
     rules: list[Rule] = Field(default_factory=list)
 
 
+class Unavailable(RuntimeError):
+    """Prices could not be fetched right now. Nothing may be concluded from that."""
+
+
 class History:
     """Long daily price history for tests, fetched when asked for and kept only in memory. The live price cache
     starts in 2026 and is rewritten whole at each refresh, so the lab does not share it."""
@@ -124,8 +129,12 @@ class History:
                 with urllib.request.urlopen(req, timeout=30) as r:
                     res = json.load(r)["chart"]["result"][0]
                 bars = [(float(t), float(c)) for t, c in zip(res["timestamp"], res["indicators"]["adjclose"][0]["adjclose"]) if c is not None]
-            except Exception:
+            except urllib.error.HTTPError as e:
+                if e.code not in (400, 404):                  # anything but "no such symbol" says nothing about the rule
+                    raise Unavailable(f"prices for {symbol}: HTTP {e.code}") from e
                 bars = []
+            except Exception as e:
+                raise Unavailable(f"prices for {symbol}: {type(e).__name__}") from e
             self.cache[symbol] = complete(bars, self.now)
         return self.cache[symbol]
 
@@ -222,13 +231,19 @@ def bar(tried: int) -> float:
 def evaluate(conn: sqlite3.Connection, rule: Rule, prices) -> tuple[list[dict], list[dict]]:
     """(development trades, holdout trades). A trade belongs to development only if it had ended before the holdout
     began, and to the holdout only if its signal came after; one that straddles the date counts for neither."""
-    bench = rule.benchmark.strip().upper() or ledger.default_benchmark(rule.symbol)
-    ts = trades(rule, crossings(rule, stat_series(rule, readings(conn, rule.series))), prices(rule.symbol.strip().upper()), prices(bench))
+    ts = trades(rule, crossings(rule, stat_series(rule, readings(conn, rule.series))), prices(rule.symbol.strip().upper()), prices(benchmark(rule)))
     return [t for t in ts if t["exit"] < HOLDOUT_START], [t for t in ts if t["signal"] >= HOLDOUT_START]
 
 
+def benchmark(rule: Rule) -> str:
+    return rule.benchmark.strip().upper() or ledger.default_benchmark(rule.symbol.strip().upper())
+
+
 def _key(rule: Rule) -> str:
-    spec = rule.model_dump(exclude={"name", "hypothesis"})
+    """The same rule always has the same key, however it is spelled: the symbol's case, a benchmark left empty or
+    given as its default, and a window on a statistic that does not use one make no difference."""
+    spec = {**rule.model_dump(exclude={"name", "hypothesis"}), "symbol": rule.symbol.strip().upper(), "benchmark": benchmark(rule),
+            "window": 0 if rule.stat == "level" else rule.window}
     return hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -240,6 +255,8 @@ def _problem(conn: sqlite3.Connection, rule: Rule, prices) -> str:
         return f"no series named {rule.series!r} with at least two years of record before {HOLDOUT_START}"
     if len([1 for t, _ in prices(rule.symbol.strip().upper()) if t < calendar.timegm(date.fromisoformat(HOLDOUT_START).timetuple())]) < 250:
         return f"{rule.symbol} has no usable price history"
+    if benchmark(rule) == rule.symbol.strip().upper() or len(prices(benchmark(rule))) < 250:
+        return f"{benchmark(rule)} cannot be the benchmark: it is the instrument itself or has no price history"
     return ""
 
 
@@ -248,11 +265,15 @@ def record(conn: sqlite3.Connection, rule: Rule, prices, now: float) -> dict:
     key = _key(rule)
     if conn.execute("SELECT 1 FROM strategies WHERE key = ?", (key,)).fetchone():
         return {"name": rule.name, "status": "duplicate"}
-    why = _problem(conn, rule, prices)
+    try:
+        why = _problem(conn, rule, prices)
+        found = None if why else evaluate(conn, rule, prices)[0]
+    except Unavailable as e:                      # not written down: it is proposed again when prices can be had
+        return {"name": rule.name, "status": "postponed", "why": str(e)}
     dev, status, note = {}, "invalid", why
     if not why:
         tried = conn.execute("SELECT COUNT(*) FROM strategies WHERE status != 'invalid'").fetchone()[0] + 1
-        dev = {**summary(evaluate(conn, rule, prices)[0]), "bar": bar(tried)}
+        dev = {**summary(found), "bar": bar(tried)}
         ok = dev["n"] >= MIN_DEV_TRADES and dev["mean"] > 0 and dev["t"] >= dev["bar"]
         status = "passed_dev" if ok else "failed_dev"
         note = "" if ok else (f"only {dev['n']} trades" if dev["n"] < MIN_DEV_TRADES else f"t {dev['t']} against a bar of {dev['bar']}")
@@ -268,7 +289,10 @@ def holdout(conn: sqlite3.Connection, prices, now: float) -> list[dict]:
     The result is final: there is no way to run it again."""
     done = []
     for s in conn.execute("SELECT * FROM strategies WHERE status = 'passed_dev'").fetchall():
-        got = summary(evaluate(conn, Rule.model_validate_json(s["spec"]), prices)[1])
+        try:
+            got = summary(evaluate(conn, Rule.model_validate_json(s["spec"]), prices)[1])
+        except Unavailable:
+            continue
         if got["n"] < MIN_HOLDOUT_TRADES:
             continue
         status = "live" if got["mean"] > 0 else "failed_holdout"
@@ -303,15 +327,17 @@ def run_live(conn: sqlite3.Connection, provider: PriceProvider, now: float) -> l
         last = hits[-1] if hits else None
         if last is None or last.isoformat() <= s["last_signal"] or (today - last).days > FRESH_DAYS:
             continue
-        with conn:
-            conn.execute("UPDATE strategies SET last_signal = ? WHERE id = ?", (last.isoformat(), s["id"]))
-        if conn.execute("SELECT 1 FROM bets WHERE source = 'lab' AND closed_at IS NULL AND tags LIKE ?", (f'%"{tag}"%',)).fetchone():
-            continue
-        bet = BetOut(symbol=rule.symbol, side=rule.side, thesis=f"Lab rule #{s['id']} ({s['name']}) fired on {last}. {s['hypothesis']}",
-                     invalidation="none: it is held to its horizon and the rule is judged on its whole record",
-                     horizon_days=rule.hold_days, benchmark=rule.benchmark, conviction=0, tags=["lab", tag])
-        placed = place_bet(conn, provider, None, bet, None, now, source="lab")
-        fired.append(f"{s['name']}: {rule.side} {rule.symbol}" + ("" if "bet" in placed else f" (not recorded: {placed['why']})"))
+        busy = conn.execute("SELECT 1 FROM bets WHERE source = 'lab' AND closed_at IS NULL AND tags LIKE ?", (f'%"{tag}"%',)).fetchone()
+        placed = None
+        if not busy:
+            bet = BetOut(symbol=rule.symbol, side=rule.side, thesis=f"Lab rule #{s['id']} ({s['name']}) fired on {last}. {s['hypothesis']}",
+                         invalidation="none: it is held to its horizon and the rule is judged on its whole record",
+                         horizon_days=rule.hold_days, benchmark=benchmark(rule), conviction=0, tags=["lab", tag])
+            placed = place_bet(conn, provider, None, bet, None, now, source="lab")
+            fired.append(f"{s['name']}: {rule.side} {rule.symbol}" + ("" if "bet" in placed else f" (not recorded: {placed['why']})"))
+        if busy or "bet" in placed:               # a signal that could not be recorded is tried again while it is fresh
+            with conn:
+                conn.execute("UPDATE strategies SET last_signal = ? WHERE id = ?", (last.isoformat(), s["id"]))
     return fired
 
 

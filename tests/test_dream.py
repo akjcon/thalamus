@@ -52,8 +52,10 @@ def test_a_page_can_be_edited_in_part_without_writing_it_again(world):
     s = DreamSession(conn, wiki, NOW)
     s.write_page("Sugar", "Sugar", "commodity", "India follows the monsoon.\n\nBrazil swings. Brazil is large.")
     note(conn)
-    assert s.edit_page("sugar", "India follows the monsoon.", "India follows the monsoon (seen 2026-06).") == "edited sugar (now 74 bytes); 1 queued note(s) folded"
-    assert "edited sugar" in s.edit_page("Sugar", "", "Thailand is third.")                       # an empty old adds at the end
+    assert s.edit_page("sugar", "India follows the monsoon.", "India follows the monsoon (seen 2026-06).") == "edited sugar (now 74 bytes); 1 note(s) still queued for it (set notes_done on the edit that covers them)"
+    assert "## sugar" in s.notes_waiting()                                                        # a partial edit does not use up the notes
+    assert s.edit_page("Sugar", "", "Thailand is third.", notes_done=True).endswith("1 queued note(s) folded")   # an empty old adds at the end
+    assert s.notes_waiting() == "no notes are waiting"
     page = wiki.read("sugar")
     assert page.body == "India follows the monsoon (seen 2026-06).\n\nBrazil swings. Brazil is large.\n\nThailand is third."
     assert page.title == "Sugar" and page.kind == "commodity" and s.written == ["sugar"]

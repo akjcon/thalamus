@@ -209,8 +209,8 @@ class Session:
         today = time.strftime("%Y-%m-%d", time.gmtime(self.now))            # nothing dated after the session's own day
         like = f"%{name.strip()}%"
         found = self.conn.execute("SELECT source, unit, COUNT(*) n, MIN(day) a, MAX(day) b, MIN(value) lo, MAX(value) hi FROM readings"
-                                  " WHERE day <= ? AND source LIKE ? AND (source NOT LIKE 'kalshi:%' OR ? LIKE 'kalshi:%')"
-                                  " GROUP BY source ORDER BY source LIMIT 60", (today, like, name.strip().lower())).fetchall()
+                                  " WHERE day <= ? AND source LIKE ? AND (source NOT LIKE 'kalshi:%' OR ? != '')"   # market prices only when a name is given
+                                  " GROUP BY source ORDER BY source LIMIT 60", (today, like, name.strip())).fetchall()
         if not found:
             return "no series by that name; call with no name to list them"
         if not name.strip() or len(found) > 4:
@@ -224,7 +224,7 @@ class Session:
         return "\n".join(out)
 
     def scoreboard(self, by: str) -> str:
-        rows = ledger.scoreboard(self.conn, by=by)
+        rows = ledger.scoreboard(self.conn, by=by, where="b.source != 'lab'")
         return ledger.format_scoreboard(rows) if rows else "no scored bets yet"
 
     def open_fuse(self, title: str, thesis: str, watch: list, expires_days: int = 90, event_ids: list | None = None) -> str:

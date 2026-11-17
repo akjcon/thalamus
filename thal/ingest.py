@@ -66,7 +66,6 @@ def _usgs(text: str) -> list[tuple[float, float]]:
 SERIES = {"pegelonline": (_pegelonline, "cm"), "usgs_gauge": (_usgs, "ft")}     # kind -> (reader, unit)
 KINDS = ("rss", "page", "series", "kalshi") + tuple(SERIES)
 WEEK = 7
-HISTORY_BELOW = 60            # a series with fewer days than this on record asks its history address once more
 MAX_PATTERN, MAX_SCAN = 300, 200_000
 
 RECIPE = """A recipe is a JSON object.
@@ -337,11 +336,14 @@ def ingest(conn: sqlite3.Connection, feeds: list[dict] | None = None, fetch=None
                     rows, ok = read_page(conn, spec, get(expand(f["url"], now)), now)   # an unchanged page is a success with no items
                 else:
                     past = spec.get("history") or (spec.get("recipe") or {}).get("history")
-                    if past and conn.execute("SELECT COUNT(*) FROM readings WHERE source = ?", (f["name"],)).fetchone()[0] < HISTORY_BELOW:
+                    done = f"history_read:{f['name']}"
+                    if past and not conn.execute("SELECT 1 FROM kv WHERE k = ?", (done,)).fetchone():
                         try:                                           # the long record, read once; the daily read never waits on it
-                            read_series(conn, spec, get(expand(str(past), now)), now)
-                        except Exception:
-                            pass
+                            if read_series(conn, spec, get(expand(str(past), now)), now):
+                                with conn:
+                                    conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES (?, ?)", (done, str(now)))
+                        except Exception as e:                         # asked for again at the next intake
+                            print(f"history for {f['name']} not read: {type(e).__name__}: {str(e)[:120]}", flush=True)
                     rows = read_series(conn, spec, get(expand(f["url"], now)), now)
                     ok = bool(rows)
             report[f["name"]] = store(conn, rows, now)

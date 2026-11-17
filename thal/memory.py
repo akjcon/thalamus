@@ -31,7 +31,8 @@ def open_fuse(conn: sqlite3.Connection, title: str, thesis: str, watch: list[str
         raise ValueError("a fuse needs a title and a thesis")
     if not watch:
         raise ValueError("a fuse must say what evidence it is waiting for")
-    n = conn.execute("SELECT COUNT(*) FROM fuses WHERE status = 'open'").fetchone()[0]
+    n = conn.execute("SELECT COUNT(*) FROM fuses WHERE status = 'open' AND id NOT IN"       # one a bet is riding on takes no slot
+                     " (SELECT fuse_id FROM bets WHERE closed_at IS NULL AND fuse_id IS NOT NULL)").fetchone()[0]
     if n >= MAX_OPEN_FUSES:
         raise ValueError(f"{n} fuses are already open; close some first")
     days = max(7, min(365, int(expires_days)))
@@ -112,7 +113,7 @@ def dashboard(conn: sqlite3.Connection, wiki: Wiki, now: float | None = None) ->
     now = now or time.time()
     rules = (ROOT / "config" / "house_rules.md").read_text().strip()
     parts = [rules, "", "## Track record (unique ideas, return vs S&P 500)"]
-    board = [r for r in ledger.scoreboard(conn, by="source") if r["horizon"] in ("4w", "12w")]
+    board = [r for r in ledger.scoreboard(conn, by="source", where="b.source != 'lab'") if r["horizon"] in ("4w", "12w")]
     parts += [f"- {r['group']} at {r['horizon']}: n={r['n']}, mean {r['mean'] * 100:+.1f}%, "
               + (f"vs S&P {r['vs_spy'] * 100:+.1f}%" if r["vs_spy"] is not None else "no benchmark")
               for r in board] or ["- no scored bets yet"]

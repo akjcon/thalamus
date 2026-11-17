@@ -61,8 +61,8 @@ TOOLS = [
      "input_schema": {"type": "object", "properties": {"page": {"type": "string"}}, "required": ["page"]}},
     {"name": "write_page", "description": "Create or replace a wiki page with its full new text. Notes queued for that page are marked as folded. The lessons page cannot be written here.",
      "input_schema": {"type": "object", "properties": {"page": {"type": "string"}, "title": {"type": "string"}, "kind": {"type": "string", "enum": ["commodity", "chokepoint", "company", "country", "theme", "rule"]}, "body": {"type": "string"}}, "required": ["page", "title", "kind", "body"]}},
-    {"name": "edit_page", "description": "Change part of an existing wiki page without writing the rest again. Replaces one passage: give the exact text to replace (it must appear once on the page) and the new text. Leave old empty to add the new text at the end of the page. Notes queued for that page are marked as folded.",
-     "input_schema": {"type": "object", "properties": {"page": {"type": "string"}, "old": {"type": "string"}, "new": {"type": "string"}}, "required": ["page", "old", "new"]}},
+    {"name": "edit_page", "description": "Change part of an existing wiki page without writing the rest again. Replaces one passage: give the exact text to replace (it must appear once on the page) and the new text. Leave old empty to add the new text at the end of the page. Set notes_done to true on the edit that finishes folding in every note queued for that page; until then they stay queued.",
+     "input_schema": {"type": "object", "properties": {"page": {"type": "string"}, "old": {"type": "string"}, "new": {"type": "string"}, "notes_done": {"type": "boolean"}}, "required": ["page", "old", "new"]}},
     {"name": "search_events", "description": "Full-text search over the event log, newest first. Use it to check a claim against what was actually reported.",
      "input_schema": {"type": "object", "properties": {"query": {"type": "string"}, "limit": {"type": "integer"}}, "required": ["query"]}},
     {"name": "read_item", "description": "Read the full source article behind an event.",
@@ -190,7 +190,7 @@ class DreamSession:
             self.written.append(slug)
         return f"wrote {slug} ({len(body.encode())} bytes); {n} queued note(s) folded"
 
-    def edit_page(self, page: str, old: str, new: str) -> str:
+    def edit_page(self, page: str, old: str, new: str, notes_done: bool = False) -> str:
         slug = slugify(page)
         if slug == "lessons":
             raise ValueError("the lessons page is rewritten from the scored record by the weekly reflection")
@@ -203,11 +203,14 @@ class DreamSession:
             raise ValueError("nothing to add")
         body = current.body.replace(old, new) if old else current.body + "\n\n" + new.strip("\n")
         self.wiki.write(slug, current.title, current.kind, body, expect_rev=current.rev, today=time.strftime("%Y-%m-%d", time.gmtime(self.now)))
-        with self.conn:
-            n = self.conn.execute("UPDATE page_notes SET folded = 1 WHERE slug = ? AND folded = 0", (slug,)).rowcount
+        left = self.conn.execute("SELECT COUNT(*) FROM page_notes WHERE slug = ? AND folded = 0", (slug,)).fetchone()[0]
+        if notes_done:
+            with self.conn:
+                self.conn.execute("UPDATE page_notes SET folded = 1 WHERE slug = ? AND folded = 0", (slug,))
         if slug not in self.written:
             self.written.append(slug)
-        return f"edited {slug} (now {len(body.encode())} bytes); {n} queued note(s) folded"
+        return (f"edited {slug} (now {len(body.encode())} bytes); "
+                + (f"{left} queued note(s) folded" if notes_done else f"{left} note(s) still queued for it (set notes_done on the edit that covers them)" if left else "no notes were queued for it"))
 
     def search_events(self, query: str, limit: int = 12) -> str:
         q = db.fts_query(query)
@@ -285,7 +288,7 @@ def dream_session(conn: sqlite3.Connection, llm: LLM, wiki: Wiki, now: float, ma
 def record_text(conn: sqlite3.Connection) -> str:
     parts = []
     for by in ("source", "kind", "side", "asset_class", "tag"):
-        rows = ledger.scoreboard(conn, by=by)
+        rows = ledger.scoreboard(conn, by=by, where="b.source != 'lab'")       # the lab's rule-made bets are not the analyst's record
         if rows:
             parts.append(f"## By {by} (unique ideas)\n{ledger.format_scoreboard(rows)}")
     parts.append("## Forecasts (Brier vs baseline)\n" + forecasts.scores_text(conn))

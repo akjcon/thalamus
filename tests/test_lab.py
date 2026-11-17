@@ -76,8 +76,15 @@ def test_the_bar_rises_with_every_rule_tried_and_each_rule_is_tried_once(conn):
     assert never["status"] == "failed_dev" and never["n"] == 0
     wrong = lab.record(conn, rule(name="Wrong way", side="SHORT"), prices, NOW)
     assert wrong["status"] == "failed_dev" and wrong["mean"] < 0
-    for bad in (rule(name="No series", series="Volga"), rule(name="No prices", symbol="NOPE"), rule(name="Too long", hold_days=400)):
+    for bad in (rule(name="No series", series="Volga"), rule(name="No prices", symbol="NOPE"), rule(name="Too long", hold_days=400),
+                rule(name="Bad benchmark", benchmark="NOPE"), rule(name="Against itself", benchmark="Barge")):
         assert lab.record(conn, bad, prices, NOW)["status"] == "invalid"
+    for same in (rule(symbol="BARGE"), rule(benchmark="spy"), rule(window=7)):         # one rule, however it is spelled
+        assert lab.record(conn, same, prices, NOW)["status"] == "duplicate"
+    def down(sym): raise lab.Unavailable("prices down")
+    before = conn.execute("SELECT COUNT(*) FROM strategies").fetchone()[0]
+    assert lab.record(conn, rule(name="Unlucky", hold_days=11), down, NOW)["status"] == "postponed"     # an outage settles nothing
+    assert conn.execute("SELECT COUNT(*) FROM strategies").fetchone()[0] == before and lab.holdout(conn, down, NOW) == []
     rows = {r["name"]: r for r in conn.execute("SELECT * FROM strategies")}
     assert rows["Never fires"]["note"] == "only 0 trades" and "at least two years" in rows["No series"]["note"]
     conn.executemany("INSERT INTO strategies(created_at, key, name, hypothesis, spec, status) VALUES (1, ?, 'x', 'h', '{}', 'failed_dev')", [(f"k{i}",) for i in range(200)])
@@ -103,7 +110,8 @@ def test_holdout_is_run_once_and_then_the_rule_trades_live_as_shadow_bets(conn):
     assert lab.run_live(conn, provider, NOW) == []                                      # last drop was 19 days ago: too old to act on
     d = date(2026, 11, 10)
     conn.execute("UPDATE readings SET value = 40 WHERE source = 'Gauge' AND day = ?", (d.isoformat(),)); conn.commit()
-    assert lab.run_live(conn, provider, NOW) == ["Low water lifts barge rates: LONG barge"]
+    assert lab.run_live(conn, FakeProvider({}), NOW) == ["Low water lifts barge rates: LONG barge (not recorded: no recent price; not a tradeable instrument)"]
+    assert lab.run_live(conn, provider, NOW) == ["Low water lifts barge rates: LONG barge"]         # the signal was not used up by the failure
     bet = conn.execute("SELECT * FROM bets").fetchone()
     assert (bet["source"], bet["kind"], bet["symbol"], bet["horizon_days"], bet["benchmark"]) == ("lab", "shadow", "BARGE", 10, "SPY")
     assert json.loads(bet["tags"]) == ["lab", "lab-1"] and "Lab rule #1" in bet["thesis"] and conn.execute("SELECT COUNT(*) FROM orders").fetchone()[0] == 0

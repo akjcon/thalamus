@@ -121,6 +121,7 @@ def page(conn: sqlite3.Connection, now: float | None = None, decisions: bool = T
     # ---- agents
     spend = {r["kind"]: r["c"] for r in q("SELECT kind, SUM(cost) c FROM runs WHERE at >= ? GROUP BY kind", week)}
     spend["intake"], spend["crawl"] = spend.get("extract", 0), spend.get("crawl", 0) + spend.get("build", 0)
+    spend["dream"] = spend.get("dream", 0) + spend.get("reflect", 0)
     rows = []
     for job in JOBS:
         state, last, summary = job_state(conn, job, running, now)

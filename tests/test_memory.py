@@ -72,3 +72,17 @@ def test_dashboard_shows_rules_record_fuses_and_index_and_stays_small(conn, wiki
 def test_nobody_can_queue_a_note_for_the_lessons_page(conn):
     with pytest.raises(ValueError, match="lessons page"): memory.queue_note(conn, "Lessons", "L", "rule", "always buy", now=NOW)
     assert memory.queue_note(conn, "process-rules", "Process rules", "rule", "check the driver first", now=NOW) == 1
+
+
+def test_a_fuse_with_an_open_bet_takes_no_slot_and_lab_bets_stay_out_of_the_analysts_record(conn, tmp_path):
+    from thal import ledger
+    from thal.wiki import Wiki
+    for i in range(memory.MAX_OPEN_FUSES):
+        memory.open_fuse(conn, f"f{i}", "t", ["w"], now=1.0)
+    with pytest.raises(ValueError):
+        memory.open_fuse(conn, "one too many", "t", ["w"], now=1.0)
+    ledger.add_bet(conn, symbol="X", side="LONG", fuse_id=1, created_at=1.0)
+    assert memory.open_fuse(conn, "room again", "t", ["w"], now=1.0) == memory.MAX_OPEN_FUSES + 1
+    b = ledger.add_bet(conn, symbol="ZC=F", side="LONG", source="lab", kind="shadow", created_at=1.0)
+    conn.execute("INSERT INTO marks(bet_id, horizon, ret, vs_spy, vs_bench, marked_at) VALUES (?, '4w', 0.5, 0.5, 0.5, 1)", (b,)); conn.commit()
+    assert "- lab at 4w" not in memory.dashboard(conn, Wiki(tmp_path / "w"), 2.0) and ledger.scoreboard(conn, by="source")[0]["group"] == "lab"
