@@ -90,3 +90,23 @@ def test_events_are_searchable(conn):
     extract.extract_batch(conn, LLM(conn, FakeClient(BatchOut(events=[ev(0, summary="Lumpy skin disease confirmed in France", commodities=["cattle"])]))), items, NOW)
     hit = conn.execute("SELECT rowid FROM events_fts WHERE events_fts MATCH 'cattle'").fetchall()
     assert len(hit) == 1
+
+
+def test_part_of_the_budget_is_kept_for_the_analyst_until_it_has_spent_it(conn):
+    cfg = {"roles": {r: {"model": "claude-haiku-5-5", "effort": "low", "max_tokens": 100} for r in ("dream", "analyst", "extract")},
+           "daily_budget_usd": 15.0, "reserved_usd": {"analyst": 6.0}, "prices": {"claude-haiku-5-5": [1.0, 0.0, 0.0]}}
+    spend = lambda role, usd: conn.execute("INSERT INTO runs(at, kind, model, input, output, cost) VALUES (?, ?, 'm', '', '', ?)", (NOW, role, usd))
+    llm = LLM(conn, FakeClient(), cfg)
+    spend("dream", 8.9); llm.check_budget("dream", NOW)                      # under 15 - 6
+    spend("dream", 0.2)
+    with pytest.raises(BudgetExceeded, match="kept for other jobs"): llm.check_budget("dream", NOW)
+    with pytest.raises(BudgetExceeded): llm.check_budget("extract", NOW)
+    llm.check_budget("analyst", NOW)                                         # the analyst still has its share
+    spend("analyst", 5.0); llm.check_budget("analyst", NOW)
+    with pytest.raises(BudgetExceeded): llm.check_budget("extract", NOW)     # 14.1 spent, 1.0 still held
+    spend("analyst", 0.8)
+    with pytest.raises(BudgetExceeded): llm.check_budget("extract", NOW)     # 14.9 spent, 0.2 still held
+    llm.check_budget("analyst", NOW)                                         # 14.9 of 15: it can still finish
+    spend("analyst", 0.2)
+    with pytest.raises(BudgetExceeded, match="is spent"): llm.check_budget("analyst", NOW)
+    llm.check_budget("dream", NOW + DAY)                                     # a new day

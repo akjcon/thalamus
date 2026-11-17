@@ -56,6 +56,24 @@ class LLM:
         return self.conn.execute("SELECT COALESCE(SUM(cost), 0) FROM runs WHERE at >= ?",
                                  (now - now % DAY,)).fetchone()[0]
 
+    def check_budget(self, role: str, now: float, verb: str = "skipping") -> None:
+        """Raise if this role may not spend any more today. Part of the day's budget can be reserved for a role
+        (config: reserved_usd), so that jobs earlier in the day cannot use up what it needs. The reserve shrinks as
+        that role spends, and is released to everyone once it has spent it."""
+        budget = float(self.cfg.get("daily_budget_usd", 0))
+        if not budget:
+            return
+        spent, day = self.spent_today(now), now - now % DAY
+        if spent >= budget:
+            raise BudgetExceeded(f"daily budget of ${budget:.2f} is spent; {verb} {role}")
+        held = 0.0
+        for other, amount in (self.cfg.get("reserved_usd") or {}).items():
+            if other != role:
+                used = self.conn.execute("SELECT COALESCE(SUM(cost), 0) FROM runs WHERE at >= ? AND kind = ?", (day, other)).fetchone()[0]
+                held += max(0.0, float(amount) - used)
+        if spent >= budget - held:
+            raise BudgetExceeded(f"${held:.2f} of today's ${budget:.2f} budget is kept for other jobs and the rest is spent; {verb} {role}")
+
     def cost(self, model: str, usage) -> float:
         p_in, p_out, p_read = self.cfg["prices"][model]
         g = lambda k: getattr(usage, k, 0) or 0
@@ -66,9 +84,7 @@ class LLM:
         """Ask the role's model for an answer that validates against schema."""
         now = now or time.time()
         r = self.cfg["roles"][role]
-        budget = float(self.cfg.get("daily_budget_usd", 0))
-        if budget and self.spent_today(now) >= budget:
-            raise BudgetExceeded(f"daily budget of ${budget:.2f} is spent; skipping {role}")
+        self.check_budget(role, now, "skipping")
         kwargs = dict(model=r["model"], max_tokens=r["max_tokens"], output_config={"effort": r["effort"]},
                       system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
                       messages=[{"role": "user", "content": user}], output_format=schema)
@@ -98,9 +114,7 @@ class LLM:
         """One step of a tool-using session. Returns the raw response; the caller owns the loop."""
         now = now or time.time()
         r = self.cfg["roles"][role]
-        budget = float(self.cfg.get("daily_budget_usd", 0))
-        if budget and self.spent_today(now) >= budget:
-            raise BudgetExceeded(f"daily budget of ${budget:.2f} is spent; stopping {role}")
+        self.check_budget(role, now, "stopping")
         kwargs = dict(model=r["model"], max_tokens=r["max_tokens"], output_config={"effort": r["effort"]},
                       system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
                       messages=messages, tools=tools)
