@@ -153,6 +153,15 @@ CREATE TABLE IF NOT EXISTS sources (
     fails INTEGER NOT NULL DEFAULT 0,        -- consecutive fetches that returned nothing
     last_ok_at REAL
 );
+-- Measurements from data sources (river levels, and later rainfall, drafts, rates): one value per source and day.
+CREATE TABLE IF NOT EXISTS readings (
+    source TEXT NOT NULL,
+    day TEXT NOT NULL,                       -- YYYY-MM-DD (UTC) of the measurement
+    at REAL NOT NULL,                        -- when the latest measurement of that day was taken
+    value REAL NOT NULL,
+    unit TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (source, day)
+);
 CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL);
 """
 
@@ -176,6 +185,8 @@ def connect(path: str | Path | None = None) -> sqlite3.Connection:
     for col in ("dup_of INTEGER", "sources INTEGER NOT NULL DEFAULT 1"):   # the same story from several feeds is merged into one
         if col.split()[0] not in have:
             conn.execute(f"ALTER TABLE events ADD COLUMN {col}")
+    if "kind" not in {r["name"] for r in conn.execute("PRAGMA table_info(sources)")}:   # sources are no longer only RSS feeds
+        conn.execute("ALTER TABLE sources ADD COLUMN kind TEXT NOT NULL DEFAULT 'rss'")
     have = {r["name"] for r in conn.execute("PRAGMA table_info(bets)")}
     for col in ("closed_at REAL", "closed_reason TEXT"):                  # a bet ends when it is closed, not only at its horizon
         if col.split()[0] not in have:

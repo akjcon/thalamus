@@ -32,7 +32,8 @@ changes; regulatory decisions, approvals, rejections, recalls and enforcement; c
 outcomes with a commercial consequence; drug and device trial results; supply agreements, capacity and capital \
 spending plans, shortages and allocation in any industry; strikes and labour settlements; bank, insurer or \
 payment-system stress; company events that change what it can make, sell or ship; meaningful shifts in demand. \
-Skip: opinion, explainers, profiles, pure politics with no economic channel, market commentary, price recaps, \
+A measurement item (a river level, a rainfall total, a draft limit) is kept when the level is at or near an \
+extreme or has moved sharply, and skipped when it is ordinary. Skip: opinion, explainers, profiles, pure politics with no economic channel, market commentary, price recaps, \
 analyst ratings, routine earnings with no new fact about the business, and repeats that add nothing.
 
 Return one record per kept item and nothing for skipped ones. In each record:

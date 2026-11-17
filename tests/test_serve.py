@@ -83,7 +83,7 @@ def test_seed_loads_only_into_an_empty_database(conn, tmp_path, monkeypatch):
     assert conn.execute("SELECT title FROM fuses").fetchone()[0] == "Suez return" and wiki.read("lessons").body == "- Shorts lost."
     assert conn.execute("SELECT slug FROM page_notes").fetchone()[0] == "lng"
     from thal import sources
-    assert sources.live(conn) == [{"name": "Kpler Blog", "url": "https://k.example/rss"}] and sources.seed(conn, 1.0) == 0   # the starter list does not override it
+    assert sources.live(conn) == [{"name": "Kpler Blog", "url": "https://k.example/rss", "kind": "rss"}] and sources.seed(conn, 1.0) == 0   # the starter list does not override it
     assert not serve.load_seed(conn, wiki, 2000.0) and conn.execute("SELECT COUNT(*) FROM fuses").fetchone()[0] == 1
 
 

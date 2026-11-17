@@ -82,6 +82,57 @@ rss_feeds:
   - name: "NOAA NHC"
     url: "https://www.nhc.noaa.gov/index-at.xml"
 
+  # ---- Physical supply disruption (added 2026-11-17; each was fetched and returned recent entries) ----
+  # Shipping, ports and canals: casualties, closures, attacks, congestion, draft limits
+  - {name: "Maritime Executive", url: "https://maritime-executive.com/articles.rss"}
+  - {name: "Seatrade Maritime", url: "https://www.seatrade-maritime.com/rss.xml"}
+  - {name: "MarineLink", url: "https://www.marinelink.com/news/rss"}
+  - {name: "Baird Maritime", url: "https://www.bairdmaritime.com/feed"}
+  - {name: "Container News", url: "https://container-news.com/feed/"}
+  - {name: "Insurance Marine News", url: "https://insurancemarinenews.com/feed/", why: "marine casualty and war-risk reports from the insurance side"}
+  - {name: "Panama Canal Authority", url: "https://pancanal.com/en/feed/", why: "primary source for draft limits and transit restrictions"}
+  - {name: "FreightWaves", url: "https://www.freightwaves.com/news/feed"}
+  - {name: "Supply Chain Dive", url: "https://www.supplychaindive.com/feeds/news/"}
+  # Energy: LNG, offshore, pipelines, rigs
+  - {name: "LNG Prime", url: "https://lngprime.com/feed/"}
+  - {name: "Offshore Energy", url: "https://www.offshore-energy.biz/feed/"}
+  - {name: "Rigzone", url: "https://www.rigzone.com/news/rss/rigzone_latest.aspx"}
+  - {name: "Pipeline & Gas Journal", url: "https://pgjonline.com/rss"}
+  - {name: "World Nuclear News", url: "https://www.world-nuclear-news.org/rss"}
+  # Crops and livestock
+  - {name: "World Grain", url: "https://www.world-grain.com/rss/articles"}
+  - {name: "Grain Central", url: "https://www.graincentral.com/feed/", why: "Australian grain: harvest, receivals, export logistics"}
+  - {name: "Agri-Pulse", url: "https://www.agri-pulse.com/rss/articles"}
+  - {name: "Feedstuffs", url: "https://www.feedstuffs.com/rss.xml"}
+  - {name: "Beef Magazine", url: "https://www.beefmagazine.com/rss.xml"}
+  - {name: "National Hog Farmer", url: "https://www.nationalhogfarmer.com/rss.xml"}
+  - {name: "USDA Press Releases", url: "https://www.usda.gov/rss/latest-releases.xml"}
+  - {name: "farmdoc daily", url: "https://farmdocdaily.illinois.edu/feed"}
+  - {name: "Interfax-Ukraine Economy", url: "https://en.interfax.com.ua/news/economic.rss", why: "Black Sea ports, grain corridor and energy strikes from the Ukrainian side"}
+  # Mining and metals
+  - {name: "Northern Miner", url: "https://www.northernminer.com/feed/"}
+  - {name: "Canadian Mining Journal", url: "https://www.canadianminingjournal.com/feed/"}
+  - {name: "Mining Weekly", url: "https://www.miningweekly.com/page/home/feed", why: "South African mining: platinum, chrome, coal, power and rail outages"}
+  - {name: "Fastmarkets Insights", url: "https://www.fastmarkets.com/insights/feed/"}
+  # Natural hazards
+  - {name: "GDACS Disaster Alerts", url: "https://www.gdacs.org/xml/rss.xml", why: "earthquakes, cyclones, floods and droughts worldwide with an alert level"}
+  - {name: "USGS Significant Earthquakes", url: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_week.atom"}
+  - {name: "NOAA NHC East Pacific", url: "https://www.nhc.noaa.gov/index-ep.xml"}
+
+# Data feeds: measurements, not news. Each has a kind that names its reader in thal/ingest.py (SERIES).
+# One item a day states the level and how it has moved; the daily values are kept in the readings table.
+data_feeds:
+  - name: "Rhine level at Kaub"
+    kind: pegelonline
+    url: "https://www.pegelonline.wsv.de/webservices/rest-api/v2/stations/KAUB/W/measurements.json?start=P15D"
+    why: "the gauge that limits barge loads on the middle Rhine (chemicals, fuel, coal, grain)"
+    note: "Kaub is the shallowest point of the middle Rhine. Below roughly 80 cm barges cannot load fully, and below roughly 40 cm many cannot sail."
+  - name: "Mississippi level at St. Louis"
+    kind: usgs_gauge
+    url: "https://waterservices.usgs.gov/nwis/dv/?format=json&sites=07010000&parameterCd=00065&period=P30D"
+    why: "the gauge that governs barge drafts for US grain and fertiliser moving to and from the Gulf"
+    note: "Flood stage here is 30 ft. Barge draft and tow-size limits on the river below St. Louis typically begin when this gauge falls to around 0 ft."
+
 # WAHIS — WOAH global animal-disease notifications (immediate + follow-up).
 # Cloudflare-walled SPA, fetched via headless browser (agent/wahis.py).
 # The authoritative global early-warning net for biological supply shocks

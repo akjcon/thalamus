@@ -199,6 +199,7 @@ def main() -> None:
     broker = get_broker(conn, provider, risk.load())
     discord = Discord(os.environ.get("DISCORD_BOT_TOKEN"))
     seeded = load_seed(conn, wiki, time.time())
+    synced = sources.sync(conn) if conn.execute("SELECT COUNT(*) FROM sources").fetchone()[0] else 0   # an empty table is seeded by the first intake
     discord.post(f"**Thalamus v2 online** ({risk.load().mode} mode). " + ("Started from seed memory." if seeded else "Resumed from saved state."))
     print("thalamus v2 serving", flush=True)
     while True:

@@ -134,3 +134,37 @@ def test_run_is_now_extract_then_one_analyst_session(conn, tmp_path):
     again = run(conn, LLM(conn, Script()), wiki, prov, broker, now=NOW + 60, fetch=lambda u: feed(1), fetcher=lambda u: ("x", "http"))
     assert again["new_items"] == 0 and again["analyst"] is None               # nothing new: no model calls at all
     assert "India sugar shortfall" not in status(conn, LLM(conn, Script()), wiki, broker).split("## Open fuses")[1].split("## Wiki")[0]
+
+
+def test_a_source_added_to_the_config_reaches_a_running_database_on_trial(conn):
+    conn.execute("INSERT INTO sources(name, url, status, added_at) VALUES ('Mining.com', 'https://old.example/feed', 'retired', 1)")
+    conn.execute("INSERT INTO sources(name, url, status, added_at) VALUES ('Renamed here', 'https://gcaptain.com/feed/', 'active', 1)")
+    n = sources.sync(conn, NOW)
+    rows = {r["name"]: r for r in conn.execute("SELECT * FROM sources")}
+    assert n > 20 and sources.sync(conn, NOW) == 0
+    assert rows["Mining.com"]["status"] == "retired" and "gCaptain" not in rows          # retired stays retired; a known address is not added twice
+    assert rows["Maritime Executive"]["status"] == "trial" and rows["Rhine level at Kaub"]["kind"] == "pegelonline"
+
+
+def test_a_measurement_is_stored_by_day_and_reaches_the_log_as_one_item_a_day(conn):
+    import json
+    feed = {"name": "Rhine level at Kaub", "url": "https://g.example/kaub", "kind": "pegelonline", "note": "Below 80 cm barges load light."}
+    day = lambda d, h, v: {"timestamp": f"2026-11-{d:02d}T{h:02d}:00:00+00:00", "value": v}
+    text = json.dumps([day(8, 6, 150), day(9, 6, 140), day(9, 18, 131), day(10, 6, 120)])
+    assert ingest.ingest(conn, [feed], get=lambda url: text, now=NOW) == {"Rhine level at Kaub": 1}
+    assert [tuple(r) for r in conn.execute("SELECT day, value, unit FROM readings ORDER BY day")] == \
+        [("2026-11-08", 150.0, "cm"), ("2026-11-09", 131.0, "cm"), ("2026-11-10", 120.0, "cm")]      # the last value of each day
+    item = conn.execute("SELECT * FROM items").fetchone()
+    assert item["title"] == "Rhine level at Kaub: 120 cm on 2026-11-10, -30 cm since 2026-11-08" and "Below 80 cm" in item["body"]
+    assert ingest.ingest(conn, [feed], get=lambda url: text, now=NOW + 60) == {"Rhine level at Kaub": 0}     # same day: nothing new
+    later = json.dumps([day(11, 6, 101)])
+    assert ingest.ingest(conn, [feed], get=lambda url: later, now=NOW + 90000) == {"Rhine level at Kaub": 1}
+    assert conn.execute("SELECT COUNT(*) FROM readings").fetchone()[0] == 4 and "101 cm on 2026-11-11, -49 cm since 2026-11-08" in \
+        conn.execute("SELECT title FROM items ORDER BY rowid DESC").fetchone()[0]
+
+
+def test_the_us_gauge_reader_skips_missing_values():
+    import json
+    text = json.dumps({"value": {"timeSeries": [{"values": [{"value": [
+        {"value": "9.60", "dateTime": "2026-11-16T00:00:00.000"}, {"value": "-999999", "dateTime": "2026-11-17T00:00:00.000"}]}]}]}})
+    assert [v for _, v in ingest._usgs(text)] == [9.6]

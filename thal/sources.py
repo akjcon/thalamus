@@ -34,13 +34,22 @@ followed. Use web search to find sources with RSS or Atom feeds that the system 
 by what they would add: coverage of something the open fuses are waiting on, primary sources (regulators, customs, \
 port and pipeline operators, statistics agencies, exchanges, courts, company filings), specialist trade press, \
 regional and non-English outlets, and anything that reports facts before the wire services do. A source that \
-duplicates what is already read adds nothing. Spend roughly half your effort on what the open fuses need and half on \
-areas the system does not cover at all, since it cannot form a hypothesis about something it never reads. The \
-system trades stocks, ETFs and futures in every sector, but its reading began in shipping, energy, agriculture and \
-geopolitics, and its bets cluster there as a result. Until the source table is balanced, favour what is thin or \
-missing: semiconductors and technology hardware, pharmaceuticals and medical devices (regulators, trial \
-registries), power and utilities, industrials and aerospace, metals and mining, autos, chemicals, banking and \
-insurance supervisors, competition authorities, courts, and company filings.
+duplicates what is already read adds nothing.
+
+The system's focus is physical supply disruption: something real stops or slows the movement or production of a \
+physical good, and the effect takes weeks to reach freight rates, inventories and prices. Spend most of your effort \
+on sources that report such things first-hand and early: canal, strait, port, terminal, pipeline, rail and river \
+authorities and their notices to shipping; navies and maritime security centres; classification, salvage and marine \
+insurance casualty reports; mine, smelter, refinery and plant operators and their regulators; crop, livestock, \
+plant-disease and weather agencies; customs and export-control notices; specialist trade press for shipping, \
+freight, energy, grains, softs, fertiliser and metals; and local or non-English outlets near chokepoints and \
+producing regions, which report an outage before the wire services do. Spend the rest on what the open fuses are \
+waiting for. Sources on other subjects (semiconductors, pharmaceuticals, finance, courts) are worth keeping only \
+where the yield table shows they led to something.
+
+You can only add RSS or Atom feeds. When you find a valuable source that is not a feed (a data service with river \
+levels, rainfall, canal drafts, vessel counts or freight rates; a notices page with no feed), name it and its \
+address in your final summary so it can be wired in as a data source.
 
 Test every feed before adding it; only a feed that returns real, recent entries can be added, and it starts on \
 trial. Retire sources the table shows have produced many items and nothing of use, and say why. Let the yield \
@@ -59,20 +68,34 @@ TOOLS = [
 ]
 
 
+def _add_missing(conn: sqlite3.Connection, status: str, now: float) -> int:
+    added = 0
+    with conn:
+        for f in ingest.load_feeds():
+            if conn.execute("SELECT 1 FROM sources WHERE name = ? OR url = ?", (f["name"], f["url"])).fetchone():
+                continue
+            conn.execute("INSERT INTO sources(name, url, status, added_at, added_by, kind, why) VALUES (?,?,?,?,'seed',?,?)",
+                         (f["name"], f["url"], status, now, f["kind"], f.get("why", "")))
+            added += 1
+    return added
+
+
 def seed(conn: sqlite3.Connection, now: float | None = None) -> int:
     """First run only: load the starter list from config/sources.yaml."""
     if conn.execute("SELECT COUNT(*) FROM sources").fetchone()[0]:
         return 0
-    now = now or time.time()
-    with conn:
-        for f in ingest.load_feeds():
-            conn.execute("INSERT OR IGNORE INTO sources(name, url, status, added_at, added_by) VALUES (?,?,'active',?,'seed')",
-                         (f["name"], f["url"], now))
-    return conn.execute("SELECT COUNT(*) FROM sources").fetchone()[0]
+    return _add_missing(conn, "active", now or time.time())
+
+
+def sync(conn: sqlite3.Connection, now: float | None = None) -> int:
+    """Run when the service starts: add, on trial, every source in config/sources.yaml that the table does not have
+    yet by name or address. This is how a source added to the config reaches a running deployment. A retired source
+    keeps its row, so it is never brought back. Returns how many were added."""
+    return _add_missing(conn, "trial", now or time.time())
 
 
 def live(conn: sqlite3.Connection) -> list[dict]:
-    return [dict(r) for r in conn.execute("SELECT name, url FROM sources WHERE status != 'retired' ORDER BY name")]
+    return [dict(r) for r in conn.execute("SELECT name, url, kind FROM sources WHERE status != 'retired' ORDER BY name")]
 
 
 def record_fetch(conn: sqlite3.Connection, name: str, ok: bool, now: float) -> None:
