@@ -128,3 +128,64 @@ def extract_pending(conn: sqlite3.Connection, llm: LLM, limit: int | None = None
             if type(e).__name__ == "BudgetExceeded":
                 break
     return done
+
+
+RECHECK = """You are checking the work of a cheaper model. It reads news items for a trading system and decides which to \
+keep as event records. The rules it was given follow. For each item below, decide for yourself whether it should be \
+kept: answer for every item, by its number, with keep true or false. You are not told what the cheaper model decided.
+
+--- the rules it was given ---
+"""
+RECHECK_DAYS, RECHECK_EVERY, RECHECK_BATCH = 7, 7 * 86400.0, 50
+
+
+class Verdict(BaseModel):
+    item: int
+    keep: bool
+
+
+class Verdicts(BaseModel):
+    verdicts: list[Verdict]
+
+
+def recheck(conn: sqlite3.Connection, llm: LLM, now: float | None = None, n: int = 100) -> dict:
+    """Measure the cheap model's keep-or-drop decisions. The top model re-judges a random sample of the last week's
+    items, n that were dropped and n that were kept, without being told which is which. The result says how much of
+    what was dropped should have been kept (the misses, which nothing downstream can recover) and how much of what
+    was kept is noise. Both models can share a blind spot, so this is a floor on the misses, not the whole truth."""
+    import json, random
+    now = now or time.time()
+    since = now - RECHECK_DAYS * 86400
+    dropped = conn.execute("SELECT * FROM items WHERE extracted = 2 AND fetched_at >= ? ORDER BY RANDOM() LIMIT ?", (since, n)).fetchall()
+    kept = conn.execute("SELECT * FROM items WHERE extracted = 1 AND fetched_at >= ? AND id IN (SELECT item_id FROM events)"
+                        " ORDER BY RANDOM() LIMIT ?", (since, n)).fetchall()
+    sample = [(r, False) for r in dropped] + [(r, True) for r in kept]      # with nothing to sample, no call is made
+    random.Random(int(now)).shuffle(sample)
+    judged: list[tuple[sqlite3.Row, bool, bool]] = []
+    for i in range(0, len(sample), RECHECK_BATCH):
+        batch = sample[i:i + RECHECK_BATCH]
+        out: Verdicts = llm.parse("recheck", RECHECK + SYSTEM, render([r for r, _ in batch]), Verdicts, now)
+        said = {v.item: v.keep for v in out.verdicts if 0 <= v.item < len(batch)}
+        judged += [(r, was, said[j]) for j, (r, was) in enumerate(batch) if j in said]      # an item it skipped is not counted
+    missed = [r for r, was, keep in judged if not was and keep]
+    noise = [r for r, was, keep in judged if was and not keep]
+    line = lambda r: f"{r['source']}: {r['title'][:140]}"
+    res = {"at": now, "dropped": sum(not was for _, was, _ in judged), "kept": sum(was for _, was, _ in judged),
+           "missed": len(missed), "noise": len(noise), "missed_examples": [line(r) for r in missed[:12]], "noise_examples": [line(r) for r in noise[:8]]}
+    with conn:
+        conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES ('extract_check', ?)", (json.dumps(res),))
+    return res
+
+
+def last_check(conn: sqlite3.Connection) -> dict | None:
+    import json
+    r = conn.execute("SELECT v FROM kv WHERE k = 'extract_check'").fetchone()
+    return json.loads(r[0]) if r else None
+
+
+def check_text(c: dict | None) -> str:
+    if not c or not (c["dropped"] or c["kept"]):
+        return ""
+    share = lambda a, b: f"{a} of {b}" + (f" ({a / b:.0%})" if b else "")
+    return (f"Of items it dropped, the top model would have kept {share(c['missed'], c['dropped'])}. "
+            f"Of items it kept, the top model would have dropped {share(c['noise'], c['kept'])}.")

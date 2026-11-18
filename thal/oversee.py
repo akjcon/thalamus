@@ -13,7 +13,7 @@ import time
 
 from pydantic import BaseModel, Field
 
-from . import crawl, lab, report
+from . import crawl, extract, lab, report
 from .llm import LLM
 
 HOUR, DAY = 3600.0, 86400.0
@@ -47,8 +47,9 @@ You are given a health report built by code. Judge, from the facts in it only:
 nothing is a problem)
 - whether the parts fit together and fit the focus (for example sources being added that the analyst never uses, \
 spending concentrated where the record shows no return, bets drifting off the focus)
-- whether the sample of extraction decisions shows the cheap model keeping what matters for the focus and \
-dropping what does not (it is the only check on that step, so name any item that was clearly misjudged)
+- whether the cheap model is keeping what matters for the focus and dropping what does not. The extraction check, \
+when present, is the measurement: a high share of dropped items that should have been kept is a serious problem, \
+because nothing downstream can recover them. Name the kinds of item being misjudged
 - what the source crawler should look for next, given what the analyst is tracking and what is thin
 - what needs the owner's decision (proposals for paid or non-feed sources worth acting on, anything risky)
 Be brief and concrete. Say nothing is wrong when nothing is. Do not invent facts that are not in the report. \
@@ -110,13 +111,18 @@ def health(conn: sqlite3.Connection, now: float) -> str:
     top = q("SELECT i.source s, COUNT(*) n FROM events e JOIN items i ON i.id = e.item_id WHERE i.fetched_at >= ? GROUP BY i.source ORDER BY n DESC LIMIT 12", week)
     if top:
         lines.append("- events by source: " + ", ".join(f"{r['s']} {r['n']}" for r in top))
+    esc = lambda s: str(s).replace("<", "&lt;").replace(">", "&gt;")
     day = now - DAY                       # a sample of what the cheap model kept and dropped, so its judgement can be checked
     kept = q("SELECT e.summary s, i.source src FROM events e JOIN items i ON i.id = e.item_id WHERE i.fetched_at >= ? AND e.dup_of IS NULL ORDER BY RANDOM() LIMIT 8", day)
     dropped = q("SELECT title s, source src FROM items WHERE fetched_at >= ? AND extracted = 2 ORDER BY RANDOM() LIMIT 8", day)
     if kept or dropped:
         lines += ["", "## Extraction, last 24 hours: a random sample of what was kept as an event and what was dropped"]
-        esc = lambda s: str(s).replace("<", "&lt;").replace(">", "&gt;")
         lines += ["<samples>"] + [f"- kept ({esc(r['src'])}): {esc(r['s'][:200])}" for r in kept] + [f"- dropped ({esc(r['src'])}): {esc(r['s'][:160])}" for r in dropped] + ["</samples>"]
+    chk = extract.last_check(conn)
+    if extract.check_text(chk):
+        lines += ["", f"## Extraction check ({(now - chk['at']) / DAY:.0f} days ago): the top model re-judged a random sample without seeing the cheap model's decisions",
+                  "- " + extract.check_text(chk), "<samples>"]
+        lines += [f"- dropped, should have been kept: {esc(x)}" for x in chk["missed_examples"]] + [f"- kept, is noise: {esc(x)}" for x in chk["noise_examples"]] + ["</samples>"]
     lines += ["", "## Strategy lab"]
     # Counts only, and none that tell a holdout or live result: this report reaches a model whose directions feed the crawler.
     lines += [f"- rules tried {one('SELECT COUNT(*) FROM strategies WHERE status != ?', 'invalid')}, "
@@ -137,6 +143,12 @@ def review(conn: sqlite3.Connection, llm: LLM, now: float | None = None) -> str:
     """The overseer's message. The code-built list of stopped jobs always leads, so it is reported even if the model
     call fails or the day's budget is spent."""
     now = now or time.time()
+    chk = extract.last_check(conn)
+    if not chk or now - chk["at"] >= extract.RECHECK_EVERY:      # once a week, measure the cheap model before reporting on it
+        try:
+            extract.recheck(conn, llm, now)
+        except Exception as e:
+            print(f"extraction check failed: {type(e).__name__}: {str(e)[:150]}", flush=True)
     down = stopped(conn, now)
     head = "**Overseer** " + (("STOPPED OR FAILING: " + "; ".join(down)) if down else "All jobs are running.")
     try:

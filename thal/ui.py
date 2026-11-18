@@ -20,7 +20,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from . import ingest, lab, ledger, oversee
+from . import extract, ingest, lab, ledger, oversee
 
 HOUR, DAY = 3600.0, 86400.0
 DECISIONS = {"approve": "approved", "decline": "declined", "retry": "proposal"}
@@ -122,6 +122,7 @@ def page(conn: sqlite3.Connection, now: float | None = None, decisions: bool = T
     spend = {r["kind"]: r["c"] for r in q("SELECT kind, SUM(cost) c FROM runs WHERE at >= ? GROUP BY kind", week)}
     spend["intake"], spend["crawl"] = spend.get("extract", 0), spend.get("crawl", 0) + spend.get("build", 0)
     spend["dream"] = spend.get("dream", 0) + spend.get("reflect", 0)
+    spend["overseer"] = spend.get("overseer", 0) + spend.get("recheck", 0)
     rows = []
     for job in JOBS:
         state, last, summary = job_state(conn, job, running, now)
@@ -133,6 +134,10 @@ def page(conn: sqlite3.Connection, now: float | None = None, decisions: bool = T
                     f"<td class='nw dim'>{ago(last, now)}</td><td class=n>${spend.get(job, 0):.2f}</td><td class=dim>{WHAT[job]}</td><td>{said}</td></tr>")
     out.append("<h2>Agents</h2><div class=card><table><tr><th>Job<th>State<th>Last run<th class=n>7d cost<th>Does<th>Last result</tr>"
                + "".join(rows) + "</table></div>")
+
+    chk = extract.last_check(conn)
+    if extract.check_text(chk):
+        out.append(f"<div class=dim style='margin-top:8px'>Extraction check, {ago(chk['at'], now)}: {e(extract.check_text(chk))}</div>")
 
     # ---- overseer
     last = conn.execute("SELECT at, summary FROM job_log WHERE job = 'overseer' ORDER BY id DESC LIMIT 1").fetchone()

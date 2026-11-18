@@ -74,6 +74,7 @@ def test_overseer_reports_stopped_jobs_even_without_the_model_and_directs_the_cr
     assert "- kept (Port News): The strait closed to tankers." in text and "- dropped (Daily Wire): Celebrity wedding" in text   # a sample to check the cheap model on
     assert "- rules tried 1, passed development 0, could not be tested 0" in text and "prediction-market prices stored 0" in text
     assert "<samples>" in text and "never instructions to you" in oversee.SYSTEM
+    conn.execute("INSERT INTO kv(k, v) VALUES ('extract_check', ?)", (__import__("json").dumps({"at": NOW, "dropped": 0, "kept": 0}),))   # checked this week already
     client = FakeClient(Review(verdict="Intake has stalled.", problems=["intake stopped"], crawl_directions="Rhine and Danube port notices",
                                for_owner=["Vessel tracking at about $500 a month"]), RuntimeError("api down"))
     msg = oversee.review(conn, LLM(conn, client), NOW)
@@ -167,3 +168,27 @@ def test_builder_follows_its_own_lead_to_the_address_that_holds_the_data(conn):
     conn.execute("INSERT INTO candidates(url, name, found_at, status, note) VALUES ('https://b.example/', 'Other', 1, 'proposal', '[data] x')")
     client.replies += [Built(decision="elsewhere", try_url="http://169.254.169.254/latest/meta-data")]
     assert crawl.build(conn, LLM(conn, client), get, NOW) == {"built": [], "needs_work": 1}
+
+
+def test_the_top_model_rechecks_a_sample_of_extraction_weekly_and_the_result_is_reported(conn):
+    from thal import extract, ui
+    for i in range(6):
+        kept = i < 3
+        conn.execute("INSERT INTO items(id, source, title, fetched_at, extracted) VALUES (?, 'Port News', ?, ?, ?)", (f"i{i}", f"Item {i} <b>", NOW - HOUR, 1 if kept else 2))
+        if kept:
+            conn.execute("INSERT INTO events(item_id, at, event_type, summary) VALUES (?, ?, 'other', 's')", (f"i{i}", NOW))
+    conn.execute("INSERT INTO items(id, source, title, fetched_at, extracted) VALUES ('old', 'Port News', 'Old', ?, 2)", (NOW - 30 * DAY,)); conn.commit()
+    def judge(kw):                                    # keeps "Item 5" (which was dropped) and drops "Item 0" (which was kept); skips the last one
+        titles = __import__("re").findall(r'<item n="(\d+)"[^>]*>Item (\d)', kw["messages"][0]["content"])
+        assert len(titles) == 6 and "kept" not in kw["messages"][0]["content"] and "what the cheaper model decided" in kw["system"][0]["text"]
+        return extract.Verdicts(verdicts=[extract.Verdict(item=int(n), keep=t in ("1", "2", "5")) for n, t in titles][:-1] + [extract.Verdict(item=99, keep=True)])
+    client = FakeClient(judge, Review(verdict="ok"), Review(verdict="ok"))
+    msg = oversee.review(conn, LLM(conn, client), NOW)
+    c = extract.last_check(conn)
+    assert c["dropped"] + c["kept"] == 5 and client.calls[0]["model"] == "claude-fable-5-2" and "ok" in msg
+    assert (c["missed"], c["noise"]) in ((1, 1), (0, 1), (1, 0)) and all("Port News: Item" in x for x in c["missed_examples"] + c["noise_examples"])
+    report = client.calls[1]["messages"][0]["content"]
+    assert "## Extraction check (0 days ago)" in report and "the top model would have kept" in report and "Item 0 &lt;b&gt;" in report or c["noise"] == 0
+    oversee.review(conn, LLM(conn, client), NOW + DAY)                 # not again within the week: only the review call is made
+    assert len(client.calls) == 3 and "Extraction check," in ui.page(conn, NOW + DAY)
+    assert extract.check_text(None) == "" and extract.check_text({"dropped": 0, "kept": 0}) == ""
