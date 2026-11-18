@@ -45,7 +45,11 @@ without anything being decided or done; politics, diplomacy, elections, coalitio
 memorials, unless the item itself reports a change to trade, supply, rules or spending; follow-up coverage of an \
 accident or disaster that adds no new fact about damage or outages; earnings and financial results with no new fact \
 about what the business can make, sell or ship; and repeats that add nothing. When unsure about general or political \
-news, skip it. When unsure about an item naming a specific facility, shipment, rule, ruling or company action, keep it.
+news, skip it. When unsure about an item naming a specific facility, shipment, rule, ruling or company action, keep it. \
+Three things are kept even though they are not yet events: a named forecaster or agency changing its estimate of \
+physical supply, output, stocks or a deficit (a price prediction is still skipped); a formal proposal of a rule, \
+tariff, sanction or export control by a body that can enact it; and a report on the current state of a shipping \
+route, strait, canal or pipeline, including the risk ships or cargo face there.
 
 Return one record per kept item and nothing for skipped ones. In each record:
 - item: the number in the item's tag.
