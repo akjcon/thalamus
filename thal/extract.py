@@ -35,8 +35,17 @@ payment-system stress; company events that change what it can make, sell or ship
 A measurement item (a river level, a rainfall total, a draft limit) is kept when the level is at or near an \
 extreme or has moved sharply, and skipped when it is ordinary. A prediction-market move item is kept when the \
 contract is about something physical or economic (weather, supply, trade, policy, rates, a company) and skipped \
-otherwise; say in the summary that it is a market price and not a report. Skip: opinion, explainers, profiles, pure politics with no economic channel, market commentary, price recaps, \
-analyst ratings, routine earnings with no new fact about the business, and repeats that add nothing.
+otherwise; say in the summary that it is a market price and not a report.
+
+The test for general news is whether the item reports something that happened or was decided, with a route to what \
+some company or market can make, move, sell or must pay. Skip: opinion, analysis and explainers, including headlines \
+posed as questions; profiles and features; forecasts, outlooks and price predictions; market commentary and price \
+recaps; analyst ratings; statements in which an official, company or agency criticises, blames, warns or claims \
+without anything being decided or done; politics, diplomacy, elections, coalition talks, summits, ceremonies and \
+memorials, unless the item itself reports a change to trade, supply, rules or spending; follow-up coverage of an \
+accident or disaster that adds no new fact about damage or outages; earnings and financial results with no new fact \
+about what the business can make, sell or ship; and repeats that add nothing. When unsure about general or political \
+news, skip it. When unsure about an item naming a specific facility, shipment, rule, ruling or company action, keep it.
 
 Return one record per kept item and nothing for skipped ones. In each record:
 - item: the number in the item's tag.
