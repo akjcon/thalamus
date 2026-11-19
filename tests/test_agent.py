@@ -79,12 +79,16 @@ def test_write_tools_go_through_the_same_guards(world):
     assert s.open_fuse("India sugar shortfall", "India must import.", ["monsoon data"], event_ids=[1, 999]) == "opened fuse #1 with 1 event(s) attached"
     assert s.add_evidence(1, 3, "supports", "export delay") == "attached" and "not attached" in s.add_evidence(1, 3, "supports", "dup")
     assert s.note_for_page("Port of Santos", "chokepoint", "Most Brazilian sugar leaves here.") == "queued"
+    long = s.note_for_page("Port of Santos", "chokepoint", "x" * 4001)                # an over-long note is refused, never cut
+    assert long.startswith("not queued") and "Split it" in long
+    assert s.note_for_page("Port of Santos", "chokepoint", "y" * 4000) == "queued"
+    assert s.conn.execute("SELECT MAX(LENGTH(note)) FROM page_notes").fetchone()[0] == 4000
     assert s.call("open_fuse", {"title": "vague", "thesis": "x", "watch": []}) == ("error: ValueError: a fuse must say what evidence it is waiting for", True)
     assert s.call("add_evidence", {"fuse_id": 1, "event_id": 1, "direction": "maybe", "note": "x"})[1]
     assert s.call("drop_tables", {})[1] and s.call("call", {"name": "x", "args": {}})[1] and s.call("open_fuse", "not a dict")[1]
     assert s.close_fuse(1, "USDA recovery forecast") == "closed" and "not open" in s.close_fuse(1, "again")
     assert world[1].slugs() == ["sugar"]                                   # the session cannot write pages
-    assert s.counts == {"fuses_opened": 1, "evidence": 1, "fuses_closed": 1, "notes": 1, "forecasts": 0, "bets_closed": 0, "tool_calls": 5, "tool_errors": 5}
+    assert s.counts == {"fuses_opened": 1, "evidence": 1, "fuses_closed": 1, "notes": 2, "forecasts": 0, "bets_closed": 0, "tool_calls": 5, "tool_errors": 5}
 
 
 def test_bets_are_checked_recorded_limited_and_capped(world):

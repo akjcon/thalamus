@@ -39,6 +39,11 @@ def test_notes_are_listed_by_page_and_folded_when_the_page_is_written(world):
     assert s.notes_waiting() == "no notes are waiting" and s.list_pages() == "no pages yet"
     note(conn); note(conn, text="Brazil is the swing supplier."); note(conn, "port-of-santos", "Handles most Brazilian sugar.")
     listed = s.notes_waiting()
+    for i in range(4):
+        note(conn, "copper", f"{i} " + "z" * 3900 + " END")
+    whole, err = s.call("notes_waiting", {})                                                     # the queue is shown whole
+    assert not err and len(whole) > 15000 and whole.count(" END") == 4
+    conn.execute("DELETE FROM page_notes WHERE slug = 'copper'"); conn.commit()
     assert "## sugar (no page yet; suggested kind commodity)" in listed and "Brazil is the swing supplier." in listed and "## port-of-santos" in listed
     assert s.write_page("Sugar", "Sugar", "commodity", "India follows the monsoon; Brazil swings. See [[port-of-santos]].") == "wrote sugar (65 bytes); 2 queued note(s) folded"
     assert "## sugar" not in s.notes_waiting() and "port-of-santos" in s.notes_waiting()

@@ -251,6 +251,9 @@ class Session:
     def note_for_page(self, page: str, kind: str, note: str) -> str:
         if page.strip().lower() == "lessons":
             return "not queued: the lessons page is rewritten from the scored record by the reflection step. Use another page for process notes."
+        if len(note.strip()) > memory.NOTE_CHARS:
+            return (f"not queued: the note is {len(note.strip())} characters and the limit is {memory.NOTE_CHARS}. "
+                    "Split it into several notes for the same page.")
         memory.queue_note(self.conn, page, page, kind, note, now=self.now)
         self.counts["notes"] += 1
         return "queued"

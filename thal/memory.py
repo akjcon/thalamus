@@ -92,6 +92,9 @@ def fuse_text(conn: sqlite3.Connection, fuse_id: int, evidence_limit: int = 12) 
     return "\n".join(lines)
 
 
+NOTE_CHARS = 4000
+
+
 def queue_note(conn: sqlite3.Connection, slug: str, title: str, kind: str, note: str, events: list[int] | None = None,
                now: float | None = None) -> int:
     """Leave a note for a wiki page. Only the dream step rewrites pages, so pages have one writer."""
@@ -99,12 +102,14 @@ def queue_note(conn: sqlite3.Connection, slug: str, title: str, kind: str, note:
         kind = "theme"
     if not note.strip():
         raise ValueError("empty note")
+    if len(note.strip()) > NOTE_CHARS:      # refused, never cut: a cut note reaches the wiki as a half-fact
+        raise ValueError(f"the note is {len(note.strip())} characters; the limit is {NOTE_CHARS}. Split it into several notes")
     if slugify(slug) == "lessons":      # that page has one writer: the weekly reflection
         raise ValueError("the lessons page is rewritten from the scored record; put process notes on another page")
     with conn:
         cur = conn.execute("INSERT INTO page_notes(at, slug, title, kind, note, events) VALUES (?,?,?,?,?,?)",
                            (now or time.time(), slugify(slug), " ".join(title.split())[:120] or slug, kind,
-                            note.strip()[:1500], db.jl(events or [])))
+                            note.strip(), db.jl(events or [])))
     return cur.lastrowid
 
 

@@ -267,7 +267,8 @@ class DreamSession:
         try:
             if fn is None or not isinstance(args, dict):
                 raise ValueError(f"unknown tool or bad input: {name!r}")
-            return str(fn(**args))[:8000], False
+            out = str(fn(**args))
+            return (out if name == "notes_waiting" else out[:8000]), False     # the queue is shown whole: a cut note is a lost fact
         except Exception as e:
             self.counts["tool_errors"] += 1
             return f"error: {type(e).__name__}: {str(e)[:300]}", True
