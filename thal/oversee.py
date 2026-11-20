@@ -121,13 +121,16 @@ def health(conn: sqlite3.Connection, now: float) -> str:
     chk = extract.last_check(conn)
     if extract.check_text(chk):
         lines += ["", f"## Extraction check ({(now - chk['at']) / DAY:.0f} days ago): the top model re-judged a random sample without seeing the cheap model's decisions",
-                  "- " + extract.check_text(chk), "<samples>"]
+                  "- " + extract.check_text(chk),
+                  "- it describes the keep rules and sources as they were on that day; changes since then show only in the next check", "<samples>"]
         lines += [f"- dropped, should have been kept: {esc(x)}" for x in chk["missed_examples"]] + [f"- kept, is noise: {esc(x)}" for x in chk["noise_examples"]] + ["</samples>"]
     lines += ["", "## Strategy lab"]
     # Counts only, and none that tell a holdout or live result: this report reaches a model whose directions feed the crawler.
     lines += [f"- rules tried {one('SELECT COUNT(*) FROM strategies WHERE status != ?', 'invalid')}, "
               f"passed development {one('SELECT COUNT(*) FROM strategies WHERE status IN (?,?,?,?)', *lab.PASSED)}, "
               f"could not be tested {one('SELECT COUNT(*) FROM strategies WHERE status = ?', 'invalid')}"]
+    lines += ["- new rules are proposed only on Saturdays; on other days the lab only follows rules it already has, so no rules "
+              "tried before the first Saturday round is not a fault"]
     lines += ["", "## Crawler"]
     lines += [f"- candidates {r['status']}: {r['n']}" for r in q("SELECT status, COUNT(*) n FROM candidates GROUP BY status ORDER BY status")] or ["- no candidates yet"]
     props = crawl.proposals(conn)
