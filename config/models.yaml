@@ -7,7 +7,7 @@ roles:
   reflect: {model: claude-fable-5-2, effort: high, max_tokens: 32000}   # weekly: rewrites the lessons page from the scored record
   crawl:    {model: claude-haiku-5-5, effort: low,  max_tokens: 16000}   # cheap: proposes sources and judges candidates that code has tested
   build:    {model: claude-opus-5-5,  effort: medium, max_tokens: 4000}  # writes the recipe that reads a page or data source the crawler found
-  overseer: {model: claude-fable-5-2, effort: high, max_tokens: 8000}    # a few times a day: is every part running, and do they fit together
+  overseer: {model: claude-fable-5-2, effort: high, max_tokens: 16000}    # a few times a day: is every part running, and do they fit together
   recheck:  {model: claude-fable-5-2, effort: medium, max_tokens: 8000}  # weekly: re-judges a sample of the extractor's keep-or-drop decisions
   lab:      {model: claude-fable-5-2, effort: high, max_tokens: 16000}   # weekly: proposes trading rules for code to test
 # No spending cap in code: the owner limits spend in Anthropic billing. Set a number here to cap a day's spend again,
