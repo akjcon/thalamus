@@ -161,7 +161,10 @@ def test_forecast_tools_report_the_baseline_and_are_capped(world, monkeypatch):
     conn.execute("INSERT INTO markets VALUES ('KXFED-CUT','KXFED','Economics','Fed cuts in December','Resolves Yes if the Fed cuts.',?,0.6,0.64,0.61,100,'active','',?)", (NOW + 30 * DAY, NOW))
     conn.execute("INSERT INTO markets_fts(ticker, title, rules) VALUES ('KXFED-CUT','Fed cuts in December','Resolves Yes if the Fed cuts.')"); conn.commit()
     assert "KXFED-CUT: Fed cuts in December | market 62% | closes" in s.find_markets("Fed December cut")
-    assert "Yours 80%, market 62%" in s.forecast_market("KXFED-CUT", 0.8, "labour data")
+    said = s.forecast_market("KXFED-CUT", 0.8, "labour data")                       # 18 points from the market: recorded halfway
+    assert "18 points from the market's 62%" in said and "recorded halfway, at 71%" in said
+    f = conn.execute("SELECT prob, rationale, tags FROM forecasts WHERE ref = 'KXFED-CUT'").fetchone()
+    assert abs(f["prob"] - 0.71) < 1e-9 and f["rationale"].startswith("[own estimate 80%") and "pulled-to-market" in f["tags"]
     assert s.call("forecast_market", {"ticker": "KXFED-CUT", "probability": 0.7, "rationale": "again"})[1]
     assert s.counts["forecasts"] == 2
     monkeypatch.setattr("thal.agent.MAX_FORECASTS", 2)

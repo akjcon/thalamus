@@ -103,6 +103,10 @@ def test_market_forecast_uses_the_market_price_as_baseline_and_resolves_from_the
     fc.refresh_markets(conn, get=lambda u: EVENTS, now=M_NOW)
     r = fc.add_market(conn, "KXFED-26DEC-CUT25", 0.8, "labour data", ["macro"], now=M_NOW)
     assert r["baseline"] == 0.62 and r["question"] == "Fed decision in December — Cut 25bps"
+    assert r["own"] == 0.8 and abs(r["prob"] - 0.71) < 1e-9                         # far from the market: pulled halfway
+    conn.execute("DELETE FROM forecasts"); conn.commit()
+    near = fc.add_market(conn, "KXFED-26DEC-CUT25", 0.7, "labour data", ["macro"], now=M_NOW)
+    assert near["prob"] == 0.7 == near["own"]                                       # a small lean is recorded as given
     with pytest.raises(ValueError, match="already an open forecast"): fc.add_market(conn, "KXFED-26DEC-CUT25", 0.7, now=M_NOW)
     with pytest.raises(ValueError, match="find_markets"): fc.add_market(conn, "KXFED-26DEC-HOLD", 0.3, now=M_NOW)      # unquoted: never stored
     with pytest.raises(ValueError, match="no usable quote"): fc.add_market(conn, "KXFED-26DEC-CUT25", 0.3, now=M_NOW + 60 * DAY)

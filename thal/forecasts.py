@@ -239,6 +239,12 @@ def search_markets(conn: sqlite3.Connection, query: str, limit: int = 10, now: f
     return out[:limit]
 
 
+# When the analyst's number was 15 points or more from a tradable price it was on the wrong side 5 times in 6
+# (first two weeks, November 2026). Such a forecast is recorded halfway back to the market. The original is kept in
+# the rationale, so a real edge in large disagreements can still be measured.
+PULL_GAP, PULLED = 0.15, "pulled-to-market"
+
+
 def add_market(conn: sqlite3.Connection, ticker: str, prob: float, rationale: str = "", tags: list[str] | None = None,
                fuse_id: int | None = None, now: float | None = None) -> dict:
     ensure(conn)
@@ -252,12 +258,17 @@ def add_market(conn: sqlite3.Connection, ticker: str, prob: float, rationale: st
         raise ValueError("that market has no usable quote or has already closed")
     if conn.execute("SELECT 1 FROM forecasts WHERE kind = 'market' AND ref = ? AND outcome IS NULL", (m["ticker"],)).fetchone():
         raise ValueError("there is already an open forecast on that market")
+    own, tags = prob, [t.strip().lower()[:30] for t in (tags or []) if t.strip()][:4]
+    if abs(prob - base) >= PULL_GAP:        # far from a tradable price: record halfway, and keep the original to score later
+        prob = round(base + (prob - base) / 2, 4)
+        rationale = f"[own estimate {own:.0%}, recorded halfway to the market] " + rationale.strip()
+        tags = [PULLED] + tags[:3]
     with conn:
         cur = conn.execute("INSERT INTO forecasts(created_at, kind, ref, question, due_at, prob, baseline, rationale, tags, fuse_id)"
                            " VALUES (?,?,?,?,?,?,?,?,?,?)",
                            (now, "market", m["ticker"], m["title"], m["close_at"], prob, base, rationale.strip()[:800],
-                            db.jl([t.strip().lower()[:30] for t in (tags or []) if t.strip()][:4]), fuse_id))
-    return {"id": cur.lastrowid, "question": m["title"], "prob": prob, "baseline": round(base, 3)}
+                            db.jl(tags), fuse_id))
+    return {"id": cur.lastrowid, "question": m["title"], "prob": prob, "baseline": round(base, 3), "own": own}
 
 
 def resolve(conn: sqlite3.Connection, provider: PriceProvider, get=_json, now: float | None = None) -> int:

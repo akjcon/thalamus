@@ -83,7 +83,10 @@ a forecast on the same instrument due within about a week, so the view is tested
 The tool tells you the baseline; a forecast that merely repeats it teaches nothing, and one that is confidently \
 wrong is penalised. A price baseline starts from the latest traded price. If the market has been closed since news \
 that moves the instrument (a weekend, a holiday, after-hours results), the baseline cannot see it and beating it is \
-not skill: do not record that price forecast.
+not skill: do not record that price forecast. \
+A prediction-market price is a tradable price, and on this record your number has been wrong nearly every time it \
+stood 15 points or more from one. Before recording such a forecast, check that your data is what the contract settles \
+on (the same source, dates and rounding). The tool then records it halfway between your number and the market's.
 
 The universe is what the account can trade at Interactive Brokers: US-listed stocks and ETFs, futures (the account \
 has futures approval), and prediction-market contracts, which Interactive Brokers carries from Kalshi. Bets are on \
@@ -284,6 +287,10 @@ class Session:
         self._forecast_room()
         r = forecasts.add_market(self.conn, ticker, probability, rationale, tags, fuse_id=self._fuse(fuse_id), now=self.now)
         self.counts["forecasts"] = self.counts.get("forecasts", 0) + 1
+        if r["own"] != r["prob"]:
+            return (f"forecast #{r['id']}: {r['question']}. Your {r['own']:.0%} is {abs(r['own'] - r['baseline']) * 100:.0f} points from the "
+                    f"market's {r['baseline']:.0%}, so it is recorded halfway, at {r['prob']:.0%}. Gaps this large have nearly always "
+                    "been your error: check that your data is what the contract settles on (source, dates, rounding).")
         return f"forecast #{r['id']}: {r['question']}. Yours {r['prob']:.0%}, market {r['baseline']:.0%}."
 
     def read_bet(self, bet_id: int) -> str:
