@@ -150,6 +150,21 @@ def stats_text(conn: sqlite3.Connection) -> str:
     return "\n".join(lines)
 
 
+FEED_TIMEOUT = 30
+
+
+def read_feed(url: str):
+    """Read a news feed with a timeout on every network wait. feedparser sets none of its own, and one server that
+    accepted a connection and then went silent stopped the whole service for two days (November 2026)."""
+    import feedparser, socket
+    old = socket.getdefaulttimeout()
+    socket.setdefaulttimeout(FEED_TIMEOUT)
+    try:
+        return feedparser.parse(url, agent="Mozilla/5.0 (feed reader)")
+    finally:
+        socket.setdefaulttimeout(old)
+
+
 class Scout:
     def __init__(self, conn: sqlite3.Connection, now: float, fetch=None):
         self.conn, self.now = conn, now
@@ -157,8 +172,7 @@ class Scout:
         self.added: list[str] = []
         self.retired: list[str] = []
         if fetch is None:
-            import feedparser
-            fetch = lambda url: feedparser.parse(url, agent="Mozilla/5.0 (feed reader)")
+            fetch = read_feed
         self.fetch = fetch
 
     def test_feed(self, url: str) -> str:

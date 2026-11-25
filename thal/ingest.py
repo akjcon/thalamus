@@ -316,8 +316,7 @@ def ingest(conn: sqlite3.Connection, feeds: list[dict] | None = None, fetch=None
     """Fetch every source; one failing source never stops the rest. Returns {source: new count or error}.
     fetch reads a news feed; get returns the text at a URL for a data feed."""
     if fetch is None:
-        import feedparser
-        fetch = lambda url: feedparser.parse(url, agent="Mozilla/5.0 (feed reader)")
+        from .sources import read_feed as fetch
     from . import sources
     now = now or time.time()
     if feeds is None:

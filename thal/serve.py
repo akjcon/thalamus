@@ -223,6 +223,41 @@ def tick(conn, llm, wiki, provider, broker, notify, now: float) -> list[str]:
     return done
 
 
+STUCK = 3 * 3600.0      # no job legitimately runs this long
+
+
+def stuck(conn, now: float) -> str | None:
+    """The name of a job that has been running longer than any job should, or None."""
+    r = conn.execute("SELECT v FROM kv WHERE k = 'running_job'").fetchone()
+    if not r:
+        return None
+    job, _, at = r[0].partition("|")
+    try:
+        return job if now - float(at) > STUCK else None
+    except ValueError:
+        return None
+
+
+def watchdog(connect, notify, every: float = 300.0) -> None:
+    """Runs beside the scheduler. If one job hangs, say so and end the process: the platform starts it again and the
+    job is retried. Without this a single silent network wait stops everything with no error and no message."""
+    import threading
+    def watch():
+        conn = connect()
+        while True:
+            time.sleep(every)
+            try:
+                job = stuck(conn, time.time())
+            except Exception:
+                continue
+            if job:
+                try:
+                    notify(f"**Thalamus stuck**: the {job} job has run for over {STUCK / 3600:.0f} hours. Restarting the service.")
+                finally:
+                    os._exit(1)
+    threading.Thread(target=watch, daemon=True, name="watchdog").start()
+
+
 def main() -> None:
     load_env()
     conn, wiki = db.connect(), Wiki()
@@ -235,6 +270,7 @@ def main() -> None:
     with conn:
         conn.execute("DELETE FROM kv WHERE k = 'running_job'")           # nothing is running just after a start
     page = ui.start(db.connect)
+    watchdog(db.connect, discord.post)
     print("thalamus v2 serving" + (f"; control page on port {page.server_address[1]}" if page else "; no control page (set THAL_UI_PASSWORD, or THAL_UI_OPEN=yes for an open read-only page)"), flush=True)
     while True:
         tick(conn, llm, wiki, provider, broker, discord.post, time.time())

@@ -128,3 +128,25 @@ def test_state_moves_to_the_volume_when_configured(monkeypatch, tmp_path):
     assert (tmp_path / "vol" / "thal.db").exists() and Wiki().root == tmp_path / "vol" / "wiki"
     (tmp_path / "vol" / "KILL").write_text("stop")
     assert risk.check(risk.OrderRequest("AAA", "BUY", 1, 10), risk.Portfolio(cash=1000), risk.Limits(), 0, {}).reasons == ("kill switch is on",)
+
+
+def test_a_job_running_far_too_long_is_reported_as_stuck(tmp_path, monkeypatch):
+    monkeypatch.setenv("THAL_DATA_DIR", str(tmp_path))
+    from thal import db, serve
+    conn = db.connect()
+    assert serve.stuck(conn, 1000.0) is None                                        # nothing running
+    conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES ('running_job', 'analyst|1000.0')"); conn.commit()
+    assert serve.stuck(conn, 1000.0 + 3600) is None                                 # an hour is a normal run
+    assert serve.stuck(conn, 1000.0 + serve.STUCK + 1) == "analyst"
+    conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES ('running_job', 'garbled')"); conn.commit()
+    assert serve.stuck(conn, 9e9) is None
+
+
+def test_feeds_are_read_with_a_timeout_and_the_old_setting_is_restored(monkeypatch):
+    import socket, feedparser
+    from thal import sources
+    seen = []
+    monkeypatch.setattr(feedparser, "parse", lambda url, agent=None: seen.append(socket.getdefaulttimeout()) or "parsed")
+    before = socket.getdefaulttimeout()
+    assert sources.read_feed("https://example.com/feed") == "parsed"
+    assert seen == [sources.FEED_TIMEOUT] and socket.getdefaulttimeout() == before
